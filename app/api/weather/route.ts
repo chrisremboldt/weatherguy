@@ -166,6 +166,7 @@ function normalizeDiscussion(product: JsonRecord, id: string): ForecastDiscussio
     issuedAt: product.issuanceTime,
     summary,
     aviation: extractSection(text, ["AVIATION"]),
+    raw: text,
     sourceUrl: `${NWS_BASE}/products/${id}`,
   };
 }

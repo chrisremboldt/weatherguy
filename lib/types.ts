@@ -71,6 +71,7 @@ export type ForecastDiscussion = {
   issuedAt: string;
   summary: string;
   aviation: string | null;
+  raw: string;
   sourceUrl: string;
 };
 

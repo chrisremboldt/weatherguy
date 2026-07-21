@@ -250,7 +250,7 @@ export function WeatherDashboard() {
       setError(null);
       try {
         const response = await fetch(
-          `/api/weather?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`,
+          `/api/weather?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}&schema=2`,
           { signal: controller.signal },
         );
         const payload = await response.json();
@@ -622,7 +622,12 @@ export function WeatherDashboard() {
             <span className="panel-note">{data?.discussion ? formatTime(data.discussion.issuedAt, timeZone) : "—"}</span>
           </div>
           <p>{data?.discussion?.summary ?? "The latest Area Forecast Discussion has not loaded yet."}</p>
-          {data?.discussion && <a href={data.discussion.sourceUrl} target="_blank" rel="noreferrer">Read full NWS product <ChevronRight size={14} /></a>}
+          {data?.discussion && (
+            <details className="discussion-product">
+              <summary>Read full NWS product <ChevronRight size={14} aria-hidden="true" /></summary>
+              <pre>{data.discussion.raw || data.discussion.summary}</pre>
+            </details>
+          )}
         </section>
 
         {data && (

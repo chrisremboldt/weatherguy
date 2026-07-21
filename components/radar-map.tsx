@@ -20,13 +20,19 @@ export function RadarMap({
 }) {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
-  const radarLayerRef = useRef<TileLayer.WMS | null>(null);
+  const visibleRadarLayerRef = useRef<TileLayer.WMS | null>(null);
+  const pendingRadarLayerRef = useRef<TileLayer.WMS | null>(null);
+  const radarRequestRef = useRef(0);
   const [labMode, setLabMode] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [radar, setRadar] = useState<RadarData | null>(null);
   const [productId, setProductId] = useState<RadarProductId>("bref");
   const [opacity, setOpacity] = useState(0.78);
+  const opacityRef = useRef(opacity);
   const [playing, setPlaying] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [renderedFrameIndex, setRenderedFrameIndex] = useState(0);
+  const [frameLoading, setFrameLoading] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -34,8 +40,10 @@ export function RadarMap({
       .then(async (response) => {
         const payload = (await response.json()) as RadarData;
         if (!response.ok) throw new Error("Radar metadata is unavailable.");
+        const latestFrame = Math.max(0, payload.times.length - 1);
         setRadar(payload);
-        setFrameIndex(Math.max(0, payload.times.length - 1));
+        setFrameIndex(latestFrame);
+        setRenderedFrameIndex(latestFrame);
       })
       .catch(() => setRadar(null));
     return () => controller.abort();
@@ -66,13 +74,17 @@ export function RadarMap({
         }).addTo(map).bindTooltip(alert.event);
       });
       mapRef.current = map;
+      setMapReady(true);
       window.setTimeout(() => map.invalidateSize(), 0);
     });
     return () => {
       active = false;
+      radarRequestRef.current += 1;
+      setMapReady(false);
       mapRef.current?.remove();
       mapRef.current = null;
-      radarLayerRef.current = null;
+      visibleRadarLayerRef.current = null;
+      pendingRadarLayerRef.current = null;
     };
   }, [alerts, labMode, latitude, longitude]);
 
@@ -80,30 +92,73 @@ export function RadarMap({
   const selectedTime = radar?.times[Math.min(frameIndex, Math.max(0, radar.times.length - 1))];
 
   useEffect(() => {
-    if (!labMode || !mapRef.current || !selectedProduct) return;
+    const map = mapRef.current;
+    if (!labMode || !mapReady || !map || !selectedProduct) return;
     let active = true;
+    const requestId = radarRequestRef.current + 1;
+    radarRequestRef.current = requestId;
+    setFrameLoading(true);
+
     void import("leaflet").then((module) => {
-      if (!active || !mapRef.current) return;
+      if (!active || radarRequestRef.current !== requestId || !mapRef.current) return;
       const L = module.default;
-      radarLayerRef.current?.remove();
-      radarLayerRef.current = L.tileLayer.wms(selectedProduct.wmsUrl, {
+      pendingRadarLayerRef.current?.remove();
+      const nextLayer = L.tileLayer.wms(selectedProduct.wmsUrl, {
         layers: selectedProduct.layer,
         styles: selectedProduct.style,
         format: "image/png",
         transparent: true,
-        opacity,
+        opacity: 0,
         version: "1.3.0",
+        updateWhenIdle: true,
+        keepBuffer: 1,
         ...(selectedTime ? { time: selectedTime } : {}),
-      }).addTo(mapRef.current);
+      });
+      pendingRadarLayerRef.current = nextLayer;
+
+      nextLayer.once("load", () => {
+        if (!active || radarRequestRef.current !== requestId || !mapRef.current) return;
+        const previousLayer = visibleRadarLayerRef.current;
+        nextLayer.setOpacity(opacityRef.current);
+        previousLayer?.setOpacity(0);
+        visibleRadarLayerRef.current = nextLayer;
+        pendingRadarLayerRef.current = null;
+        setRenderedFrameIndex(frameIndex);
+        setFrameLoading(false);
+
+        if (previousLayer) {
+          window.setTimeout(() => {
+            if (mapRef.current?.hasLayer(previousLayer)) previousLayer.remove();
+          }, 180);
+        }
+      });
+
+      nextLayer.addTo(mapRef.current);
+      nextLayer.getContainer()?.classList.add("radar-frame-layer");
     });
-    return () => { active = false; };
-  }, [labMode, opacity, selectedProduct, selectedTime]);
+    return () => {
+      active = false;
+      const pendingLayer = pendingRadarLayerRef.current;
+      if (pendingLayer && pendingLayer !== visibleRadarLayerRef.current) {
+        pendingLayer.remove();
+        pendingRadarLayerRef.current = null;
+      }
+    };
+  }, [frameIndex, labMode, mapReady, selectedProduct, selectedTime]);
 
   useEffect(() => {
-    if (!playing || !labMode || !radar || radar.times.length < 2) return;
-    const timer = window.setInterval(() => setFrameIndex((current) => (current + 1) % radar.times.length), 650);
-    return () => window.clearInterval(timer);
-  }, [labMode, playing, radar]);
+    opacityRef.current = opacity;
+    visibleRadarLayerRef.current?.setOpacity(opacity);
+  }, [opacity]);
+
+  useEffect(() => {
+    if (!playing || !labMode || frameLoading || !radar || radar.times.length < 2) return;
+    const timer = window.setTimeout(
+      () => setFrameIndex((renderedFrameIndex + 1) % radar.times.length),
+      650,
+    );
+    return () => window.clearTimeout(timer);
+  }, [frameLoading, labMode, playing, radar, renderedFrameIndex]);
 
   const ridgeUrl = `https://radar.weather.gov/ridge/standard/${station}_loop.gif?v=${refreshKey}`;
 
@@ -139,7 +194,8 @@ export function RadarMap({
               {playing ? <Pause size={14} /> : <Play size={14} />}
             </button>
             <input type="range" min="0" max={Math.max(0, (radar?.times.length ?? 1) - 1)} value={frameIndex} onChange={(event) => { setPlaying(false); setFrameIndex(Number(event.target.value)); }} aria-label="Radar time" />
-            <span>{selectedTime ? new Date(selectedTime).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "LATEST"}</span>
+            <span className={frameLoading ? "radar-frame-status is-loading" : "radar-frame-status"}>{frameLoading ? "BUFFERING" : playing ? "LOOP READY" : "PAUSED"}</span>
+            <span>{radar?.times[renderedFrameIndex] ? new Date(radar.times[renderedFrameIndex]).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "LATEST"}</span>
             <label>Opacity <input type="range" min="0.25" max="1" step="0.05" value={opacity} onChange={(event) => setOpacity(Number(event.target.value))} /></label>
             {selectedProduct && <span title={selectedProduct.detail}>{selectedProduct.detail}</span>}
           </div>

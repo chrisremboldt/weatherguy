@@ -887,6 +887,43 @@ h2 {
   margin: auto 14px 14px;
 }
 
+.discussion-product {
+  position: relative;
+  z-index: 1;
+  margin: auto 14px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.discussion-product summary {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-top: 10px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  list-style: none;
+}
+
+.discussion-product summary::-webkit-details-marker { display: none; }
+.discussion-product summary:hover { color: var(--cloud); }
+.discussion-product[open] summary svg { transform: rotate(90deg); }
+
+.discussion-product pre {
+  max-height: 360px;
+  margin: 10px 0 0;
+  padding: 12px;
+  overflow: auto;
+  color: #cbd9d9;
+  border: 1px solid var(--line);
+  background: rgba(5, 20, 25, 0.88);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .source-strip {
   min-height: 34px;
   display: flex;
@@ -1628,6 +1665,24 @@ h2 {
   z-index: 0;
   width: 100%;
   background: #06151a;
+}
+
+.radar-map .radar-frame-layer {
+  transition: opacity 160ms linear;
+}
+
+.radar-frame-status {
+  color: var(--signal);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.radar-frame-status.is-loading { color: var(--amber); }
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-map .radar-frame-layer { transition: none; }
 }
 
 .radar-map .leaflet-tile-pane .leaflet-layer:first-child img {
