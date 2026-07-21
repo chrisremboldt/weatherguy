@@ -2025,6 +2025,11 @@ h2 {
 
 @media (max-width: 820px) {
   .mode-picker { display: none; }
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; }
+  .location-lockup { min-width: 0; display: flex; justify-self: center; }
+  .location-lockup > svg,
+  .location-lockup span { display: none; }
+  .location-lockup strong { max-width: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
   .dashboard-grid,
   .mode-aviation .dashboard-grid,
   .mode-minimal .dashboard-grid { display: flex; flex-direction: column; }
@@ -2048,6 +2053,10 @@ h2 {
 }
 
 @media (max-width: 560px) {
+  .brand-lockup { gap: 6px; }
+  .brand-lockup .radar-mark { width: 25px; height: 25px; }
+  .brand-name { font-size: 15px; }
+  .location-lockup strong { max-width: 92px; font-size: 9px; }
   .sensor-grid .radar-stage,
   .satellite-stage,
   .radar-map { height: 430px; min-height: 360px; }
