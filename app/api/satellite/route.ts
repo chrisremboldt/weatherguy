@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(`${directory}/`, {
-      next: { revalidate: 180 },
+      cache: "no-store",
       signal: AbortSignal.timeout(12_000),
     });
     if (!response.ok) throw new Error(`NOAA STAR returned ${response.status}`);
