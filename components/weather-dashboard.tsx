@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   HourlyPeriod,
   DisplayMode,
@@ -190,6 +191,7 @@ export function WeatherDashboard() {
   const [copied, setCopied] = useState(false);
   const [offlineSnapshot, setOfflineSnapshot] = useState(false);
   const [online, setOnline] = useState(true);
+  const locationModalOpen = mounted && (settingsOpen || !config);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -218,6 +220,15 @@ export function WeatherDashboard() {
       window.removeEventListener("offline", updateConnection);
     };
   }, []);
+
+  useEffect(() => {
+    if (!locationModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [locationModalOpen]);
 
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 1_000);
@@ -631,7 +642,7 @@ export function WeatherDashboard() {
         {data?.notices.map((notice) => <span className="source-notice" key={notice}>{notice}</span>)}
       </footer>
 
-      {(settingsOpen || (mounted && !config)) && (
+      {locationModalOpen && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeLocationSettings()}>
           <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <div className="settings-heading">
@@ -704,7 +715,8 @@ export function WeatherDashboard() {
               <div className="form-actions">{config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}<button className="primary-button" type="submit">Load this area</button></div>
             </form>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </main>
   );
