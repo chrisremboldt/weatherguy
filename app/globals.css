@@ -2034,6 +2034,11 @@ h2 {
   .satellite-stage,
   .radar-map { height: min(74vw, 560px); min-height: 400px; }
   .status-column { display: grid; grid-template-columns: 1fr; }
+  .hourly-panel { order: 1; }
+  .outlook-panel { order: 2; }
+  .discussion-panel { order: 3; }
+  .intelligence-grid { order: 4; }
+  .aviation-console-panel { order: 5; }
   .intelligence-grid { display: grid; grid-template-columns: 1fr; }
   .mode-severe .severe-center { grid-column: auto; }
   .aviation-console-grid { grid-template-columns: 1fr; }
