@@ -189,10 +189,12 @@ export function WeatherDashboard() {
   const [alertAudio, setAlertAudio] = useState(false);
   const [copied, setCopied] = useState(false);
   const [offlineSnapshot, setOfflineSnapshot] = useState(false);
+  const [online, setOnline] = useState(true);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setMounted(true);
+      setOnline(navigator.onLine);
       try {
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
         setDisplayMode((window.localStorage.getItem("weatherguy-display-mode") as DisplayMode) || "desk");
@@ -205,6 +207,16 @@ export function WeatherDashboard() {
     }, 0);
     if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const updateConnection = () => setOnline(navigator.onLine);
+    window.addEventListener("online", updateConnection);
+    window.addEventListener("offline", updateConnection);
+    return () => {
+      window.removeEventListener("online", updateConnection);
+      window.removeEventListener("offline", updateConnection);
+    };
   }, []);
 
   useEffect(() => {
@@ -611,7 +623,7 @@ export function WeatherDashboard() {
       </div>
 
       <footer className="source-strip">
-        <span><i className={error ? "status-dot degraded" : "status-dot"} /> {offlineSnapshot ? "Offline · serving saved snapshot" : error ? "Live feed degraded" : "All live feeds connected"}</span>
+        <span><i className={!online || error ? "status-dot degraded" : "status-dot"} /> {!online ? "Offline · cached desk remains available" : offlineSnapshot ? "Serving the last saved snapshot" : error ? "Live feed degraded" : "All live feeds connected"}</span>
         <span>Weather: NOAA / National Weather Service</span>
         <span>Radar: NEXRAD RIDGE + NWS OpenGeo</span>
         <span>Satellite: NOAA GOES</span>
