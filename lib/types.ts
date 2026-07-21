@@ -103,3 +103,15 @@ export type LocationConfig = {
   longitude: number;
   customLabel?: string;
 };
+
+export type LocationSearchResult = {
+  id: string;
+  name: string;
+  region: string;
+  country: string;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+  timeZone: string;
+  label: string;
+};

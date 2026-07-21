@@ -10,6 +10,7 @@ import {
   MapPin,
   Navigation,
   RefreshCw,
+  Search,
   Settings2,
   Sunrise,
   Sunset,
@@ -17,37 +18,66 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import type { HourlyPeriod, LocationConfig, WeatherDashboardData } from "@/lib/types";
+import type {
+  HourlyPeriod,
+  LocationConfig,
+  LocationSearchResult,
+  WeatherDashboardData,
+} from "@/lib/types";
 import { WeatherIcon } from "@/components/weather-icon";
 
-const DEFAULT_LOCATION: LocationConfig = {
-  latitude: 44.7631,
-  longitude: -85.6206,
+type LocationFormConfig = {
+  latitude: string;
+  longitude: string;
+  customLabel?: string;
 };
 
-const PRESETS: Array<LocationConfig & { name: string }> = [
-  { name: "Traverse City", latitude: 44.7631, longitude: -85.6206 },
-  { name: "Chicago", latitude: 41.8781, longitude: -87.6298 },
-  { name: "Denver", latitude: 39.7392, longitude: -104.9903 },
-];
+function validLocation(value: unknown): value is LocationConfig {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<LocationConfig>;
+  return (
+    typeof candidate.latitude === "number" &&
+    typeof candidate.longitude === "number" &&
+    Number.isFinite(candidate.latitude) &&
+    Number.isFinite(candidate.longitude) &&
+    candidate.latitude >= -90 &&
+    candidate.latitude <= 90 &&
+    candidate.longitude >= -180 &&
+    candidate.longitude <= 180
+  );
+}
 
-function initialLocation(): LocationConfig {
-  if (typeof window === "undefined") return DEFAULT_LOCATION;
+function initialLocation(): LocationConfig | null {
+  if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
   const queryLat = Number(params.get("lat"));
   const queryLon = Number(params.get("lon"));
   if (params.has("lat") && params.has("lon") && Number.isFinite(queryLat) && Number.isFinite(queryLon)) {
-    return { latitude: queryLat, longitude: queryLon };
+    const queryLocation = {
+      latitude: queryLat,
+      longitude: queryLon,
+      customLabel: params.get("location")?.slice(0, 120) || undefined,
+    };
+    return validLocation(queryLocation) ? queryLocation : null;
   }
 
   const saved = window.localStorage.getItem("weatherguy-location");
-  if (!saved) return DEFAULT_LOCATION;
+  if (!saved) return null;
   try {
-    return JSON.parse(saved) as LocationConfig;
+    const location = JSON.parse(saved) as unknown;
+    return validLocation(location) ? location : null;
   } catch {
     window.localStorage.removeItem("weatherguy-location");
-    return DEFAULT_LOCATION;
+    return null;
   }
+}
+
+function formFromLocation(location: LocationConfig | null): LocationFormConfig {
+  return {
+    latitude: location ? String(location.latitude) : "",
+    longitude: location ? String(location.longitude) : "",
+    customLabel: location?.customLabel,
+  };
 }
 
 function formatTime(iso: string | null, timeZone: string, options?: Intl.DateTimeFormatOptions) {
@@ -127,15 +157,25 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
 }
 
 export function WeatherDashboard() {
-  const [config, setConfig] = useState<LocationConfig>(initialLocation);
-  const [formConfig, setFormConfig] = useState<LocationConfig>(initialLocation);
+  const [config, setConfig] = useState<LocationConfig | null>(initialLocation);
+  const [formConfig, setFormConfig] = useState<LocationFormConfig>(() => formFromLocation(initialLocation()));
   const [data, setData] = useState<WeatherDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [now, setNow] = useState(new Date());
   const [geoError, setGeoError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMounted(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 1_000);
@@ -147,6 +187,9 @@ export function WeatherDashboard() {
   }, []);
 
   useEffect(() => {
+    const activeConfig = config;
+    if (!activeConfig) return;
+    const { latitude, longitude } = activeConfig;
     const controller = new AbortController();
 
     async function load() {
@@ -154,7 +197,7 @@ export function WeatherDashboard() {
       setError(null);
       try {
         const response = await fetch(
-          `/api/weather?lat=${config.latitude.toFixed(4)}&lon=${config.longitude.toFixed(4)}`,
+          `/api/weather?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`,
           { signal: controller.signal },
         );
         const payload = await response.json();
@@ -172,7 +215,7 @@ export function WeatherDashboard() {
     return () => controller.abort();
   }, [config, refreshKey]);
 
-  const timeZone = data?.location.timeZone ?? "America/Detroit";
+  const timeZone = data?.location.timeZone ?? "UTC";
   const hourly = data?.hourly.slice(0, 9) ?? [];
   const daily = useMemo(() => data?.daily.filter((period) => period.isDaytime).slice(0, 5) ?? [], [data]);
   const radarVersion = Math.floor(now.getTime() / 120_000);
@@ -189,12 +232,25 @@ export function WeatherDashboard() {
         setGeoError("Enter valid numeric coordinates.");
         return;
       }
-      const next = { latitude, longitude };
+      if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+        setGeoError("Coordinates are outside the valid range.");
+        return;
+      }
+      const next: LocationConfig = {
+        latitude,
+        longitude,
+        customLabel: formConfig.customLabel?.trim() || undefined,
+      };
       window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
-      window.history.replaceState(null, "", `?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`);
+      const params = new URLSearchParams({ lat: latitude.toFixed(4), lon: longitude.toFixed(4) });
+      if (next.customLabel) params.set("location", next.customLabel);
+      window.history.replaceState(null, "", `?${params.toString()}`);
+      setData(null);
       setConfig(next);
       setSettingsOpen(false);
       setGeoError(null);
+      setSearchError(null);
+      setSearchResults([]);
     },
     [formConfig],
   );
@@ -208,13 +264,64 @@ export function WeatherDashboard() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setFormConfig({
-          latitude: Number(position.coords.latitude.toFixed(4)),
-          longitude: Number(position.coords.longitude.toFixed(4)),
+          latitude: position.coords.latitude.toFixed(4),
+          longitude: position.coords.longitude.toFixed(4),
         });
       },
       () => setGeoError("Location access was not granted. Enter coordinates instead."),
       { enableHighAccuracy: false, timeout: 10_000 },
     );
+  };
+
+  const openLocationSettings = () => {
+    setFormConfig(formFromLocation(config));
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchError(null);
+    setGeoError(null);
+    setSettingsOpen(true);
+  };
+
+  const closeLocationSettings = () => {
+    if (config) setSettingsOpen(false);
+  };
+
+  const searchLocations = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    if (query.length < 2) {
+      setSearchError("Enter a city, state, territory, or ZIP code.");
+      return;
+    }
+
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const response = await fetch(`/api/locations?q=${encodeURIComponent(query)}`);
+      const payload = (await response.json()) as { results?: LocationSearchResult[]; error?: string };
+      if (!response.ok) throw new Error(payload.error || "Location search failed.");
+      const results = payload.results ?? [];
+      setSearchResults(results);
+      if (results.length === 0) {
+        setSearchError("No NWS-covered locations matched. Try a nearby city or ZIP code.");
+      }
+    } catch (searchRequestError) {
+      setSearchResults([]);
+      setSearchError(
+        searchRequestError instanceof Error ? searchRequestError.message : "Location search failed.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const chooseSearchResult = (result: LocationSearchResult) => {
+    setFormConfig({
+      latitude: result.latitude.toFixed(4),
+      longitude: result.longitude.toFixed(4),
+      customLabel: result.label,
+    });
+    setGeoError(null);
   };
 
   const requestFullscreen = async () => {
@@ -236,8 +343,8 @@ export function WeatherDashboard() {
         <div className="location-lockup">
           <MapPin size={15} aria-hidden="true" />
           <div>
-            <strong>{data?.location.label ?? "Locating weather station"}</strong>
-            <span>{data ? `${data.location.stationId} · NWS ${data.location.wfo}` : "NOAA / NWS"}</span>
+            <strong>{(mounted ? config?.customLabel : undefined) ?? data?.location.label ?? "Choose a location"}</strong>
+            <span>{data ? `${data.location.stationId} · NWS ${data.location.wfo}` : "U.S. / NWS coverage"}</span>
           </div>
         </div>
 
@@ -252,7 +359,7 @@ export function WeatherDashboard() {
           <button className="icon-button" onClick={() => void requestFullscreen()} title="Toggle fullscreen" aria-label="Toggle fullscreen">
             <Expand size={18} />
           </button>
-          <button className="icon-button" onClick={() => { setFormConfig(config); setSettingsOpen(true); }} title="Change location" aria-label="Change location">
+          <button className="icon-button" onClick={openLocationSettings} title="Change location" aria-label="Change location">
             <Settings2 size={18} />
           </button>
         </div>
@@ -405,29 +512,52 @@ export function WeatherDashboard() {
         {data?.notices.map((notice) => <span className="source-notice" key={notice}>{notice}</span>)}
       </footer>
 
-      {settingsOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setSettingsOpen(false)}>
+      {(settingsOpen || (mounted && !config)) && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeLocationSettings()}>
           <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <div className="settings-heading">
-              <div><span className="eyebrow">Display position</span><h2 id="settings-title">Change location</h2></div>
-              <button className="icon-button" onClick={() => setSettingsOpen(false)} aria-label="Close settings"><X size={18} /></button>
+              <div><span className="eyebrow">Display position</span><h2 id="settings-title">{config ? "Change area" : "Choose an area"}</h2></div>
+              {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
-            <p className="settings-intro">WeatherGuy resolves your forecast office, radar site, and nearest reporting airport automatically.</p>
-            <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this iMac’s location</button>
-            <div className="preset-list">
-              {PRESETS.map((preset) => (
-                <button type="button" key={preset.name} onClick={() => setFormConfig(preset)}>
-                  <MapPin size={14} /><span>{preset.name}</span><small>{preset.latitude.toFixed(2)}, {preset.longitude.toFixed(2)}</small>
-                </button>
-              ))}
-            </div>
+            <p className="settings-intro">Search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+
+            <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
+              <label htmlFor="location-search">City, state, territory, or ZIP code</label>
+              <div>
+                <Search size={17} aria-hidden="true" />
+                <input id="location-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="City and state, or ZIP code" autoComplete="off" />
+                <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
+              </div>
+            </form>
+
+            {searchResults.length > 0 && (
+              <div className="search-results" aria-label="Location search results">
+                {searchResults.map((result) => {
+                  const selected =
+                    Number(formConfig.latitude) === result.latitude &&
+                    Number(formConfig.longitude) === result.longitude;
+                  return (
+                    <button className={selected ? "selected" : ""} type="button" key={result.id} onClick={() => chooseSearchResult(result)}>
+                      <MapPin size={15} aria-hidden="true" />
+                      <span><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
+                      <code>{result.latitude.toFixed(2)}, {result.longitude.toFixed(2)}</code>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {searchError && <p className="form-error">{searchError}</p>}
+
+            <div className="settings-or"><span>or position directly</span></div>
+            <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
             <form onSubmit={saveLocation}>
               <div className="coordinate-grid">
-                <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: Number(event.target.value) }))} /></label>
-                <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: Number(event.target.value) }))} /></label>
+                <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
+                <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
               </div>
               {geoError && <p className="form-error">{geoError}</p>}
-              <div className="form-actions"><button type="button" onClick={() => setSettingsOpen(false)}>Cancel</button><button className="primary-button" type="submit">Load location</button></div>
+              <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
+              <div className="form-actions">{config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}<button className="primary-button" type="submit">Load this area</button></div>
             </form>
           </section>
         </div>

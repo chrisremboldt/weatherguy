@@ -2,7 +2,7 @@
 
 WeatherGuy turns an unused iMac, monitor, or TV into an always-on weather observation desk. It combines authoritative U.S. government feeds into one large-screen display with no API keys and no database.
 
-The default station is Traverse City, Michigan. Choose a preset, use the browser's location, enter coordinates, or share a location with `?lat=44.7631&lon=-85.6206`. WeatherGuy automatically resolves the correct National Weather Service office, radar site, and nearest reporting airport.
+On first run, search for any U.S. city, state, ZIP code, or supported territory; use the browser's location; or enter coordinates directly. The selection persists in that browser and the resulting `?lat=…&lon=…` URL is shareable. WeatherGuy automatically resolves the correct National Weather Service office, radar site, and nearest reporting airport for the selected point.
 
 ## What is on the desk
 
@@ -26,6 +26,7 @@ The server-side data adapter tolerates partial upstream outages. A missing Area 
 | Animated radar | [NWS RIDGE radar](https://radar.weather.gov) | 2 minutes |
 | METAR and flight category | [AviationWeather.gov Data API](https://aviationweather.gov/data/api/) | 1 minute |
 | Forecast discussion | NWS text products API | 10 minutes |
+| City, state, ZIP code, and territory search | [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api) | Cached for 24 hours |
 
 NWS asks clients to identify themselves with a user agent. The project includes a safe default; deployed instances should set `NWS_USER_AGENT` to a URL or contact address.
 
@@ -90,7 +91,7 @@ Then open the HTTPS URL reported by `tailscale serve` from another device on the
 
 ## Architecture
 
-The browser calls a single `/api/weather` route. That server route resolves a coordinate through NWS, fetches the independent weather products concurrently, normalizes their different units and schemas, and returns one dashboard payload. Keeping the upstream calls server-side avoids browser CORS problems and lets Vercel cache public data close to viewers.
+The browser calls `/api/locations` for explicit location searches and `/api/weather` after a point is selected. The weather route resolves the coordinate through NWS, fetches the independent weather products concurrently, normalizes their different units and schemas, and returns one dashboard payload. Keeping the upstream calls server-side avoids browser CORS problems and lets Vercel cache public data close to viewers.
 
 The animated radar image is loaded directly from NWS RIDGE. This keeps the radar authoritative and animated without a paid mapping provider or a large client-side GIS bundle.
 

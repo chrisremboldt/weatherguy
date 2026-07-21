@@ -214,8 +214,15 @@ function fillObservationGaps(current: CurrentObservation, metar: JsonRecord | un
 }
 
 export async function GET(request: NextRequest) {
-  const latitude = Number(request.nextUrl.searchParams.get("lat") ?? "44.7631");
-  const longitude = Number(request.nextUrl.searchParams.get("lon") ?? "-85.6206");
+  const latitudeParam = request.nextUrl.searchParams.get("lat");
+  const longitudeParam = request.nextUrl.searchParams.get("lon");
+
+  if (latitudeParam === null || longitudeParam === null) {
+    return NextResponse.json({ error: "Latitude and longitude are required." }, { status: 400 });
+  }
+
+  const latitude = Number(latitudeParam);
+  const longitude = Number(longitudeParam);
 
   if (
     !Number.isFinite(latitude) ||
