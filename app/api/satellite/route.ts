@@ -21,21 +21,21 @@ function validCoordinate(value: string | null, min: number, max: number) {
 
 function resolveSector(latitude: number, longitude: number) {
   if (latitude >= 50 && longitude <= -130) {
-    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/ak", label: "Alaska" };
+    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/ak", label: "Alaska", size: "1000x1000" };
   }
   if (latitude >= 15 && latitude <= 25 && longitude >= -163 && longitude <= -151) {
-    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/hi", label: "Hawaii" };
+    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/hi", label: "Hawaii", size: "1200x1200" };
   }
   if (latitude >= 10 && latitude <= 23 && longitude >= 130) {
-    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/gu", label: "Guam / western Pacific" };
+    return { satellite: "GOES-18" as const, code: "G18", path: "SECTOR/tpw", label: "Guam / tropical Pacific", size: "900x540" };
   }
   if (latitude >= 15 && latitude <= 22 && longitude >= -70 && longitude <= -60) {
-    return { satellite: "GOES-19" as const, code: "G19", path: "SECTOR/pr", label: "Caribbean" };
+    return { satellite: "GOES-19" as const, code: "G19", path: "SECTOR/pr", label: "Caribbean", size: "1200x1200" };
   }
   if (longitude < -105) {
-    return { satellite: "GOES-18" as const, code: "G18", path: "PACUS", label: "Pacific U.S." };
+    return { satellite: "GOES-18" as const, code: "G18", path: "CONUS", label: "Western U.S.", size: "1250x750" };
   }
-  return { satellite: "GOES-19" as const, code: "G19", path: "CONUS", label: "Continental U.S." };
+  return { satellite: "GOES-19" as const, code: "G19", path: "CONUS", label: "Eastern U.S.", size: "1250x750" };
 }
 
 function timestampFromFilename(filename: string) {
@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
     });
     if (!response.ok) throw new Error(`NOAA STAR returned ${response.status}`);
     const html = await response.text();
-    const filenames = Array.from(html.matchAll(/href="([^"]+-1250x750\.jpg)"/g), (match) => match[1]);
+    const sizePattern = sector.size;
+    const filenames = Array.from(html.matchAll(new RegExp(`href="([^"]+-${sizePattern}\\.jpg)"`, "g")), (match) => match[1]);
     const unique = Array.from(new Set(filenames)).sort().slice(-12);
     if (unique.length === 0) throw new Error("No recent frames were listed");
 
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
       sectorLabel: sector.label,
       product,
       productLabel: ALLOWED_PRODUCTS[product],
-      frames: [{ url: `${directory}/1250x750.jpg`, capturedAt: new Date().toISOString() }],
+      frames: [{ url: `${directory}/${sector.size}.jpg`, capturedAt: new Date().toISOString() }],
       sourceUrl: "https://www.star.nesdis.noaa.gov/GOES/",
       notice: `Loop index unavailable; showing NOAA's latest frame. ${notice}`,
     };
