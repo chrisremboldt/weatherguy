@@ -59,6 +59,12 @@ export type WeatherAlert = {
   instruction: string | null;
   effective: string;
   expires: string;
+  geometry: GeoJsonGeometry | null;
+};
+
+export type GeoJsonGeometry = {
+  type: string;
+  coordinates: unknown;
 };
 
 export type ForecastDiscussion = {
@@ -80,6 +86,25 @@ export type AviationObservation = {
   altimeterInHg: number | null;
 };
 
+export type TafPeriod = {
+  from: string;
+  to: string;
+  change: string;
+  probability: number | null;
+  wind: string;
+  visibility: string;
+  ceilingFeet: number | null;
+  weather: string | null;
+};
+
+export type AviationForecast = {
+  raw: string;
+  issuedAt: string;
+  validFrom: string;
+  validTo: string;
+  periods: TafPeriod[];
+};
+
 export type Astronomy = {
   sunrise: string | null;
   sunset: string | null;
@@ -94,9 +119,159 @@ export type WeatherDashboardData = {
   alerts: WeatherAlert[];
   discussion: ForecastDiscussion | null;
   aviation: AviationObservation | null;
+  aviationForecast: AviationForecast | null;
   astronomy: Astronomy;
   notices: string[];
 };
+
+export type SatelliteProductId =
+  | "GEOCOLOR"
+  | "13"
+  | "09"
+  | "DayNightCloudMicroCombo"
+  | "EXTENT3"
+  | "FireTemperature"
+  | "Dust";
+
+export type SatelliteFrame = {
+  url: string;
+  capturedAt: string;
+};
+
+export type SatelliteData = {
+  fetchedAt: string;
+  satellite: "GOES-18" | "GOES-19";
+  sector: string;
+  sectorLabel: string;
+  product: SatelliteProductId;
+  productLabel: string;
+  frames: SatelliteFrame[];
+  sourceUrl: string;
+  notice: string | null;
+};
+
+export type RadarProductId = "bref" | "cref" | "velocity" | "hydrometeor" | "rain1h" | "rainstorm";
+
+export type RadarProduct = {
+  id: RadarProductId;
+  label: string;
+  detail: string;
+  wmsUrl: string;
+  layer: string;
+  style: string;
+  legendUrl: string;
+};
+
+export type RadarData = {
+  fetchedAt: string;
+  station: string;
+  region: string;
+  times: string[];
+  products: RadarProduct[];
+  sourceUrl: string;
+};
+
+export type ForecastSignalHour = {
+  time: string;
+  feelsLikeF: number | null;
+  precipitationIn: number | null;
+  snowfallIn: number | null;
+  cloudCoverPct: number | null;
+  freezingLevelFt: number | null;
+};
+
+export type ForecastSignals = {
+  next24PrecipitationIn: number | null;
+  next72PrecipitationIn: number | null;
+  next72SnowfallIn: number | null;
+  peakCloudCoverPct: number | null;
+  freezingLevelFt: number | null;
+  bestOutdoorWindow: { start: string; end: string; reason: string } | null;
+  hours: ForecastSignalHour[];
+};
+
+export type AirQuality = {
+  observedAt: string;
+  aqi: number | null;
+  category: string;
+  pm25: number | null;
+  ozone: number | null;
+  next24High: number | null;
+};
+
+export type NearbyEarthquake = {
+  magnitude: number | null;
+  place: string;
+  occurredAt: string;
+  distanceMiles: number;
+  url: string;
+};
+
+export type SpaceWeather = {
+  observedAt: string;
+  kp: number | null;
+  category: string;
+};
+
+export type IntelligenceData = {
+  fetchedAt: string;
+  forecast: ForecastSignals | null;
+  airQuality: AirQuality | null;
+  earthquake: NearbyEarthquake | null;
+  spaceWeather: SpaceWeather | null;
+  links: {
+    spc: string;
+    rivers: string;
+    tropical: string;
+    fire: string;
+    buoys: string;
+    aviation: string;
+  };
+  notices: string[];
+};
+
+export type NearbyAirport = {
+  id: string;
+  name: string;
+  flightCategory: string;
+  temperatureF: number | null;
+  wind: string;
+  visibility: string | null;
+  observedAt: string;
+};
+
+export type PilotReport = {
+  observedAt: string;
+  aircraft: string;
+  altitudeFt: number | null;
+  icing: string | null;
+  turbulence: string | null;
+  weather: string | null;
+};
+
+export type AviationAdvisory = {
+  id: string;
+  kind: string;
+  hazard: string;
+  severity: string | null;
+  validTo: string;
+  raw: string;
+};
+
+export type AviationData = {
+  fetchedAt: string;
+  airports: NearbyAirport[];
+  pireps: PilotReport[];
+  advisories: AviationAdvisory[];
+  notices: string[];
+};
+
+export type FavoriteLocation = LocationConfig & {
+  id: string;
+  label: string;
+};
+
+export type DisplayMode = "desk" | "severe" | "aviation" | "minimal";
 
 export type LocationConfig = {
   latitude: number;

@@ -1,17 +1,23 @@
 "use client";
 
 import {
+  Bell,
+  BellOff,
   ChevronRight,
-  Crosshair,
+  Copy,
   Droplets,
   Expand,
   Gauge,
+  LayoutDashboard,
   LocateFixed,
   MapPin,
+  Moon,
   Navigation,
   RefreshCw,
   Search,
   Settings2,
+  Star,
+  Trash2,
   Sunrise,
   Sunset,
   Wind,
@@ -20,11 +26,16 @@ import {
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import type {
   HourlyPeriod,
+  DisplayMode,
+  FavoriteLocation,
   LocationConfig,
   LocationSearchResult,
   WeatherDashboardData,
 } from "@/lib/types";
 import { WeatherIcon } from "@/components/weather-icon";
+import { AviationConsole } from "@/components/aviation-console";
+import { IntelligenceGrid } from "@/components/intelligence-grid";
+import { SensorDeck } from "@/components/sensor-deck";
 
 type LocationFormConfig = {
   latitude: string;
@@ -171,9 +182,28 @@ export function WeatherDashboard() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("desk");
+  const [autoRotate, setAutoRotate] = useState(false);
+  const [autoDim, setAutoDim] = useState(true);
+  const [alertAudio, setAlertAudio] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [offlineSnapshot, setOfflineSnapshot] = useState(false);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setMounted(true), 0);
+    const timer = window.setTimeout(() => {
+      setMounted(true);
+      try {
+        setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
+        setDisplayMode((window.localStorage.getItem("weatherguy-display-mode") as DisplayMode) || "desk");
+        setAutoRotate(window.localStorage.getItem("weatherguy-auto-rotate") === "true");
+        setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") !== "false");
+        setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
+      } catch {
+        // A privacy-mode browser may disable persistent storage; the desk still works live.
+      }
+    }, 0);
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -203,8 +233,19 @@ export function WeatherDashboard() {
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "Weather data could not be loaded.");
         setData(payload as WeatherDashboardData);
+        setOfflineSnapshot(false);
+        window.localStorage.setItem(`weatherguy-snapshot-${latitude.toFixed(3)}-${longitude.toFixed(3)}`, JSON.stringify(payload));
       } catch (requestError) {
         if (requestError instanceof DOMException && requestError.name === "AbortError") return;
+        const cached = window.localStorage.getItem(`weatherguy-snapshot-${latitude.toFixed(3)}-${longitude.toFixed(3)}`);
+        if (cached) {
+          try {
+            setData(JSON.parse(cached) as WeatherDashboardData);
+            setOfflineSnapshot(true);
+          } catch {
+            window.localStorage.removeItem(`weatherguy-snapshot-${latitude.toFixed(3)}-${longitude.toFixed(3)}`);
+          }
+        }
         setError(requestError instanceof Error ? requestError.message : "Weather data could not be loaded.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
@@ -215,13 +256,41 @@ export function WeatherDashboard() {
     return () => controller.abort();
   }, [config, refreshKey]);
 
+  useEffect(() => {
+    if (!autoRotate || favorites.length < 2) return;
+    const timer = window.setInterval(() => {
+      setConfig((current) => {
+        const currentIndex = favorites.findIndex((favorite) => favorite.latitude === current?.latitude && favorite.longitude === current?.longitude);
+        const next = favorites[(currentIndex + 1 + favorites.length) % favorites.length];
+        window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
+        const params = new URLSearchParams({ lat: next.latitude.toFixed(4), lon: next.longitude.toFixed(4), location: next.label });
+        window.history.replaceState(null, "", `?${params.toString()}`);
+        return next;
+      });
+    }, 15 * 60_000);
+    return () => window.clearInterval(timer);
+  }, [autoRotate, favorites]);
+
+  useEffect(() => {
+    if (!alertAudio || !data?.alerts.length) return;
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = 660;
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+    return () => { void context.close(); };
+  }, [alertAudio, data?.alerts.length]);
+
   const timeZone = data?.location.timeZone ?? "UTC";
   const hourly = data?.hourly.slice(0, 9) ?? [];
   const daily = useMemo(() => data?.daily.filter((period) => period.isDaytime).slice(0, 5) ?? [], [data]);
-  const radarVersion = Math.floor(now.getTime() / 120_000);
-  const radarUrl = data
-    ? `https://radar.weather.gov/ridge/standard/${data.location.radarStation}_loop.gif?v=${radarVersion}`
-    : "";
+  const localHour = Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(now));
+  const nightDimmed = mounted && autoDim && (localHour >= 22 || localHour < 6);
 
   const saveLocation = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -329,8 +398,43 @@ export function WeatherDashboard() {
     else await document.exitFullscreen?.();
   };
 
+  const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
+
+  const addFavorite = () => {
+    if (!config || !data) return;
+    const favorite: FavoriteLocation = {
+      ...config,
+      id: `${config.latitude.toFixed(4)},${config.longitude.toFixed(4)}`,
+      label: config.customLabel || data.location.label,
+    };
+    const next = [...favorites.filter((item) => item.id !== favorite.id), favorite];
+    setFavorites(next);
+    window.localStorage.setItem("weatherguy-favorites", JSON.stringify(next));
+  };
+
+  const removeFavorite = (id: string) => {
+    const next = favorites.filter((favorite) => favorite.id !== id);
+    setFavorites(next);
+    window.localStorage.setItem("weatherguy-favorites", JSON.stringify(next));
+  };
+
+  const loadFavorite = (favorite: FavoriteLocation) => {
+    const next: LocationConfig = { latitude: favorite.latitude, longitude: favorite.longitude, customLabel: favorite.label };
+    window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
+    const params = new URLSearchParams({ lat: favorite.latitude.toFixed(4), lon: favorite.longitude.toFixed(4), location: favorite.label });
+    window.history.replaceState(null, "", `?${params.toString()}`);
+    setConfig(next);
+    setSettingsOpen(false);
+  };
+
+  const copyFamilyUrl = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1_500);
+  };
+
   return (
-    <main className="app-shell">
+    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""}`}>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -353,6 +457,19 @@ export function WeatherDashboard() {
             <span suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).format(now)}</span>
             <strong suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", second: "2-digit" }).format(now)}</strong>
           </div>
+          <label className="mode-picker" title="Change dashboard layout">
+            <LayoutDashboard size={15} aria-hidden="true" />
+            <select value={displayMode} onChange={(event) => {
+              const mode = event.target.value as DisplayMode;
+              setDisplayMode(mode);
+              persistSetting("weatherguy-display-mode", mode);
+            }} aria-label="Display mode">
+              <option value="desk">Desk</option>
+              <option value="severe">Severe</option>
+              <option value="aviation">Aviation</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </label>
           <button className="icon-button" onClick={() => setRefreshKey((value) => value + 1)} title="Refresh data" aria-label="Refresh weather data">
             <RefreshCw size={18} className={loading ? "spin" : ""} />
           </button>
@@ -378,6 +495,13 @@ export function WeatherDashboard() {
         <span className="alert-source">NWS CAP</span>
       </section>
 
+      {data?.alerts[0] && (
+        <details className="alert-detail">
+          <summary>Read {data.alerts[0].event} details</summary>
+          <div><p>{data.alerts[0].description}</p>{data.alerts[0].instruction && <p><strong>What to do:</strong> {data.alerts[0].instruction}</p>}</div>
+        </details>
+      )}
+
       {error && (
         <div className="error-banner" role="alert">
           <span><strong>Live feed interrupted.</strong> {error}</span>
@@ -386,34 +510,9 @@ export function WeatherDashboard() {
       )}
 
       <div className={`dashboard-grid ${loading && !data ? "is-loading" : ""}`}>
-        <section className="panel radar-panel">
-          <div className="panel-heading radar-heading">
-            <div>
-              <span className="eyebrow">Live sweep / 10 frames</span>
-              <h1>Base reflectivity</h1>
-            </div>
-            <div className="panel-actions">
-              <span className="live-chip"><i /> LIVE</span>
-              <a href="https://radar.weather.gov" target="_blank" rel="noreferrer">Open NWS radar <ChevronRight size={14} /></a>
-            </div>
-          </div>
-          <div className="radar-stage">
-            {radarUrl ? (
-              <>
-                {/* NWS radar GIFs are animated and intentionally bypass image optimization. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="radar-backdrop" src={radarUrl} alt="" aria-hidden="true" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="radar-image" src={radarUrl} alt={`Animated NWS radar loop from ${data?.location.radarStation}`} />
-              </>
-            ) : (
-              <div className="radar-placeholder"><Crosshair size={32} /><span>Acquiring radar</span></div>
-            )}
-            <div className="radar-scanline" aria-hidden="true" />
-            <div className="radar-corner nw">NOAA / MRMS</div>
-            <div className="radar-corner se">{data?.location.radarStation ?? "—"} · 0.5° BR</div>
-          </div>
-        </section>
+        {data ? <SensorDeck data={data} refreshKey={refreshKey} /> : (
+          <section className="panel sensor-panel sensor-loading"><RefreshCw className="spin" size={28} /><span>Resolving sensor network</span></section>
+        )}
 
         <aside className="status-column">
           <section className="panel current-panel">
@@ -502,12 +601,20 @@ export function WeatherDashboard() {
           <p>{data?.discussion?.summary ?? "The latest Area Forecast Discussion has not loaded yet."}</p>
           {data?.discussion && <a href={data.discussion.sourceUrl} target="_blank" rel="noreferrer">Read full NWS product <ChevronRight size={14} /></a>}
         </section>
+
+        {data && (
+          <>
+            <IntelligenceGrid latitude={data.location.latitude} longitude={data.location.longitude} timeZone={data.location.timeZone} refreshKey={refreshKey} />
+            <AviationConsole data={data} refreshKey={refreshKey} />
+          </>
+        )}
       </div>
 
       <footer className="source-strip">
-        <span><i className={error ? "status-dot degraded" : "status-dot"} /> {error ? "Serving last successful observation" : "All live feeds connected"}</span>
+        <span><i className={error ? "status-dot degraded" : "status-dot"} /> {offlineSnapshot ? "Offline · serving saved snapshot" : error ? "Live feed degraded" : "All live feeds connected"}</span>
         <span>Weather: NOAA / National Weather Service</span>
-        <span>Radar: NEXRAD RIDGE</span>
+        <span>Radar: NEXRAD RIDGE + NWS OpenGeo</span>
+        <span>Satellite: NOAA GOES</span>
         <span>Aviation: AviationWeather.gov</span>
         {data?.notices.map((notice) => <span className="source-notice" key={notice}>{notice}</span>)}
       </footer>
@@ -520,6 +627,31 @@ export function WeatherDashboard() {
               {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
             <p className="settings-intro">Search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+
+            {config && (
+              <div className="display-preferences">
+                <span className="settings-section-label">Family & display profile</span>
+                <div className="preference-actions">
+                  <button type="button" onClick={() => void copyFamilyUrl()}><Copy size={15} /> {copied ? "Copied" : "Copy family URL"}</button>
+                  <button type="button" onClick={addFavorite}><Star size={15} /> Save current area</button>
+                </div>
+                <div className="preference-toggles">
+                  <label><span><Moon size={16} /><b>Auto-dim</b><small>10 PM–6 AM local time</small></span><input type="checkbox" checked={autoDim} onChange={(event) => { setAutoDim(event.target.checked); persistSetting("weatherguy-auto-dim", String(event.target.checked)); }} /></label>
+                  <label><span>{alertAudio ? <Bell size={16} /> : <BellOff size={16} />}<b>Alert tone</b><small>One chime when alerts appear</small></span><input type="checkbox" checked={alertAudio} onChange={(event) => { setAlertAudio(event.target.checked); persistSetting("weatherguy-alert-audio", String(event.target.checked)); }} /></label>
+                  <label><span><RefreshCw size={16} /><b>Rotate favorites</b><small>Change area every 15 minutes</small></span><input type="checkbox" checked={autoRotate} onChange={(event) => { setAutoRotate(event.target.checked); persistSetting("weatherguy-auto-rotate", String(event.target.checked)); }} /></label>
+                </div>
+                {favorites.length > 0 && (
+                  <div className="favorite-list">
+                    {favorites.map((favorite) => (
+                      <div key={favorite.id}>
+                        <button type="button" onClick={() => loadFavorite(favorite)}><MapPin size={14} /><span>{favorite.label}</span></button>
+                        <button type="button" onClick={() => removeFavorite(favorite.id)} aria-label={`Remove ${favorite.label}`}><Trash2 size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
               <label htmlFor="location-search">City, state, territory, or ZIP code</label>

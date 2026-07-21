@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type {
+  AviationForecast,
   AviationObservation,
   CurrentObservation,
   DailyPeriod,
@@ -126,6 +127,7 @@ function normalizeAlerts(alerts: JsonRecord): WeatherAlert[] {
       instruction: properties.instruction || null,
       effective: properties.effective,
       expires: properties.expires,
+      geometry: feature.geometry ?? null,
     };
   });
 }
@@ -185,6 +187,37 @@ function normalizeAviation(metar: JsonRecord | undefined): AviationObservation |
     windGustKt: numberOrNull(metar.wgst),
     altimeterInHg:
       typeof metar.altim === "number" ? Math.round(metar.altim * 0.02953 * 100) / 100 : null,
+  };
+}
+
+function epochToIso(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? new Date(value * 1000).toISOString()
+    : new Date().toISOString();
+}
+
+function normalizeTaf(taf: JsonRecord | undefined): AviationForecast | null {
+  if (!taf) return null;
+  return {
+    raw: taf.rawTAF || "",
+    issuedAt: taf.issueTime || taf.bulletinTime || new Date().toISOString(),
+    validFrom: epochToIso(taf.validTimeFrom),
+    validTo: epochToIso(taf.validTimeTo),
+    periods: (taf.fcsts ?? []).slice(0, 8).map((period: JsonRecord) => {
+      const clouds = Array.isArray(period.clouds) ? period.clouds : [];
+      const ceiling = clouds.find((cloud: JsonRecord) => ["BKN", "OVC", "VV"].includes(cloud.cover));
+      const windDirection = typeof period.wdir === "number" ? String(period.wdir).padStart(3, "0") : "VRB";
+      return {
+        from: epochToIso(period.timeFrom),
+        to: epochToIso(period.timeTo),
+        change: period.fcstChange || (period.probability ? `PROB${period.probability}` : "Prevailing"),
+        probability: numberOrNull(period.probability),
+        wind: `${windDirection}° ${period.wspd ?? 0} kt${period.wgst ? ` G${period.wgst}` : ""}`,
+        visibility: period.visib ? `${period.visib} sm` : "P6SM",
+        ceilingFeet: numberOrNull(ceiling?.base),
+        weather: period.wxString || null,
+      };
+    }),
   };
 }
 
@@ -262,11 +295,16 @@ export async function GET(request: NextRequest) {
 
     const latestProduct =
       productsResult.status === "fulfilled" ? productsResult.value["@graph"]?.[0] : null;
-    const [observationResult, aviationResult, discussionResult] = await Promise.allSettled([
+    const [observationResult, aviationResult, tafResult, discussionResult] = await Promise.allSettled([
       getJson<JsonRecord>(`${NWS_BASE}/stations/${stationId}/observations/latest`, 120),
       getJson<JsonRecord[]>(
         `${AVIATION_BASE}/metar?ids=${encodeURIComponent(stationId)}&format=json&taf=false`,
         60,
+        "application/json",
+      ),
+      getJson<JsonRecord[]>(
+        `${AVIATION_BASE}/taf?ids=${encodeURIComponent(stationId)}&format=json` ,
+        300,
         "application/json",
       ),
       latestProduct
@@ -282,6 +320,7 @@ export async function GET(request: NextRequest) {
     if (dailyResult.status === "rejected") notices.push("Daily forecast is temporarily unavailable.");
     if (alertsResult.status === "rejected") notices.push("NWS alerts could not be refreshed.");
     if (aviationResult.status === "rejected") notices.push("Aviation Weather is temporarily unavailable.");
+    if (tafResult.status === "rejected") notices.push("The nearest-airport TAF is temporarily unavailable.");
     if (discussionResult.status === "rejected") notices.push("Forecast discussion is temporarily unavailable.");
 
     const aviationMetar =
@@ -311,6 +350,8 @@ export async function GET(request: NextRequest) {
           : null,
       aviation:
         aviationResult.status === "fulfilled" ? normalizeAviation(aviationMetar) : null,
+      aviationForecast:
+        tafResult.status === "fulfilled" ? normalizeTaf(tafResult.value[0]) : null,
       astronomy: {
         sunrise: pointProperties.astronomicalData?.sunrise ?? null,
         sunset: pointProperties.astronomicalData?.sunset ?? null,
