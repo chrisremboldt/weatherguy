@@ -62,7 +62,7 @@ export function IntelligenceGrid({ latitude, longitude, timeZone, refreshKey }: 
         <div className="spc-stage">
           {/* SPC's operational outlook image updates in place throughout the day. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.gif" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
+          <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.png" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
         </div>
         <div className="spc-links">
           <a href="https://www.spc.noaa.gov/products/outlook/day1probotlk.html" target="_blank" rel="noreferrer">Tornado / wind / hail</a>
