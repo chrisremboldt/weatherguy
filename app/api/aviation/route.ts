@@ -82,8 +82,16 @@ export async function GET(request: NextRequest) {
   if (pirepResult.status === "rejected") notices.push("PIREPs unavailable.");
   if (advisoryResult.status === "rejected") notices.push("SIGMET feed unavailable.");
 
+  const latestMetars = new Map<string, JsonRecord>();
+  if (metarResult.status === "fulfilled") {
+    for (const item of metarResult.value) {
+      const id = String(item.icaoId || "");
+      const existing = latestMetars.get(id);
+      if (id && (!existing || Number(item.obsTime) > Number(existing.obsTime))) latestMetars.set(id, item);
+    }
+  }
   const airports = metarResult.status === "fulfilled"
-    ? metarResult.value
+    ? Array.from(latestMetars.values())
         .sort((a, b) => {
           const aDistance = (Number(a.lat) - latitude) ** 2 + (Number(a.lon) - longitude) ** 2;
           const bDistance = (Number(b.lat) - latitude) ** 2 + (Number(b.lon) - longitude) ** 2;
