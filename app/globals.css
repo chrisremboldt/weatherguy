@@ -1681,8 +1681,60 @@ h2 {
 
 .radar-frame-status.is-loading { color: var(--amber); }
 
+.radar-device-icon {
+  border: 0;
+  background: transparent;
+}
+
+.radar-device-pulse {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.radar-device-pulse::before,
+.radar-device-pulse::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radar-device-pulse::before {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(159, 229, 255, 0.76);
+  animation: device-location-pulse 2.4s ease-out infinite;
+}
+
+.radar-device-pulse::after {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #f4fbfb;
+  background: #9fe5ff;
+  box-shadow: 0 0 0 3px rgba(7, 23, 29, 0.82), 0 0 16px rgba(159, 229, 255, 0.9);
+}
+
+@keyframes device-location-pulse {
+  0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.55); }
+  70%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.35); }
+}
+
+.radar-lab-strip .radar-location-button.active {
+  color: var(--sky);
+  border-color: rgba(159, 229, 255, 0.36);
+  background: rgba(159, 229, 255, 0.08);
+}
+
+.radar-lab-strip .radar-location-button.denied { color: var(--amber); }
+.radar-lab-strip .radar-location-button:disabled { cursor: not-allowed; opacity: 0.72; }
+
 @media (prefers-reduced-motion: reduce) {
   .radar-map .radar-frame-layer { transition: none; }
+  .radar-device-pulse::before { animation: none; opacity: 0.65; }
 }
 
 .radar-map .leaflet-tile-pane .leaflet-layer:first-child img {
