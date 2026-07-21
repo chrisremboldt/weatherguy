@@ -247,6 +247,7 @@ export type PilotReport = {
   icing: string | null;
   turbulence: string | null;
   weather: string | null;
+  raw: string;
 };
 
 export type AviationAdvisory = {

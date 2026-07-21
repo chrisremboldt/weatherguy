@@ -42,6 +42,7 @@ function pilotReport(item: JsonRecord): PilotReport {
     icing,
     turbulence,
     weather: item.wxString || null,
+    raw: item.rawOb || "",
   };
 }
 
