@@ -20,6 +20,14 @@ test("wxDynamics is the product identity across the interface and install metada
   assert.match(serviceWorker, /const CACHE = "wxdynamics-v3"/);
 });
 
+test("social sharing metadata uses the branded large preview", () => {
+  assert.match(layout, /url: "\/social-preview\.png"/);
+  assert.match(layout, /width: 1200/);
+  assert.match(layout, /height: 630/);
+  assert.match(layout, /card: "summary_large_image"/);
+  assert.match(layout, /alt: "wxDynamics weather intelligence desk with live radar and satellite displays"/);
+});
+
 test("legacy browser storage identifiers remain stable through the rebrand", () => {
   assert.match(component, /localStorage\.getItem\("weatherguy-location"\)/);
   assert.match(component, /persistSetting\("weatherguy-theme", nextTheme\)/);

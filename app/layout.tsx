@@ -34,6 +34,20 @@ export const metadata: Metadata = {
     siteName: "wxDynamics",
     title: "wxDynamics — Weather Intelligence Desk",
     description: "Live NOAA weather intelligence, radar, satellite, forecasts, alerts, and aviation conditions for any U.S. location.",
+    images: [
+      {
+        url: "/social-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "wxDynamics weather intelligence desk with live radar and satellite displays",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "wxDynamics — Weather Intelligence Desk",
+    description: "Live NOAA radar, satellite, forecasts, alerts, and aviation weather for any U.S. location.",
+    images: ["/social-preview.png"],
   },
 };
 
