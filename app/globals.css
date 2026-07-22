@@ -2934,6 +2934,56 @@ h2 {
   }
 }
 
+@media (min-width: 3000px) and (min-height: 900px) {
+  .app-shell.is-fullscreen.wallboard-expanded .dashboard-grid,
+  .app-shell.is-fullscreen.wallboard-expanded.mode-aviation .dashboard-grid,
+  .app-shell.is-fullscreen.wallboard-expanded.mode-minimal .dashboard-grid {
+    grid-template-rows: minmax(0, 1fr) clamp(330px, 31vh, 420px);
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-bay {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 8px;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded.wallboard-scenes-2 .wallboard-bay {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-cycle {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled {
+    grid-row: 2;
+    grid-column: auto;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene:not(.enabled) {
+    display: none;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .hourly-panel,
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .outlook-panel,
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .discussion-panel,
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .aviation-console-panel {
+    display: block;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .intelligence-grid {
+    display: grid;
+  }
+
+  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene-forecast {
+    grid-template-columns: minmax(0, 1.8fr) minmax(180px, 0.68fr) minmax(220px, 0.82fr);
+  }
+}
+
 @media (min-width: 900px) and (min-height: 900px) {
   .app-shell.is-fullscreen .status-column .aviation-panel {
     display: block;

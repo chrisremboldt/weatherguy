@@ -54,6 +54,8 @@ const WALLBOARD_SCENES = [
   { id: "aviation", label: "Aviation", detail: "TAF, nearby airports, advisories, and pilot reports" },
 ] as const;
 
+const EXPANDED_WALLBOARD_QUERY = "(min-width: 3000px) and (min-height: 900px)";
+
 type WallboardSceneId = (typeof WALLBOARD_SCENES)[number]["id"];
 type WallboardScenes = Record<WallboardSceneId, boolean>;
 
@@ -254,6 +256,7 @@ export function WeatherDashboard() {
   const [wallboardIntervalSeconds, setWallboardIntervalSeconds] = useState(20);
   const [wallboardSceneIndex, setWallboardSceneIndex] = useState(0);
   const [wallboardPaused, setWallboardPaused] = useState(false);
+  const [largeDisplayWallboard, setLargeDisplayWallboard] = useState(false);
   const locationModalOpen = mounted && (settingsOpen || !config);
 
   useEffect(() => {
@@ -282,6 +285,14 @@ export function WeatherDashboard() {
     const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
     document.addEventListener("fullscreenchange", syncFullscreen);
     return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia(EXPANDED_WALLBOARD_QUERY);
+    const syncLargeDisplay = () => setLargeDisplayWallboard(media.matches);
+    syncLargeDisplay();
+    media.addEventListener("change", syncLargeDisplay);
+    return () => media.removeEventListener("change", syncLargeDisplay);
   }, []);
 
   useEffect(() => {
@@ -411,15 +422,16 @@ export function WeatherDashboard() {
   const activeWallboardScene = enabledWallboardScenes[wallboardSceneIndex % enabledWallboardScenes.length]?.id ?? "forecast";
   const activeWallboardScenePosition = Math.max(0, enabledWallboardScenes.findIndex((scene) => scene.id === activeWallboardScene));
   const activeWallboardSceneLabel = enabledWallboardScenes[activeWallboardScenePosition]?.label ?? "Forecast";
+  const showAllWallboardScenes = isFullscreen && largeDisplayWallboard && enabledWallboardScenes.length > 1;
 
   useEffect(() => {
-    if (!isFullscreen || !wallboardRotate || wallboardPaused || enabledWallboardScenes.length < 2) return;
+    if (!isFullscreen || showAllWallboardScenes || !wallboardRotate || wallboardPaused || enabledWallboardScenes.length < 2) return;
     const timer = window.setInterval(
       () => setWallboardSceneIndex((current) => (current + 1) % enabledWallboardScenes.length),
       wallboardIntervalSeconds * 1_000,
     );
     return () => window.clearInterval(timer);
-  }, [enabledWallboardScenes.length, isFullscreen, wallboardIntervalSeconds, wallboardPaused, wallboardRotate]);
+  }, [enabledWallboardScenes.length, isFullscreen, showAllWallboardScenes, wallboardIntervalSeconds, wallboardPaused, wallboardRotate]);
 
   const saveLocation = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -583,7 +595,7 @@ export function WeatherDashboard() {
   };
 
   return (
-    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""}`}>
+    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""}`}>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -728,40 +740,44 @@ export function WeatherDashboard() {
         <section className="wallboard-bay" aria-label="Fullscreen wallboard scenes">
           <div className="wallboard-cycle">
             <div className="wallboard-cycle-status">
-              <span>Wallboard cycle</span>
-              <strong aria-live="polite">{activeWallboardSceneLabel}</strong>
-              <small>{activeWallboardScenePosition + 1} / {enabledWallboardScenes.length}</small>
+              <span>{showAllWallboardScenes ? "Large display" : "Wallboard cycle"}</span>
+              <strong aria-live="polite">{showAllWallboardScenes ? "All stations open" : activeWallboardSceneLabel}</strong>
+              <small>{showAllWallboardScenes ? `${enabledWallboardScenes.length} live` : `${activeWallboardScenePosition + 1} / ${enabledWallboardScenes.length}`}</small>
             </div>
-            <div className="wallboard-scene-tabs" aria-label="Choose wallboard scene">
-              {enabledWallboardScenes.map((scene, index) => (
-                <button
-                  className={activeWallboardScene === scene.id ? "active" : ""}
-                  type="button"
-                  key={scene.id}
-                  onClick={() => setWallboardSceneIndex(index)}
-                  title={scene.detail}
-                >
-                  {scene.label}
-                </button>
-              ))}
-            </div>
-            <div className="wallboard-cycle-actions">
-              <button type="button" onClick={() => showAdjacentWallboardScene(-1)} aria-label="Previous wallboard scene"><ChevronLeft size={14} /></button>
-              {wallboardRotate && enabledWallboardScenes.length > 1 && (
-                <button type="button" onClick={() => setWallboardPaused((current) => !current)} aria-label={wallboardPaused ? "Resume wallboard rotation" : "Pause wallboard rotation"}>
-                  {wallboardPaused ? <Play size={14} /> : <Pause size={14} />}
-                </button>
-              )}
-              <button type="button" onClick={() => showAdjacentWallboardScene(1)} aria-label="Next wallboard scene"><ChevronRight size={14} /></button>
-            </div>
-            {wallboardRotate && !wallboardPaused && enabledWallboardScenes.length > 1 && (
-              <span className="wallboard-progress" aria-hidden="true">
-                <i key={`${activeWallboardScene}-${wallboardSceneIndex}`} style={{ animationDuration: `${wallboardIntervalSeconds}s` }} />
-              </span>
+            {!showAllWallboardScenes && (
+              <>
+                <div className="wallboard-scene-tabs" aria-label="Choose wallboard scene">
+                  {enabledWallboardScenes.map((scene, index) => (
+                    <button
+                      className={activeWallboardScene === scene.id ? "active" : ""}
+                      type="button"
+                      key={scene.id}
+                      onClick={() => setWallboardSceneIndex(index)}
+                      title={scene.detail}
+                    >
+                      {scene.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="wallboard-cycle-actions">
+                  <button type="button" onClick={() => showAdjacentWallboardScene(-1)} aria-label="Previous wallboard scene"><ChevronLeft size={14} /></button>
+                  {wallboardRotate && enabledWallboardScenes.length > 1 && (
+                    <button type="button" onClick={() => setWallboardPaused((current) => !current)} aria-label={wallboardPaused ? "Resume wallboard rotation" : "Pause wallboard rotation"}>
+                      {wallboardPaused ? <Play size={14} /> : <Pause size={14} />}
+                    </button>
+                  )}
+                  <button type="button" onClick={() => showAdjacentWallboardScene(1)} aria-label="Next wallboard scene"><ChevronRight size={14} /></button>
+                </div>
+                {wallboardRotate && !wallboardPaused && enabledWallboardScenes.length > 1 && (
+                  <span className="wallboard-progress" aria-hidden="true">
+                    <i key={`${activeWallboardScene}-${wallboardSceneIndex}`} style={{ animationDuration: `${wallboardIntervalSeconds}s` }} />
+                  </span>
+                )}
+              </>
             )}
           </div>
 
-          <div className={`wallboard-scene wallboard-scene-forecast ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? activeWallboardScene !== "forecast" : undefined}>
+          <div className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : activeWallboardScene !== "forecast") : undefined}>
             <section className="panel hourly-panel">
           <div className="panel-heading compact">
             <div><span className="eyebrow">Temperature / probability</span><h2>Next nine hours</h2></div>
@@ -818,10 +834,10 @@ export function WeatherDashboard() {
 
           {data && (
             <>
-              <div className={`wallboard-scene wallboard-scene-intelligence ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? activeWallboardScene !== "intelligence" : undefined}>
+              <div className={`wallboard-scene wallboard-scene-intelligence ${wallboardScenes.intelligence ? "enabled" : ""} ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.intelligence : activeWallboardScene !== "intelligence") : undefined}>
                 <IntelligenceGrid latitude={data.location.latitude} longitude={data.location.longitude} timeZone={data.location.timeZone} refreshKey={refreshKey} />
               </div>
-              <div className={`wallboard-scene wallboard-scene-aviation ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? activeWallboardScene !== "aviation" : undefined}>
+              <div className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : activeWallboardScene !== "aviation") : undefined}>
                 <AviationConsole data={data} refreshKey={refreshKey} />
               </div>
             </>
@@ -852,7 +868,7 @@ export function WeatherDashboard() {
                 <>
                   <div className="wallboard-preferences">
                     <span className="settings-section-label">Fullscreen wallboard</span>
-                    <p>Radar, satellite, and current conditions stay fixed. Choose which briefing scenes rotate through the lower bay.</p>
+                    <p>Radar, satellite, and current conditions stay fixed. Standard displays rotate these briefing scenes; very large displays open every enabled scene at once.</p>
                     <div className="wallboard-scene-options">
                       {WALLBOARD_SCENES.map((scene) => (
                         <label key={scene.id}>
@@ -868,7 +884,7 @@ export function WeatherDashboard() {
                     </div>
                     <div className="wallboard-timing">
                       <label>
-                        <span><b>Rotate scenes</b><small>Advance automatically while fullscreen</small></span>
+                        <span><b>Rotate scenes</b><small>Advance automatically on standard fullscreen displays</small></span>
                         <input type="checkbox" checked={wallboardRotate} onChange={(event) => {
                           setWallboardRotate(event.target.checked);
                           setWallboardPaused(false);
