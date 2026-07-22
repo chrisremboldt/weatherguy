@@ -1,19 +1,80 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
+  color-scheme: dark;
   --ink: #07171d;
+  --ink-rgb: 7, 23, 29;
+  --ink-deep: #06151a;
+  --ink-deepest: #02090c;
   --ink-soft: #0b222a;
   --panel: #0c252e;
+  --panel-rgb: 12, 37, 46;
   --panel-high: #102d37;
-  --line: rgba(171, 213, 218, 0.16);
-  --line-strong: rgba(171, 213, 218, 0.28);
+  --control-rgb: 13, 42, 51;
+  --line-rgb: 171, 213, 218;
+  --line: rgba(var(--line-rgb), 0.16);
+  --line-strong: rgba(var(--line-rgb), 0.28);
   --cloud: #e7f0ef;
+  --copy: #bcd0d1;
+  --copy-strong: #cbd9d9;
   --muted: #8eafb2;
   --faint: #54777c;
   --signal: #63e2b7;
+  --signal-rgb: 99, 226, 183;
   --sky: #9fe5ff;
+  --sky-rgb: 159, 229, 255;
   --amber: #ffb85c;
+  --amber-rgb: 255, 184, 92;
   --danger: #ff6577;
+  --danger-rgb: 255, 101, 119;
+  --danger-surface-rgb: 94, 25, 37;
+  --danger-surface-strong-rgb: 95, 26, 39;
+  --danger-copy: #ff98a4;
+  --danger-copy-soft: #d8c3c5;
+  --danger-contrast: #ffdce0;
+  --grid-rgb: 129, 190, 198;
+}
+
+:root[data-theme="blue-hour"] {
+  --ink: #07101f; --ink-rgb: 7, 16, 31; --ink-deep: #030913; --ink-deepest: #01040b;
+  --ink-soft: #0b1930; --panel: #0d2038; --panel-rgb: 13, 32, 56; --panel-high: #142d4b; --control-rgb: 17, 43, 71;
+  --line-rgb: 151, 194, 235; --cloud: #edf6ff; --copy: #c1d7ed; --copy-strong: #d8e9fa; --muted: #8aa9c7; --faint: #4e7294;
+  --signal: #4dd8ff; --signal-rgb: 77, 216, 255; --sky: #8faeff; --sky-rgb: 143, 174, 255;
+  --amber: #ffc766; --amber-rgb: 255, 199, 102; --danger: #ff6b85; --danger-rgb: 255, 107, 133; --grid-rgb: 77, 137, 191;
+}
+
+:root[data-theme="aurora-field"] {
+  --ink: #110f22; --ink-rgb: 17, 15, 34; --ink-deep: #090816; --ink-deepest: #05030c;
+  --ink-soft: #191632; --panel: #1d1938; --panel-rgb: 29, 25, 56; --panel-high: #28214b; --control-rgb: 39, 32, 73;
+  --line-rgb: 180, 173, 225; --cloud: #f2efff; --copy: #d3cdea; --copy-strong: #e4ddff; --muted: #a29abb; --faint: #6e668f;
+  --signal: #72f1b8; --signal-rgb: 114, 241, 184; --sky: #b8a5ff; --sky-rgb: 184, 165, 255;
+  --amber: #ffd36a; --amber-rgb: 255, 211, 106; --danger: #ff718d; --danger-rgb: 255, 113, 141; --grid-rgb: 132, 109, 180;
+}
+
+:root[data-theme="solar-flare"] {
+  --ink: #1a0f0a; --ink-rgb: 26, 15, 10; --ink-deep: #100806; --ink-deepest: #070302;
+  --ink-soft: #25150e; --panel: #2a1911; --panel-rgb: 42, 25, 17; --panel-high: #3a2317; --control-rgb: 55, 33, 22;
+  --line-rgb: 225, 188, 148; --cloud: #fff4e5; --copy: #e2c8aa; --copy-strong: #f4dcc0; --muted: #bd9874; --faint: #826347;
+  --signal: #ff9d45; --signal-rgb: 255, 157, 69; --sky: #ffd28a; --sky-rgb: 255, 210, 138;
+  --amber: #ffe06f; --amber-rgb: 255, 224, 111; --danger: #ff5e57; --danger-rgb: 255, 94, 87; --grid-rgb: 180, 112, 64;
+}
+
+:root[data-theme="phosphor-rain"] {
+  --ink: #041006; --ink-rgb: 4, 16, 6; --ink-deep: #020803; --ink-deepest: #010401;
+  --ink-soft: #081a0b; --panel: #0b200f; --panel-rgb: 11, 32, 15; --panel-high: #123018; --control-rgb: 13, 44, 20;
+  --line-rgb: 135, 202, 141; --cloud: #eaffdf; --copy: #c0deb4; --copy-strong: #d8f4cf; --muted: #86aa7d; --faint: #4f7350;
+  --signal: #83f28f; --signal-rgb: 131, 242, 143; --sky: #c8ff73; --sky-rgb: 200, 255, 115;
+  --amber: #ffca58; --amber-rgb: 255, 202, 88; --danger: #ff6870; --danger-rgb: 255, 104, 112; --grid-rgb: 90, 150, 96;
+}
+
+:root[data-theme="cloud-deck"] {
+  color-scheme: light;
+  --ink: #e8eef1; --ink-rgb: 232, 238, 241; --ink-deep: #d9e2e7; --ink-deepest: #c8d4da;
+  --ink-soft: #f3f7f8; --panel: #f8fbfc; --panel-rgb: 248, 251, 252; --panel-high: #ffffff; --control-rgb: 232, 239, 242;
+  --line-rgb: 31, 59, 75; --cloud: #142631; --copy: #314c5a; --copy-strong: #203b49; --muted: #516d7b; --faint: #78909c;
+  --signal: #007d70; --signal-rgb: 0, 125, 112; --sky: #146f9e; --sky-rgb: 20, 111, 158;
+  --amber: #a95f00; --amber-rgb: 169, 95, 0; --danger: #bb3048; --danger-rgb: 187, 48, 72; --grid-rgb: 56, 91, 109;
+  --danger-surface-rgb: 187, 48, 72; --danger-surface-strong-rgb: 154, 35, 56; --danger-copy: #861b30; --danger-copy-soft: #61313b; --danger-contrast: #4e1420;
 }
 
 * {
@@ -29,8 +90,8 @@ body {
   min-width: 320px;
   color: var(--cloud);
   background:
-    linear-gradient(rgba(129, 190, 198, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(129, 190, 198, 0.025) 1px, transparent 1px),
+    linear-gradient(rgba(var(--grid-rgb), 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--grid-rgb), 0.025) 1px, transparent 1px),
     var(--ink);
   background-size: 32px 32px;
   font-family: var(--font-body), system-ui, sans-serif;
@@ -102,7 +163,7 @@ a {
   border: 1px solid var(--line-strong);
   border-radius: 50%;
   background:
-    radial-gradient(circle, var(--signal) 0 2px, transparent 2.5px 8px, rgba(99, 226, 183, 0.28) 8.5px 9px, transparent 9.5px 14px, rgba(99, 226, 183, 0.16) 14.5px 15px, transparent 15.5px);
+    radial-gradient(circle, var(--signal) 0 2px, transparent 2.5px 8px, rgba(var(--signal-rgb), 0.28) 8.5px 9px, transparent 9.5px 14px, rgba(var(--signal-rgb), 0.16) 14.5px 15px, transparent 15.5px);
   overflow: hidden;
 }
 
@@ -201,7 +262,7 @@ a {
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(13, 42, 51, 0.65);
+  background: rgba(var(--control-rgb), 0.65);
   cursor: pointer;
   transition: 150ms ease;
 }
@@ -229,7 +290,7 @@ a {
   align-items: center;
   gap: 12px;
   border: 1px solid var(--line);
-  background: rgba(12, 37, 46, 0.74);
+  background: rgba(var(--panel-rgb), 0.74);
 }
 
 .alert-rail.all-clear {
@@ -237,9 +298,9 @@ a {
 }
 
 .alert-rail.has-alerts {
-  border-color: rgba(255, 101, 119, 0.5);
+  border-color: rgba(var(--danger-rgb), 0.5);
   border-left: 3px solid var(--danger);
-  background: rgba(94, 25, 37, 0.36);
+  background: rgba(var(--danger-surface-rgb), 0.36);
 }
 
 .alert-state {
@@ -251,7 +312,7 @@ a {
 }
 
 .has-alerts .alert-state {
-  color: #ff98a4;
+  color: var(--danger-copy);
 }
 
 .alert-divider {
@@ -286,9 +347,9 @@ a {
   gap: 20px;
   margin-bottom: 12px;
   padding: 10px 12px;
-  color: #ffdce0;
-  border: 1px solid rgba(255, 101, 119, 0.38);
-  background: rgba(95, 26, 39, 0.55);
+  color: var(--danger-contrast);
+  border: 1px solid rgba(var(--danger-rgb), 0.38);
+  background: rgba(var(--danger-surface-strong-rgb), 0.55);
   font-size: 13px;
 }
 
@@ -321,7 +382,7 @@ a {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(12, 37, 46, 0.92);
+  background: rgba(var(--panel-rgb), 0.92);
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 8, 12, 0.16);
 }
@@ -406,7 +467,7 @@ h2 {
   display: inline-block;
   border-radius: 50%;
   background: var(--signal);
-  box-shadow: 0 0 10px rgba(99, 226, 183, 0.75);
+  box-shadow: 0 0 10px rgba(var(--signal-rgb), 0.75);
 }
 
 .sensor-panel {
@@ -433,8 +494,8 @@ h2 {
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(7, 23, 29, 0.84), transparent 16%, transparent 84%, rgba(7, 23, 29, 0.84)),
-    linear-gradient(rgba(7, 23, 29, 0.45), transparent 12%, transparent 88%, rgba(7, 23, 29, 0.5));
+    linear-gradient(90deg, rgba(var(--ink-rgb), 0.84), transparent 16%, transparent 84%, rgba(var(--ink-rgb), 0.84)),
+    linear-gradient(rgba(var(--ink-rgb), 0.45), transparent 12%, transparent 88%, rgba(var(--ink-rgb), 0.5));
 }
 
 .radar-backdrop {
@@ -479,7 +540,7 @@ h2 {
   height: 12%;
   opacity: 0.42;
   pointer-events: none;
-  background: linear-gradient(transparent, rgba(99, 226, 183, 0.07), transparent);
+  background: linear-gradient(transparent, rgba(var(--signal-rgb), 0.07), transparent);
   animation: scan 9s linear infinite;
 }
 
@@ -492,7 +553,7 @@ h2 {
   z-index: 3;
   padding: 5px 7px;
   color: rgba(231, 240, 239, 0.8);
-  background: rgba(7, 23, 29, 0.78);
+  background: rgba(var(--ink-rgb), 0.78);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
@@ -538,7 +599,7 @@ h2 {
 
 .condition-icon {
   color: var(--sky);
-  filter: drop-shadow(0 0 20px rgba(159, 229, 255, 0.16));
+  filter: drop-shadow(0 0 20px rgba(var(--sky-rgb), 0.16));
 }
 
 .temperature-block {
@@ -651,7 +712,7 @@ h2 {
 .daylight-line {
   height: 1px;
   position: relative;
-  background: linear-gradient(90deg, rgba(255,184,92,0.18), rgba(255,184,92,0.82), rgba(255,184,92,0.18));
+  background: linear-gradient(90deg, rgba(var(--amber-rgb),0.18), rgba(var(--amber-rgb),0.82), rgba(var(--amber-rgb),0.18));
 }
 
 .daylight-line i {
@@ -662,7 +723,7 @@ h2 {
   top: -2px;
   border-radius: 50%;
   background: var(--amber);
-  box-shadow: 0 0 8px rgba(255, 184, 92, 0.8);
+  box-shadow: 0 0 8px rgba(var(--amber-rgb), 0.8);
 }
 
 .aviation-panel {
@@ -685,14 +746,14 @@ h2 {
   font-weight: 600;
 }
 
-.cat-vfr { color: var(--signal); border-color: rgba(99, 226, 183, 0.5); }
-.cat-mvfr { color: var(--sky); border-color: rgba(159, 229, 255, 0.5); }
-.cat-ifr { color: #ff8895; border-color: rgba(255, 101, 119, 0.5); }
+.cat-vfr { color: var(--signal); border-color: rgba(var(--signal-rgb), 0.5); }
+.cat-mvfr { color: var(--sky); border-color: rgba(var(--sky-rgb), 0.5); }
+.cat-ifr { color: #ff8895; border-color: rgba(var(--danger-rgb), 0.5); }
 .cat-lifr { color: #d9a8ff; border-color: rgba(217, 168, 255, 0.5); }
 
 .metar-raw {
   min-height: 48px;
-  color: #bcd0d1;
+  color: var(--copy);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
   line-height: 1.52;
@@ -752,7 +813,7 @@ h2 {
   justify-items: center;
   align-items: center;
   padding: 11px 4px 8px;
-  border-right: 1px solid rgba(171, 213, 218, 0.08);
+  border-right: 1px solid rgba(var(--line-rgb), 0.08);
 }
 
 .hour-cell:last-child {
@@ -778,7 +839,7 @@ h2 {
 .hour-temp {
   align-self: start;
   padding: 2px 4px;
-  background: rgba(12, 37, 46, 0.74);
+  background: rgba(var(--panel-rgb), 0.74);
   font-family: var(--font-display), "Arial Narrow", sans-serif;
   font-size: 24px;
   font-weight: 500;
@@ -808,7 +869,7 @@ h2 {
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border-bottom: 1px solid rgba(171, 213, 218, 0.09);
+  border-bottom: 1px solid rgba(var(--line-rgb), 0.09);
 }
 
 .day-row:last-child {
@@ -862,7 +923,7 @@ h2 {
   position: absolute;
   right: 11px;
   bottom: -25px;
-  color: rgba(159, 229, 255, 0.035);
+  color: rgba(var(--sky-rgb), 0.035);
   font-family: var(--font-display), "Arial Narrow", sans-serif;
   font-size: 118px;
   font-weight: 700;
@@ -877,7 +938,7 @@ h2 {
   min-height: 85px;
   margin: 14px 14px 8px;
   overflow: hidden;
-  color: #bcd0d1;
+  color: var(--copy);
   font-size: 13px;
   line-height: 1.48;
   -webkit-box-orient: vertical;
@@ -918,7 +979,7 @@ h2 {
   margin: 10px 0 0;
   padding: 12px;
   overflow: auto;
-  color: #cbd9d9;
+  color: var(--copy-strong);
   border: 1px solid var(--line);
   background: rgba(5, 20, 25, 0.88);
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -953,7 +1014,7 @@ h2 {
 
 .status-dot.degraded {
   background: var(--danger);
-  box-shadow: 0 0 8px rgba(255, 101, 119, 0.65);
+  box-shadow: 0 0 8px rgba(var(--danger-rgb), 0.65);
 }
 
 .source-notice {
@@ -980,7 +1041,7 @@ h2 {
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
-  background: #0b222a;
+  background: var(--ink-soft);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.5);
 }
 
@@ -1007,6 +1068,73 @@ h2 {
   color: var(--muted);
   font-size: 14px;
   line-height: 1.45;
+}
+
+.theme-preferences {
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(var(--ink-rgb), 0.48);
+}
+
+.theme-preferences > p {
+  margin: -2px 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.theme-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 7px;
+  color: var(--muted);
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: rgba(var(--ink-rgb), 0.32);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.theme-option:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.theme-option.active { border-color: rgba(var(--signal-rgb), 0.58); background: rgba(var(--signal-rgb), 0.07); box-shadow: inset 2px 0 var(--signal); }
+.theme-option > span:last-child { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.theme-option b { color: var(--cloud); font-size: 10px; font-weight: 600; }
+.theme-option small { color: var(--faint); font-size: 8px; line-height: 1.3; }
+
+.theme-swatch {
+  position: relative;
+  height: 34px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  overflow: hidden;
+  border: 1px solid rgba(var(--line-rgb), 0.24);
+  border-radius: 5px;
+}
+
+.theme-swatch i { display: block; }
+.theme-swatch::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.72);
 }
 
 .location-search-form > label {
@@ -1083,7 +1211,7 @@ h2 {
   text-align: left;
   border: 0;
   border-bottom: 1px solid var(--line);
-  background: rgba(7, 23, 29, 0.55);
+  background: rgba(var(--ink-rgb), 0.55);
   cursor: pointer;
 }
 
@@ -1093,7 +1221,7 @@ h2 {
 
 .search-results > button:hover,
 .search-results > button.selected {
-  background: rgba(99, 226, 183, 0.08);
+  background: rgba(var(--signal-rgb), 0.08);
 }
 
 .search-results > button.selected {
@@ -1156,9 +1284,9 @@ h2 {
   gap: 8px;
   padding: 10px;
   color: var(--signal);
-  border: 1px solid rgba(99, 226, 183, 0.32);
+  border: 1px solid rgba(var(--signal-rgb), 0.32);
   border-radius: 8px;
-  background: rgba(99, 226, 183, 0.07);
+  background: rgba(var(--signal-rgb), 0.07);
   cursor: pointer;
 }
 
@@ -1193,7 +1321,7 @@ h2 {
 
 .form-error {
   margin: 10px 0 0;
-  color: #ff9da8;
+  color: var(--danger-copy);
   font-size: 12px;
 }
 
@@ -1209,7 +1337,7 @@ h2 {
   gap: 8px;
   padding: 12px 20px 20px;
   border-top: 1px solid var(--line);
-  background: #0b222a;
+  background: var(--ink-soft);
   box-shadow: 0 -12px 28px rgba(2, 12, 16, 0.22);
 }
 
@@ -1436,7 +1564,7 @@ h2 {
   color: var(--muted);
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(13, 42, 51, 0.65);
+  background: rgba(var(--control-rgb), 0.65);
 }
 
 .mode-picker select,
@@ -1452,14 +1580,14 @@ h2 {
 
 .alert-detail {
   margin: -7px 0 12px;
-  border: 1px solid rgba(255, 101, 119, 0.28);
+  border: 1px solid rgba(var(--danger-rgb), 0.28);
   border-top: 0;
-  background: rgba(94, 25, 37, 0.2);
+  background: rgba(var(--danger-surface-rgb), 0.2);
 }
 
 .alert-detail summary {
   padding: 7px 12px;
-  color: #ffabb4;
+  color: var(--danger-copy);
   cursor: pointer;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
@@ -1471,7 +1599,7 @@ h2 {
   max-height: 260px;
   padding: 8px 14px 14px;
   overflow-y: auto;
-  color: #d8c3c5;
+  color: var(--danger-copy-soft);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -1497,7 +1625,7 @@ h2 {
 .sensor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-  background: #06151a;
+  background: var(--ink-deep);
 }
 
 .sensor-cell {
@@ -1545,7 +1673,7 @@ h2 {
   gap: 8px;
   padding: 5px 8px;
   border-bottom: 1px solid var(--line);
-  background: rgba(7, 23, 29, 0.94);
+  background: rgba(var(--ink-rgb), 0.94);
 }
 
 .mode-switch,
@@ -1582,8 +1710,8 @@ h2 {
 .mode-switch button.active,
 .product-tabs button.active {
   color: var(--signal);
-  border-color: rgba(99, 226, 183, 0.28);
-  background: rgba(99, 226, 183, 0.08);
+  border-color: rgba(var(--signal-rgb), 0.28);
+  background: rgba(var(--signal-rgb), 0.08);
 }
 
 .sensor-grid .radar-stage,
@@ -1604,7 +1732,7 @@ h2 {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #02090c;
+  background: var(--ink-deepest);
 }
 
 .satellite-stage::after {
@@ -1612,7 +1740,7 @@ h2 {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(7, 23, 29, 0.28), transparent 18%, transparent 82%, rgba(7, 23, 29, 0.28));
+  background: linear-gradient(90deg, rgba(var(--ink-rgb), 0.28), transparent 18%, transparent 82%, rgba(var(--ink-rgb), 0.28));
   box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.35);
 }
 
@@ -1636,7 +1764,7 @@ h2 {
   transform: translate(-50%, -50%);
   border: 1px solid rgba(231, 240, 239, 0.72);
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(7, 23, 29, 0.6);
+  box-shadow: 0 0 0 2px rgba(var(--ink-rgb), 0.6);
 }
 
 .satellite-crosshair i,
@@ -1656,7 +1784,7 @@ h2 {
   z-index: 4;
   padding: 5px 7px;
   color: rgba(231, 240, 239, 0.85);
-  background: rgba(7, 23, 29, 0.82);
+  background: rgba(var(--ink-rgb), 0.82);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 8px;
   letter-spacing: 0.07em;
@@ -1697,7 +1825,7 @@ h2 {
 .radar-map {
   z-index: 0;
   width: 100%;
-  background: #06151a;
+  background: var(--ink-deep);
 }
 
 .radar-map .radar-frame-layer {
@@ -1739,7 +1867,7 @@ h2 {
 .radar-device-pulse::before {
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(159, 229, 255, 0.76);
+  border: 1px solid rgba(var(--sky-rgb), 0.76);
   animation: device-location-pulse 2.4s ease-out infinite;
 }
 
@@ -1748,7 +1876,7 @@ h2 {
   height: 10px;
   border: 2px solid #f4fbfb;
   background: #9fe5ff;
-  box-shadow: 0 0 0 3px rgba(7, 23, 29, 0.82), 0 0 16px rgba(159, 229, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(var(--ink-rgb), 0.82), 0 0 16px rgba(var(--sky-rgb), 0.9);
 }
 
 @keyframes device-location-pulse {
@@ -1758,8 +1886,8 @@ h2 {
 
 .radar-lab-strip .radar-location-button.active {
   color: var(--sky);
-  border-color: rgba(159, 229, 255, 0.36);
-  background: rgba(159, 229, 255, 0.08);
+  border-color: rgba(var(--sky-rgb), 0.36);
+  background: rgba(var(--sky-rgb), 0.08);
 }
 
 .radar-lab-strip .radar-location-button.denied { color: var(--amber); }
@@ -1778,7 +1906,7 @@ h2 {
 .radar-map .leaflet-control-zoom a {
   color: var(--muted);
   border-color: var(--line) !important;
-  background: rgba(7, 23, 29, 0.88);
+  background: rgba(var(--ink-rgb), 0.88);
 }
 
 .radar-map .leaflet-control-attribution a { color: var(--signal); }
@@ -1852,7 +1980,7 @@ h2 {
   align-items: center;
   gap: 9px;
   padding: 9px 11px;
-  color: #bcd0d1;
+  color: var(--copy);
   border-top: 1px solid var(--line);
   font-size: 11px;
 }
@@ -1912,7 +2040,7 @@ h2 {
 
 .environment-list > div:last-child { border-bottom: 0; }
 .environment-list > div > svg { color: var(--faint); }
-.environment-list span { min-width: 0; color: #bcd0d1; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.environment-list span { min-width: 0; color: var(--copy); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
 .environment-list strong { color: var(--signal); font-family: var(--font-mono), ui-monospace, monospace; font-size: 11px; }
 
 .tool-links {
@@ -1927,7 +2055,7 @@ h2 {
   align-items: center;
   gap: 9px;
   padding: 8px 11px;
-  color: #bcd0d1;
+  color: var(--copy);
   border-bottom: 1px solid var(--line);
   font-size: 10px;
   text-decoration: none;
@@ -1936,7 +2064,7 @@ h2 {
 .tool-links a:last-child { border-bottom: 0; }
 .tool-links a > svg:first-child { color: var(--faint); }
 .tool-links a > svg:last-child { color: var(--faint); }
-.tool-links a:hover { color: var(--signal); background: rgba(99, 226, 183, 0.04); }
+.tool-links a:hover { color: var(--signal); background: rgba(var(--signal-rgb), 0.04); }
 
 .aviation-console-panel {
   grid-area: aviation-console;
@@ -1999,7 +2127,7 @@ h2 {
   align-items: center;
   gap: 5px;
   padding: 4px 9px;
-  border-bottom: 1px solid rgba(171, 213, 218, 0.08);
+  border-bottom: 1px solid rgba(var(--line-rgb), 0.08);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 8px;
 }
@@ -2031,17 +2159,17 @@ h2 {
 
 .hazard-summary button:last-child { border-bottom: 0; }
 .hazard-summary button:hover,
-.hazard-summary button.active { background: rgba(255, 184, 92, 0.06); }
+.hazard-summary button.active { background: rgba(var(--amber-rgb), 0.06); }
 .hazard-summary button:disabled { cursor: default; opacity: 0.45; }
 .hazard-summary button > svg { color: var(--faint); transition: transform 150ms ease; }
 .hazard-summary button.active > svg { color: var(--amber); transform: rotate(180deg); }
 .hazard-summary strong { color: var(--amber); font-family: var(--font-display), sans-serif; font-size: 25px; font-weight: 500; }
 .hazard-summary span { color: var(--muted); font-size: 10px; }
 .hazard-tags { display: flex; flex-wrap: wrap; gap: 5px; padding: 9px; }
-.hazard-tags span { padding: 4px 6px; color: #c9b48f; border: 1px solid rgba(255, 184, 92, 0.2); border-radius: 4px; background: rgba(255, 184, 92, 0.05); font-family: var(--font-mono), monospace; font-size: 7px; text-transform: uppercase; }
+.hazard-tags span { padding: 4px 6px; color: #c9b48f; border: 1px solid rgba(var(--amber-rgb), 0.2); border-radius: 4px; background: rgba(var(--amber-rgb), 0.05); font-family: var(--font-mono), monospace; font-size: 7px; text-transform: uppercase; }
 
 .hazard-details {
-  border-top: 1px solid rgba(255, 184, 92, 0.28);
+  border-top: 1px solid rgba(var(--amber-rgb), 0.28);
   background: rgba(5, 20, 25, 0.72);
 }
 
@@ -2095,13 +2223,13 @@ h2 {
   align-items: center;
   gap: 10px;
   padding: 8px 11px;
-  color: #bcd0d1;
+  color: var(--copy);
   cursor: pointer;
   font-size: 9px;
   list-style-position: inside;
 }
 
-.hazard-report-list summary:hover { background: rgba(99, 226, 183, 0.035); }
+.hazard-report-list summary:hover { background: rgba(var(--signal-rgb), 0.035); }
 .hazard-report-list summary span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hazard-report-list summary b { margin-right: 6px; color: var(--amber); font-family: var(--font-mono), monospace; font-size: 8px; }
 .hazard-report-list summary time { color: var(--faint); font-family: var(--font-mono), monospace; font-size: 8px; white-space: nowrap; }
@@ -2109,9 +2237,9 @@ h2 {
   margin: 0;
   padding: 11px 13px 13px;
   overflow-x: auto;
-  color: #cbd9d9;
-  border-top: 1px solid rgba(171, 213, 218, 0.08);
-  background: rgba(7, 23, 29, 0.9);
+  color: var(--copy-strong);
+  border-top: 1px solid rgba(var(--line-rgb), 0.08);
+  background: rgba(var(--ink-rgb), 0.9);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   line-height: 1.55;
@@ -2124,7 +2252,7 @@ h2 {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: rgba(7, 23, 29, 0.48);
+  background: rgba(var(--ink-rgb), 0.48);
 }
 
 .settings-section-label {
@@ -2158,7 +2286,7 @@ h2 {
   cursor: pointer;
 }
 
-.preference-actions button:hover { color: var(--signal); border-color: rgba(99, 226, 183, 0.3); }
+.preference-actions button:hover { color: var(--signal); border-color: rgba(var(--signal-rgb), 0.3); }
 
 .preference-toggles {
   display: grid;
@@ -2311,6 +2439,7 @@ h2 {
   .signal-matrix > span:nth-last-child(-n + 2) { border-bottom: 0; }
   .intelligence-grid { display: grid; }
   .preference-actions { grid-template-columns: 1fr; }
+  .theme-options { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2330,9 +2459,9 @@ h2 {
 .wallboard-preferences {
   margin-bottom: 10px;
   padding: 12px;
-  border: 1px solid rgba(159, 229, 255, 0.2);
+  border: 1px solid rgba(var(--sky-rgb), 0.2);
   border-radius: 9px;
-  background: linear-gradient(135deg, rgba(159, 229, 255, 0.055), rgba(7, 23, 29, 0.54));
+  background: linear-gradient(135deg, rgba(var(--sky-rgb), 0.055), rgba(var(--ink-rgb), 0.54));
 }
 
 .wallboard-preferences > p {
@@ -2357,12 +2486,12 @@ h2 {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgba(7, 23, 29, 0.38);
+  background: rgba(var(--ink-rgb), 0.38);
 }
 
 .wallboard-scene-options label:has(input:checked) {
-  border-color: rgba(99, 226, 183, 0.34);
-  background: rgba(99, 226, 183, 0.055);
+  border-color: rgba(var(--signal-rgb), 0.34);
+  background: rgba(var(--signal-rgb), 0.055);
 }
 
 .wallboard-scene-options input,
@@ -2596,8 +2725,8 @@ h2 {
     grid-template-rows: auto minmax(0, 1fr);
     border-top: 1px solid var(--line);
     background:
-      linear-gradient(90deg, rgba(99, 226, 183, 0.025), transparent 45%, rgba(159, 229, 255, 0.025)),
-      rgba(7, 23, 29, 0.2);
+      linear-gradient(90deg, rgba(var(--signal-rgb), 0.025), transparent 45%, rgba(var(--sky-rgb), 0.025)),
+      rgba(var(--ink-rgb), 0.2);
   }
 
   .app-shell.is-fullscreen .current-nowcast-summary {
@@ -2661,7 +2790,7 @@ h2 {
     place-items: center;
     gap: 1px;
     padding: 5px 2px 4px;
-    border-right: 1px solid rgba(171, 213, 218, 0.1);
+    border-right: 1px solid rgba(var(--line-rgb), 0.1);
   }
 
   .app-shell.is-fullscreen .current-nowcast-hours > span:last-child { border-right: 0; }
@@ -2702,7 +2831,7 @@ h2 {
     border: 1px solid var(--line);
     border-bottom: 0;
     border-radius: 7px 7px 0 0;
-    background: rgba(7, 23, 29, 0.96);
+    background: rgba(var(--ink-rgb), 0.96);
     font-family: var(--font-mono), ui-monospace, monospace;
     font-size: 7px;
     letter-spacing: 0.06em;
@@ -2743,7 +2872,7 @@ h2 {
   }
 
   .wallboard-scene-tabs button { padding: 3px 8px; }
-  .wallboard-scene-tabs button.active { color: var(--signal); border-color: rgba(99, 226, 183, 0.28); background: rgba(99, 226, 183, 0.07); }
+  .wallboard-scene-tabs button.active { color: var(--signal); border-color: rgba(var(--signal-rgb), 0.28); background: rgba(var(--signal-rgb), 0.07); }
   .wallboard-cycle-actions { display: flex; gap: 2px; }
   .wallboard-cycle-actions button { width: 24px; height: 22px; padding: 0; }
   .wallboard-cycle-actions button:hover { color: var(--cloud); border-color: var(--line); }
@@ -2755,7 +2884,7 @@ h2 {
     left: 0;
     height: 1px;
     overflow: hidden;
-    background: rgba(99, 226, 183, 0.09);
+    background: rgba(var(--signal-rgb), 0.09);
   }
 
   .wallboard-progress i {
@@ -3011,7 +3140,7 @@ h2 {
     gap: 1px 8px;
     padding: 7px 10px;
     border-right: 0;
-    border-bottom: 1px solid rgba(171, 213, 218, 0.1);
+    border-bottom: 1px solid rgba(var(--line-rgb), 0.1);
   }
 
   .app-shell.is-fullscreen .current-nowcast-hours > span:last-child { border-bottom: 0; }

@@ -41,6 +41,7 @@ import { WeatherIcon } from "@/components/weather-icon";
 import { AviationConsole } from "@/components/aviation-console";
 import { IntelligenceGrid } from "@/components/intelligence-grid";
 import { SensorDeck } from "@/components/sensor-deck";
+import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
 
 type LocationFormConfig = {
   latitude: string;
@@ -244,6 +245,7 @@ export function WeatherDashboard() {
   const [mounted, setMounted] = useState(false);
   const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("desk");
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
   const [autoRotate, setAutoRotate] = useState(false);
   const [autoDim, setAutoDim] = useState(false);
   const [alertAudio, setAlertAudio] = useState(false);
@@ -266,6 +268,8 @@ export function WeatherDashboard() {
       try {
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
         setDisplayMode((window.localStorage.getItem("weatherguy-display-mode") as DisplayMode) || "desk");
+        const savedTheme = window.localStorage.getItem("weatherguy-theme");
+        if (isThemeId(savedTheme)) setTheme(savedTheme);
         setAutoRotate(window.localStorage.getItem("weatherguy-auto-rotate") === "true");
         setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") === "true");
         setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
@@ -286,6 +290,13 @@ export function WeatherDashboard() {
     document.addEventListener("fullscreenchange", syncFullscreen);
     return () => document.removeEventListener("fullscreenchange", syncFullscreen);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    document.documentElement.dataset.theme = theme;
+    const browserColor = THEMES.find((option) => option.id === theme)?.browserColor;
+    if (browserColor) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", browserColor);
+  }, [mounted, theme]);
 
   useEffect(() => {
     const media = window.matchMedia(EXPANDED_WALLBOARD_QUERY);
@@ -545,6 +556,11 @@ export function WeatherDashboard() {
   };
 
   const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
+
+  const selectTheme = (nextTheme: ThemeId) => {
+    setTheme(nextTheme);
+    persistSetting("weatherguy-theme", nextTheme);
+  };
 
   const addFavorite = () => {
     if (!config || !data) return;
@@ -862,10 +878,32 @@ export function WeatherDashboard() {
               {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
             <div className="settings-modal-body">
-              <p className="settings-intro">Configure the fullscreen wallboard or search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+              <p className="settings-intro">Choose the desk’s visual channel, configure the fullscreen wallboard, or search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
 
               {config && (
                 <>
+                  <div className="theme-preferences">
+                    <span className="settings-section-label">Color console</span>
+                    <p>Switch the entire desk instantly. Your choice follows this browser into fullscreen.</p>
+                    <div className="theme-options" role="radiogroup" aria-label="Dashboard color scheme">
+                      {THEMES.map((option) => (
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={theme === option.id}
+                          className={`theme-option ${theme === option.id ? "active" : ""}`}
+                          key={option.id}
+                          onClick={() => selectTheme(option.id)}
+                        >
+                          <span className="theme-swatch" aria-hidden="true">
+                            {option.swatches.map((color) => <i key={color} style={{ backgroundColor: color }} />)}
+                          </span>
+                          <span><b>{option.name}</b><small>{option.detail}</small></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="wallboard-preferences">
                     <span className="settings-section-label">Fullscreen wallboard</span>
                     <p>Radar, satellite, and current conditions stay fixed. Standard displays rotate these briefing scenes; very large displays open every enabled scene at once.</p>
