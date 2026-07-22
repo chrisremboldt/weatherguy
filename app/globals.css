@@ -966,16 +966,18 @@ h2 {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  overflow: hidden;
   background: rgba(2, 12, 16, 0.78);
   backdrop-filter: blur(10px);
 }
 
 .settings-modal {
   width: min(100%, 540px);
-  max-height: min(90vh, 760px);
-  overflow-y: auto;
-  padding: 20px;
+  max-height: min(100%, 760px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   background: #0b222a;
@@ -985,10 +987,19 @@ h2 {
 .settings-heading {
   justify-content: space-between;
   gap: 20px;
+  padding: 20px 20px 0;
 }
 
 .settings-heading h2 {
   font-size: 28px;
+}
+
+.settings-modal-body {
+  min-height: 0;
+  padding: 0 20px 20px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .settings-intro {
@@ -1196,7 +1207,10 @@ h2 {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 18px;
+  padding: 12px 20px 20px;
+  border-top: 1px solid var(--line);
+  background: #0b222a;
+  box-shadow: 0 -12px 28px rgba(2, 12, 16, 0.22);
 }
 
 .form-actions button {
@@ -1357,8 +1371,23 @@ h2 {
   }
 
   .settings-modal {
-    max-height: calc(100vh - 24px);
-    padding: 18px;
+    max-height: 100%;
+  }
+
+  .modal-backdrop {
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .settings-heading {
+    padding: 18px 18px 0;
+  }
+
+  .settings-modal-body {
+    padding: 0 18px 14px;
+  }
+
+  .form-actions {
+    padding: 12px 18px max(12px, env(safe-area-inset-bottom));
   }
 
   .search-results code {

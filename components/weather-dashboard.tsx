@@ -845,113 +845,118 @@ export function WeatherDashboard() {
               <div><span className="eyebrow">WeatherGuy controls</span><h2 id="settings-title">{config ? "Desk settings" : "Choose an area"}</h2></div>
               {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
-            <p className="settings-intro">Configure the fullscreen wallboard or search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+            <div className="settings-modal-body">
+              <p className="settings-intro">Configure the fullscreen wallboard or search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
 
-            {config && (
-              <>
-                <div className="wallboard-preferences">
-                  <span className="settings-section-label">Fullscreen wallboard</span>
-                  <p>Radar, satellite, and current conditions stay fixed. Choose which briefing scenes rotate through the lower bay.</p>
-                  <div className="wallboard-scene-options">
-                    {WALLBOARD_SCENES.map((scene) => (
-                      <label key={scene.id}>
-                        <input
-                          type="checkbox"
-                          checked={wallboardScenes[scene.id]}
-                          disabled={wallboardScenes[scene.id] && enabledWallboardScenes.length === 1}
-                          onChange={() => toggleWallboardScene(scene.id)}
-                        />
-                        <span><b>{scene.label}</b><small>{scene.detail}</small></span>
-                      </label>
-                    ))}
-                  </div>
-                  <div className="wallboard-timing">
-                    <label>
-                      <span><b>Rotate scenes</b><small>Advance automatically while fullscreen</small></span>
-                      <input type="checkbox" checked={wallboardRotate} onChange={(event) => {
-                        setWallboardRotate(event.target.checked);
-                        setWallboardPaused(false);
-                        persistSetting("weatherguy-wallboard-rotate", String(event.target.checked));
-                      }} />
-                    </label>
-                    <label>
-                      <span><b>Scene time</b><small>A full three-scene pass takes about one minute at 20 seconds</small></span>
-                      <select value={wallboardIntervalSeconds} disabled={!wallboardRotate} onChange={(event) => {
-                        const seconds = Number(event.target.value);
-                        setWallboardIntervalSeconds(seconds);
-                        persistSetting("weatherguy-wallboard-interval", String(seconds));
-                      }}>
-                        <option value="20">20 seconds</option>
-                        <option value="30">30 seconds</option>
-                        <option value="60">1 minute</option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="display-preferences">
-                  <span className="settings-section-label">Family & display profile</span>
-                  <div className="preference-actions">
-                    <button type="button" onClick={() => void copyFamilyUrl()}><Copy size={15} /> {copied ? "Copied" : "Copy family URL"}</button>
-                    <button type="button" onClick={addFavorite}><Star size={15} /> Save current area</button>
-                  </div>
-                  <div className="preference-toggles">
-                    <label><span><Moon size={16} /><b>Auto-dim</b><small>10 PM–6 AM local time</small></span><input type="checkbox" checked={autoDim} onChange={(event) => { setAutoDim(event.target.checked); persistSetting("weatherguy-auto-dim", String(event.target.checked)); }} /></label>
-                    <label><span>{alertAudio ? <Bell size={16} /> : <BellOff size={16} />}<b>Alert tone</b><small>One chime when alerts appear</small></span><input type="checkbox" checked={alertAudio} onChange={(event) => { setAlertAudio(event.target.checked); persistSetting("weatherguy-alert-audio", String(event.target.checked)); }} /></label>
-                    <label><span><RefreshCw size={16} /><b>Rotate favorites</b><small>Change area every 15 minutes</small></span><input type="checkbox" checked={autoRotate} onChange={(event) => { setAutoRotate(event.target.checked); persistSetting("weatherguy-auto-rotate", String(event.target.checked)); }} /></label>
-                  </div>
-                  {favorites.length > 0 && (
-                    <div className="favorite-list">
-                      {favorites.map((favorite) => (
-                        <div key={favorite.id}>
-                          <button type="button" onClick={() => loadFavorite(favorite)}><MapPin size={14} /><span>{favorite.label}</span></button>
-                          <button type="button" onClick={() => removeFavorite(favorite.id)} aria-label={`Remove ${favorite.label}`}><Trash2 size={14} /></button>
-                        </div>
+              {config && (
+                <>
+                  <div className="wallboard-preferences">
+                    <span className="settings-section-label">Fullscreen wallboard</span>
+                    <p>Radar, satellite, and current conditions stay fixed. Choose which briefing scenes rotate through the lower bay.</p>
+                    <div className="wallboard-scene-options">
+                      {WALLBOARD_SCENES.map((scene) => (
+                        <label key={scene.id}>
+                          <input
+                            type="checkbox"
+                            checked={wallboardScenes[scene.id]}
+                            disabled={wallboardScenes[scene.id] && enabledWallboardScenes.length === 1}
+                            onChange={() => toggleWallboardScene(scene.id)}
+                          />
+                          <span><b>{scene.label}</b><small>{scene.detail}</small></span>
+                        </label>
                       ))}
                     </div>
-                  )}
+                    <div className="wallboard-timing">
+                      <label>
+                        <span><b>Rotate scenes</b><small>Advance automatically while fullscreen</small></span>
+                        <input type="checkbox" checked={wallboardRotate} onChange={(event) => {
+                          setWallboardRotate(event.target.checked);
+                          setWallboardPaused(false);
+                          persistSetting("weatherguy-wallboard-rotate", String(event.target.checked));
+                        }} />
+                      </label>
+                      <label>
+                        <span><b>Scene time</b><small>A full three-scene pass takes about one minute at 20 seconds</small></span>
+                        <select value={wallboardIntervalSeconds} disabled={!wallboardRotate} onChange={(event) => {
+                          const seconds = Number(event.target.value);
+                          setWallboardIntervalSeconds(seconds);
+                          persistSetting("weatherguy-wallboard-interval", String(seconds));
+                        }}>
+                          <option value="20">20 seconds</option>
+                          <option value="30">30 seconds</option>
+                          <option value="60">1 minute</option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="display-preferences">
+                    <span className="settings-section-label">Family & display profile</span>
+                    <div className="preference-actions">
+                      <button type="button" onClick={() => void copyFamilyUrl()}><Copy size={15} /> {copied ? "Copied" : "Copy family URL"}</button>
+                      <button type="button" onClick={addFavorite}><Star size={15} /> Save current area</button>
+                    </div>
+                    <div className="preference-toggles">
+                      <label><span><Moon size={16} /><b>Auto-dim</b><small>10 PM–6 AM local time</small></span><input type="checkbox" checked={autoDim} onChange={(event) => { setAutoDim(event.target.checked); persistSetting("weatherguy-auto-dim", String(event.target.checked)); }} /></label>
+                      <label><span>{alertAudio ? <Bell size={16} /> : <BellOff size={16} />}<b>Alert tone</b><small>One chime when alerts appear</small></span><input type="checkbox" checked={alertAudio} onChange={(event) => { setAlertAudio(event.target.checked); persistSetting("weatherguy-alert-audio", String(event.target.checked)); }} /></label>
+                      <label><span><RefreshCw size={16} /><b>Rotate favorites</b><small>Change area every 15 minutes</small></span><input type="checkbox" checked={autoRotate} onChange={(event) => { setAutoRotate(event.target.checked); persistSetting("weatherguy-auto-rotate", String(event.target.checked)); }} /></label>
+                    </div>
+                    {favorites.length > 0 && (
+                      <div className="favorite-list">
+                        {favorites.map((favorite) => (
+                          <div key={favorite.id}>
+                            <button type="button" onClick={() => loadFavorite(favorite)}><MapPin size={14} /><span>{favorite.label}</span></button>
+                            <button type="button" onClick={() => removeFavorite(favorite.id)} aria-label={`Remove ${favorite.label}`}><Trash2 size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
+                <label htmlFor="location-search">City, state, territory, or ZIP code</label>
+                <div>
+                  <Search size={17} aria-hidden="true" />
+                  <input id="location-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="City and state, or ZIP code" autoComplete="off" />
+                  <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
                 </div>
-              </>
-            )}
+              </form>
 
-            <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
-              <label htmlFor="location-search">City, state, territory, or ZIP code</label>
-              <div>
-                <Search size={17} aria-hidden="true" />
-                <input id="location-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="City and state, or ZIP code" autoComplete="off" />
-                <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
-              </div>
-            </form>
+              {searchResults.length > 0 && (
+                <div className="search-results" aria-label="Location search results">
+                  {searchResults.map((result) => {
+                    const selected =
+                      Number(formConfig.latitude) === result.latitude &&
+                      Number(formConfig.longitude) === result.longitude;
+                    return (
+                      <button className={selected ? "selected" : ""} type="button" key={result.id} onClick={() => chooseSearchResult(result)}>
+                        <MapPin size={15} aria-hidden="true" />
+                        <span><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
+                        <code>{result.latitude.toFixed(2)}, {result.longitude.toFixed(2)}</code>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {searchError && <p className="form-error">{searchError}</p>}
 
-            {searchResults.length > 0 && (
-              <div className="search-results" aria-label="Location search results">
-                {searchResults.map((result) => {
-                  const selected =
-                    Number(formConfig.latitude) === result.latitude &&
-                    Number(formConfig.longitude) === result.longitude;
-                  return (
-                    <button className={selected ? "selected" : ""} type="button" key={result.id} onClick={() => chooseSearchResult(result)}>
-                      <MapPin size={15} aria-hidden="true" />
-                      <span><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
-                      <code>{result.latitude.toFixed(2)}, {result.longitude.toFixed(2)}</code>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {searchError && <p className="form-error">{searchError}</p>}
-
-            <div className="settings-or"><span>or position directly</span></div>
-            <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
-            <form onSubmit={saveLocation}>
-              <div className="coordinate-grid">
-                <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
-                <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
-              </div>
-              {geoError && <p className="form-error">{geoError}</p>}
-              <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
-              <div className="form-actions">{config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}<button className="primary-button" type="submit">Load this area</button></div>
-            </form>
+              <div className="settings-or"><span>or position directly</span></div>
+              <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
+              <form id="location-coordinate-form" onSubmit={saveLocation}>
+                <div className="coordinate-grid">
+                  <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
+                  <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
+                </div>
+                {geoError && <p className="form-error">{geoError}</p>}
+                <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
+              </form>
+            </div>
+            <div className="form-actions">
+              {config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}
+              <button className="primary-button" type="submit" form="location-coordinate-form">Load this area</button>
+            </div>
           </section>
         </div>,
         document.body,
