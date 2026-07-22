@@ -245,7 +245,7 @@ export function WeatherDashboard() {
   const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("desk");
   const [autoRotate, setAutoRotate] = useState(false);
-  const [autoDim, setAutoDim] = useState(true);
+  const [autoDim, setAutoDim] = useState(false);
   const [alertAudio, setAlertAudio] = useState(false);
   const [copied, setCopied] = useState(false);
   const [offlineSnapshot, setOfflineSnapshot] = useState(false);
@@ -267,7 +267,7 @@ export function WeatherDashboard() {
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
         setDisplayMode((window.localStorage.getItem("weatherguy-display-mode") as DisplayMode) || "desk");
         setAutoRotate(window.localStorage.getItem("weatherguy-auto-rotate") === "true");
-        setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") !== "false");
+        setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") === "true");
         setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
         setWallboardScenes(savedWallboardScenes(window.localStorage.getItem("weatherguy-wallboard-scenes")));
         setWallboardRotate(window.localStorage.getItem("weatherguy-wallboard-rotate") !== "false");
