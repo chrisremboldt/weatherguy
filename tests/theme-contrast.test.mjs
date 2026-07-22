@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+const darkThemes = ["night-watch", "blue-hour", "aurora-field", "solar-flare", "phosphor-rain"];
 const lightThemes = ["cloud-deck", "bluebird", "marine-layer", "first-light", "polar-station"];
+const allThemes = [...darkThemes, ...lightThemes];
 const surfaceTokens = ["ink", "ink-deep", "ink-deepest", "ink-soft", "panel", "panel-high"];
 const foregroundTokens = ["cloud", "copy", "copy-strong", "muted", "faint", "signal", "sky", "amber", "danger", "danger-copy", "danger-copy-soft", "danger-contrast"];
 
@@ -32,14 +34,21 @@ function blend(foreground, background, alpha) {
   return toHex(foregroundChannels.map((channel, index) => channel * alpha + backgroundChannels[index] * (1 - alpha)));
 }
 
-function themeTokens(id) {
-  const block = styles.match(new RegExp(`:root\\[data-theme="${id}"\\]\\s*\\{([^}]*)\\}`, "s"));
-  assert.ok(block, `missing CSS block for ${id}`);
-  return Object.fromEntries([...block[1].matchAll(/--([\w-]+):\s*(#[0-9a-f]{6}|\d+,\s*\d+,\s*\d+)/gi)].map((match) => [match[1], match[2]]));
+function declarations(block) {
+  return Object.fromEntries([...block.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6}|\d+,\s*\d+,\s*\d+)/gi)].map((match) => [match[1], match[2]]));
 }
 
-test("light themes meet WCAG AA contrast on every dashboard surface", () => {
-  for (const id of lightThemes) {
+const defaultTokens = declarations(styles.match(/:root\s*\{([^}]*)\}/s)?.[1] ?? "");
+
+function themeTokens(id) {
+  if (id === "night-watch") return defaultTokens;
+  const block = styles.match(new RegExp(`:root\\[data-theme="${id}"\\]\\s*\\{([^}]*)\\}`, "s"));
+  assert.ok(block, `missing CSS block for ${id}`);
+  return { ...defaultTokens, ...declarations(block[1]) };
+}
+
+test("every theme meets WCAG AA contrast on every dashboard surface", () => {
+  for (const id of allThemes) {
     const tokens = themeTokens(id);
     const controlSurface = toHex(tokens["control-rgb"].split(",").map(Number));
     const surfaces = [...surfaceTokens.map((token) => [token, tokens[token]]), ["control", controlSurface]];
@@ -54,8 +63,8 @@ test("light themes meet WCAG AA contrast on every dashboard surface", () => {
   }
 });
 
-test("light theme warning and error surfaces retain WCAG AA contrast", () => {
-  for (const id of lightThemes) {
+test("every theme warning and error surface retains WCAG AA contrast", () => {
+  for (const id of allThemes) {
     const tokens = themeTokens(id);
     const warning = blend(tokens["danger-surface-rgb"].split(",").map(Number), tokens.ink, 0.36);
     const error = blend(tokens["danger-surface-strong-rgb"].split(",").map(Number), tokens.ink, 0.55);
