@@ -5,10 +5,19 @@ import test from "node:test";
 import { normalizeForecast, nwsPrecipitationIn } from "../lib/forecast-signals.ts";
 
 const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+const component = await readFile(new URL("../components/intelligence-grid.tsx", import.meta.url), "utf8");
 
 test("Storm Center contains the complete SPC image and its legend", () => {
   assert.match(styles, /\.spc-stage img\s*{[^}]*object-fit:\s*contain;/s);
   assert.doesNotMatch(styles, /\.spc-stage img\s*{[^}]*object-fit:\s*cover;/s);
+});
+
+test("fullscreen Storm Center gives the map a full-height stage beside its related products", () => {
+  assert.match(component, /className="storm-center-body"/);
+  assert.match(component, /aria-label="Storm Prediction Center products"/);
+  assert.match(styles, /\.app-shell\.is-fullscreen \.storm-center-body\s*{[^}]*grid-template-columns:/s);
+  assert.match(styles, /\.app-shell\.is-fullscreen \.spc-stage\s*{[^}]*height:\s*100%;/s);
+  assert.doesNotMatch(styles, /\.app-shell\.is-fullscreen \.spc-stage\s*{[^}]*height:\s*90px;/s);
 });
 
 test("NWS quantitative precipitation is converted from millimeters and prorated across the forecast window", () => {

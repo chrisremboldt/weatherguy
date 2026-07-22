@@ -59,16 +59,18 @@ export function IntelligenceGrid({ latitude, longitude, timeZone, refreshKey }: 
           <div><span className="eyebrow">National convective picture</span><h2>Storm center</h2></div>
           <a href={data?.links.spc ?? "https://www.spc.noaa.gov/products/outlook/"} target="_blank" rel="noreferrer">SPC outlook <ChevronRight size={14} /></a>
         </div>
-        <div className="spc-stage">
-          {/* SPC's operational outlook image updates in place throughout the day. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.png" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
-        </div>
-        <div className="spc-links">
-          <a href="https://www.spc.noaa.gov/products/outlook/day1probotlk.html" target="_blank" rel="noreferrer">Tornado / wind / hail</a>
-          <a href="https://www.spc.noaa.gov/products/md/" target="_blank" rel="noreferrer">Mesoscale discussions</a>
-          <a href="https://www.spc.noaa.gov/products/watch/" target="_blank" rel="noreferrer">Watches</a>
-          <a href="https://www.spc.noaa.gov/climo/reports/today.html" target="_blank" rel="noreferrer">Storm reports</a>
+        <div className="storm-center-body">
+          <div className="spc-stage">
+            {/* SPC's operational outlook image updates in place throughout the day. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.png" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
+          </div>
+          <nav className="spc-links" aria-label="Storm Prediction Center products">
+            <a href="https://www.spc.noaa.gov/products/outlook/day1probotlk.html" target="_blank" rel="noreferrer"><span><b>Tornado / wind / hail</b><small>Day 1 probability maps</small></span><ChevronRight size={13} /></a>
+            <a href="https://www.spc.noaa.gov/products/md/" target="_blank" rel="noreferrer"><span><b>Mesoscale discussions</b><small>Short-fuse storm analysis</small></span><ChevronRight size={13} /></a>
+            <a href="https://www.spc.noaa.gov/products/watch/" target="_blank" rel="noreferrer"><span><b>Watches</b><small>Active severe watches</small></span><ChevronRight size={13} /></a>
+            <a href="https://www.spc.noaa.gov/climo/reports/today.html" target="_blank" rel="noreferrer"><span><b>Storm reports</b><small>Today’s observed reports</small></span><ChevronRight size={13} /></a>
+          </nav>
         </div>
       </article>
 
