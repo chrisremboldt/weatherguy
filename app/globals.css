@@ -2283,3 +2283,563 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   .app-shell { animation: none; }
 }
+
+/* Fullscreen wallboard */
+.wallboard-bay,
+.wallboard-scene {
+  display: contents;
+}
+
+.wallboard-cycle {
+  display: none;
+}
+
+.wallboard-preferences {
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid rgba(159, 229, 255, 0.2);
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(159, 229, 255, 0.055), rgba(7, 23, 29, 0.54));
+}
+
+.wallboard-preferences > p {
+  margin: -2px 0 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.wallboard-scene-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.wallboard-scene-options label,
+.wallboard-timing label {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(7, 23, 29, 0.38);
+}
+
+.wallboard-scene-options label:has(input:checked) {
+  border-color: rgba(99, 226, 183, 0.34);
+  background: rgba(99, 226, 183, 0.055);
+}
+
+.wallboard-scene-options input,
+.wallboard-timing input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  accent-color: var(--signal);
+}
+
+.wallboard-scene-options span,
+.wallboard-timing span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wallboard-scene-options b,
+.wallboard-timing b {
+  color: var(--cloud);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.wallboard-scene-options small,
+.wallboard-timing small {
+  color: var(--faint);
+  font-size: 8px;
+  line-height: 1.35;
+}
+
+.wallboard-timing {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 7px;
+  margin-top: 7px;
+}
+
+.wallboard-timing label {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wallboard-timing select {
+  max-width: 105px;
+  padding: 5px 6px;
+  color: var(--cloud);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  outline: 0;
+  background: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+}
+
+.wallboard-timing select:disabled,
+.wallboard-scene-options input:disabled {
+  opacity: 0.48;
+}
+
+@keyframes wallboard-progress-run {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (min-width: 900px) and (min-height: 620px) {
+  body:has(.app-shell.is-fullscreen) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0 10px 6px;
+    overflow: hidden;
+    animation: none;
+  }
+
+  .app-shell.is-fullscreen .topbar {
+    height: 52px;
+    min-height: 52px;
+    flex: 0 0 52px;
+    grid-template-columns: minmax(185px, 0.85fr) minmax(220px, 1.15fr) minmax(300px, 1fr);
+  }
+
+  .app-shell.is-fullscreen .radar-mark {
+    width: 29px;
+    height: 29px;
+  }
+
+  .app-shell.is-fullscreen .radar-mark span {
+    left: 14px;
+    top: 14px;
+    width: 15px;
+  }
+
+  .app-shell.is-fullscreen .brand-name { font-size: 18px; }
+  .app-shell.is-fullscreen .brand-subtitle { font-size: 8px; }
+  .app-shell.is-fullscreen .location-lockup strong { font-size: 12px; }
+  .app-shell.is-fullscreen .location-lockup span,
+  .app-shell.is-fullscreen .clock-block span { font-size: 8px; }
+  .app-shell.is-fullscreen .clock-block strong { font-size: 13px; }
+  .app-shell.is-fullscreen .icon-button,
+  .app-shell.is-fullscreen .mode-picker { height: 32px; }
+  .app-shell.is-fullscreen .icon-button { width: 32px; }
+
+  .app-shell.is-fullscreen .alert-rail {
+    min-height: 32px;
+    flex: 0 0 32px;
+    margin: 6px 0;
+    padding: 0 9px;
+    gap: 9px;
+  }
+
+  .app-shell.is-fullscreen .alert-message strong { font-size: 11px; }
+  .app-shell.is-fullscreen .alert-message span { font-size: 10px; }
+  .app-shell.is-fullscreen .alert-detail { display: none; }
+  .app-shell.is-fullscreen .error-banner { flex: 0 0 auto; margin-bottom: 6px; padding: 6px 9px; font-size: 10px; }
+
+  .app-shell.is-fullscreen .dashboard-grid,
+  .app-shell.is-fullscreen.mode-aviation .dashboard-grid,
+  .app-shell.is-fullscreen.mode-minimal .dashboard-grid {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 2.55fr) minmax(285px, 0.72fr);
+    grid-template-rows: minmax(0, 1fr) clamp(210px, 27vh, 280px);
+    grid-template-areas:
+      "sensor status"
+      "wallboard wallboard";
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .panel {
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(0, 8, 12, 0.13);
+  }
+
+  .app-shell.is-fullscreen .panel-heading,
+  .app-shell.is-fullscreen .panel-heading.compact {
+    min-height: 42px;
+    padding: 7px 10px;
+  }
+
+  .app-shell.is-fullscreen h1 { font-size: 22px; }
+  .app-shell.is-fullscreen h2 { font-size: 18px; }
+  .app-shell.is-fullscreen .eyebrow,
+  .app-shell.is-fullscreen .panel-note,
+  .app-shell.is-fullscreen .freshness { font-size: 8px; }
+
+  .app-shell.is-fullscreen .sensor-panel {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell.is-fullscreen .sensor-grid {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .app-shell.is-fullscreen .sensor-cell,
+  .app-shell.is-fullscreen .radar-console,
+  .app-shell.is-fullscreen .satellite-console {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell.is-fullscreen .radar-console,
+  .app-shell.is-fullscreen .satellite-console {
+    flex: 1 1 auto;
+  }
+
+  .app-shell.is-fullscreen .sensor-label { min-height: 27px; height: 27px; font-size: 7px; }
+  .app-shell.is-fullscreen .sensor-label > strong { font-size: 8px; }
+  .app-shell.is-fullscreen .sensor-toolbar { min-height: 32px; padding: 3px 6px; }
+  .app-shell.is-fullscreen .loop-controls,
+  .app-shell.is-fullscreen .radar-lab-strip { min-height: 29px; padding: 3px 6px; }
+  .app-shell.is-fullscreen .radar-lab-strip { flex-wrap: nowrap; overflow-x: auto; }
+
+  .app-shell.is-fullscreen .sensor-grid .radar-stage,
+  .app-shell.is-fullscreen .satellite-stage,
+  .app-shell.is-fullscreen .radar-map {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    flex: 1 1 auto;
+  }
+
+  .app-shell.is-fullscreen .status-column {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .current-panel {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-shell.is-fullscreen .current-hero {
+    min-height: 82px;
+    flex: 1 1 auto;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .app-shell.is-fullscreen .condition-icon svg { width: 54px; height: 54px; }
+  .app-shell.is-fullscreen .temperature-block > strong { font-size: clamp(58px, 8vh, 88px); }
+  .app-shell.is-fullscreen .temperature-block span { margin-top: 8px; font-size: 12px; }
+  .app-shell.is-fullscreen .metric { min-height: 48px; padding: 6px 8px; }
+  .app-shell.is-fullscreen .metric-label { font-size: 8px; }
+  .app-shell.is-fullscreen .metric-copy strong { font-size: 9px; }
+  .app-shell.is-fullscreen .solar-track { min-height: 43px; padding: 6px 9px; gap: 7px; }
+  .app-shell.is-fullscreen .solar-track span { font-size: 8px; }
+  .app-shell.is-fullscreen .solar-track strong { font-size: 9px; }
+  .app-shell.is-fullscreen .status-column .aviation-panel { display: none; }
+
+  .app-shell.is-fullscreen .wallboard-bay {
+    grid-area: wallboard;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 29px minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .wallboard-cycle {
+    position: relative;
+    z-index: 4;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(190px, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 0 7px;
+    overflow: hidden;
+    color: var(--faint);
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    border-radius: 7px 7px 0 0;
+    background: rgba(7, 23, 29, 0.96);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 7px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .wallboard-cycle-status {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .wallboard-cycle-status > span { color: var(--signal); }
+  .wallboard-cycle-status strong { overflow: hidden; color: var(--cloud); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+  .wallboard-cycle-status small { color: var(--faint); }
+
+  .wallboard-scene-tabs {
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .wallboard-scene-tabs button,
+  .wallboard-cycle-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--faint);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 7px;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .wallboard-scene-tabs button { padding: 3px 8px; }
+  .wallboard-scene-tabs button.active { color: var(--signal); border-color: rgba(99, 226, 183, 0.28); background: rgba(99, 226, 183, 0.07); }
+  .wallboard-cycle-actions { display: flex; gap: 2px; }
+  .wallboard-cycle-actions button { width: 24px; height: 22px; padding: 0; }
+  .wallboard-cycle-actions button:hover { color: var(--cloud); border-color: var(--line); }
+
+  .wallboard-progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 1px;
+    overflow: hidden;
+    background: rgba(99, 226, 183, 0.09);
+  }
+
+  .wallboard-progress i {
+    width: 100%;
+    height: 100%;
+    display: block;
+    transform-origin: left center;
+    background: linear-gradient(90deg, var(--signal), var(--sky));
+    animation-name: wallboard-progress-run;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene {
+    min-width: 0;
+    min-height: 0;
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    gap: 8px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(3px);
+    transition: opacity 260ms ease, transform 260ms ease, visibility 260ms;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene-forecast {
+    grid-template-columns: minmax(0, 1.8fr) minmax(230px, 0.62fr) minmax(280px, 0.82fr);
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene.active .hourly-panel,
+  .app-shell.is-fullscreen .wallboard-scene.active .outlook-panel,
+  .app-shell.is-fullscreen .wallboard-scene.active .discussion-panel,
+  .app-shell.is-fullscreen .wallboard-scene.active .intelligence-grid,
+  .app-shell.is-fullscreen .wallboard-scene.active .aviation-console-panel {
+    display: block;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene-forecast > .panel,
+  .app-shell.is-fullscreen .wallboard-scene-intelligence > .intelligence-grid,
+  .app-shell.is-fullscreen .wallboard-scene-aviation > .aviation-console-panel {
+    min-height: 0;
+    height: 100%;
+    grid-area: auto;
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene .panel-heading,
+  .app-shell.is-fullscreen .wallboard-scene .panel-heading.compact {
+    min-height: 39px;
+    height: 39px;
+    padding: 5px 9px;
+  }
+
+  .app-shell.is-fullscreen .hourly-chart {
+    min-height: 0;
+    height: calc(100% - 39px);
+    grid-template-columns: repeat(9, minmax(48px, 1fr));
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .hour-cell {
+    grid-template-rows: 13px 16px 25px 26px 14px;
+    align-content: center;
+    padding: 4px 2px;
+  }
+
+  .app-shell.is-fullscreen .temperature-trace { top: 30px; height: 65px; }
+  .app-shell.is-fullscreen .hour-temp { font-size: 19px; }
+  .app-shell.is-fullscreen .hour-time,
+  .app-shell.is-fullscreen .hour-day,
+  .app-shell.is-fullscreen .rain-chance { font-size: 7px; }
+  .app-shell.is-fullscreen .hour-icon svg { width: 17px; height: 17px; }
+
+  .app-shell.is-fullscreen .day-row {
+    min-height: 26px;
+    grid-template-columns: 26px 18px 34px minmax(0, 1fr) 28px;
+    gap: 4px;
+    padding: 3px 7px;
+  }
+
+  .app-shell.is-fullscreen .day-row svg { width: 16px; height: 16px; }
+  .app-shell.is-fullscreen .day-name,
+  .app-shell.is-fullscreen .day-pop { font-size: 7px; }
+  .app-shell.is-fullscreen .day-row > strong { font-size: 11px; }
+  .app-shell.is-fullscreen .day-condition { font-size: 9px; }
+  .app-shell.is-fullscreen .discussion-panel > p {
+    min-height: 0;
+    margin: 8px 10px 5px;
+    font-size: 10px;
+    line-height: 1.35;
+    -webkit-line-clamp: 4;
+  }
+
+  .app-shell.is-fullscreen .discussion-product { margin: auto 10px 8px; }
+  .app-shell.is-fullscreen .discussion-product summary { padding-top: 6px; font-size: 8px; }
+  .app-shell.is-fullscreen .discussion-product pre { max-height: 110px; padding: 7px; font-size: 7px; }
+
+  .app-shell.is-fullscreen .wallboard-scene-intelligence .intelligence-grid {
+    display: grid;
+    grid-template-columns: 0.9fr 1.15fr 0.9fr 1fr;
+    gap: 8px;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene-intelligence.active > .intelligence-grid {
+    display: grid;
+  }
+
+  .app-shell.is-fullscreen .signal-matrix > span { min-height: 45px; padding: 5px 7px; }
+  .app-shell.is-fullscreen .signal-matrix strong { font-size: 17px; }
+  .app-shell.is-fullscreen .best-window { min-height: 37px; padding: 5px 8px; font-size: 8px; }
+  .app-shell.is-fullscreen .spc-stage { height: 90px; }
+  .app-shell.is-fullscreen .spc-links a { padding: 5px 7px; font-size: 7px; }
+  .app-shell.is-fullscreen .environment-list > div { min-height: 44px; padding: 5px 8px; }
+  .app-shell.is-fullscreen .environment-list span,
+  .app-shell.is-fullscreen .environment-list strong { font-size: 8px; }
+  .app-shell.is-fullscreen .tool-links a { min-height: 33px; padding: 3px 8px; font-size: 8px; }
+  .app-shell.is-fullscreen .signal-matrix b,
+  .app-shell.is-fullscreen .best-window b,
+  .app-shell.is-fullscreen .environment-list b,
+  .app-shell.is-fullscreen .tool-links b { margin-bottom: 2px; font-size: 6px; }
+  .app-shell.is-fullscreen.mode-severe .field-tools { display: block; }
+
+  .app-shell.is-fullscreen .wallboard-scene-aviation .aviation-console-grid {
+    height: calc(100% - 39px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.9fr) minmax(250px, 0.8fr);
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene-aviation .aviation-console-grid > div {
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .wallboard-scene-aviation .hazard-board { grid-column: auto; border-top: 0; border-left: 1px solid var(--line) !important; }
+  .app-shell.is-fullscreen .subhead { min-height: 29px; height: 29px; font-size: 7px; }
+  .app-shell.is-fullscreen .taf-timeline { min-height: 0; height: calc(100% - 29px); grid-template-columns: repeat(6, minmax(86px, 1fr)); }
+  .app-shell.is-fullscreen .taf-timeline > div { gap: 2px; padding: 6px; }
+  .app-shell.is-fullscreen .taf-timeline span,
+  .app-shell.is-fullscreen .taf-timeline small { font-size: 6px; }
+  .app-shell.is-fullscreen .airport-list {
+    height: calc(100% - 29px);
+    display: grid;
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+  }
+  .app-shell.is-fullscreen .airport-list > div { min-height: 0; padding: 1px 7px; font-size: 7px; }
+  .app-shell.is-fullscreen .hazard-summary { grid-template-columns: 1fr 1fr; }
+  .app-shell.is-fullscreen .hazard-summary button { min-height: 52px; border-bottom: 0; }
+  .app-shell.is-fullscreen .hazard-summary button:first-child { border-right: 1px solid var(--line); }
+  .app-shell.is-fullscreen .hazard-summary strong { font-size: 21px; }
+  .app-shell.is-fullscreen .hazard-summary span { font-size: 8px; }
+  .app-shell.is-fullscreen .hazard-tags { gap: 3px; padding: 5px; }
+  .app-shell.is-fullscreen .hazard-tags span { padding: 3px 4px; font-size: 6px; }
+  .app-shell.is-fullscreen .hazard-details-heading { min-height: 36px; padding: 4px 7px; }
+  .app-shell.is-fullscreen .hazard-report-list { max-height: 105px; }
+  .app-shell.is-fullscreen .hazard-report-list summary { min-height: 34px; padding: 5px 8px; font-size: 7px; }
+  .app-shell.is-fullscreen .hazard-report-list pre { padding: 7px; font-size: 7px; }
+
+  .app-shell.is-fullscreen .source-strip {
+    min-height: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    gap: 13px;
+    padding-top: 4px;
+    font-size: 6px;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 900px) {
+  .app-shell.is-fullscreen .status-column .aviation-panel {
+    display: block;
+    flex: 0 0 auto;
+    padding: 9px;
+  }
+
+  .app-shell.is-fullscreen .aviation-topline { margin-bottom: 7px; }
+  .app-shell.is-fullscreen .metar-raw { min-height: 35px; font-size: 8px; line-height: 1.35; }
+  .app-shell.is-fullscreen .aviation-facts { margin-top: 7px; padding-top: 7px; }
+  .app-shell.is-fullscreen .aviation-facts span { font-size: 8px; }
+}
+
+@media (max-width: 620px) {
+  .wallboard-scene-options,
+  .wallboard-timing {
+    grid-template-columns: 1fr;
+  }
+
+  .wallboard-timing select { max-width: 118px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell.is-fullscreen .wallboard-scene { transition: none; transform: none; }
+  .wallboard-progress i { animation: none; transform: scaleX(1); }
+}
