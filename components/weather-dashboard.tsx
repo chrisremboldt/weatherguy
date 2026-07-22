@@ -16,10 +16,12 @@ import {
   Moon,
   Navigation,
   Pause,
+  Plane,
   Play,
   RefreshCw,
   Search,
   Settings2,
+  ShieldAlert,
   Star,
   Trash2,
   Sunrise,
@@ -54,6 +56,13 @@ const WALLBOARD_SCENES = [
   { id: "intelligence", label: "Intelligence", detail: "Decision signals, storm center, environment, and field tools" },
   { id: "aviation", label: "Aviation", detail: "TAF, nearby airports, advisories, and pilot reports" },
 ] as const;
+
+const DISPLAY_PROFILES: Array<{ id: DisplayMode; name: string; detail: string }> = [
+  { id: "desk", name: "Weather desk", detail: "Balanced radar, forecast, and situational awareness" },
+  { id: "severe", name: "Storm watch", detail: "Warnings and convective intelligence move forward" },
+  { id: "aviation", name: "Flight operations", detail: "METAR, TAF, alternates, hazards, and pilot products" },
+  { id: "minimal", name: "Essential", detail: "Radar, satellite, and current conditions only" },
+];
 
 const EXPANDED_WALLBOARD_QUERY = "(min-width: 3000px) and (min-height: 900px)";
 
@@ -94,6 +103,10 @@ function validLocation(value: unknown): value is LocationConfig {
     candidate.longitude >= -180 &&
     candidate.longitude <= 180
   );
+}
+
+function isDisplayMode(value: string | null): value is DisplayMode {
+  return DISPLAY_PROFILES.some((profile) => profile.id === value);
 }
 
 function initialLocation(): LocationConfig | null {
@@ -268,7 +281,8 @@ export function WeatherDashboard() {
       setOnline(navigator.onLine);
       try {
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
-        setDisplayMode((window.localStorage.getItem("weatherguy-display-mode") as DisplayMode) || "desk");
+        const savedDisplayMode = window.localStorage.getItem("weatherguy-display-mode");
+        setDisplayMode(isDisplayMode(savedDisplayMode) ? savedDisplayMode : "desk");
         const savedTheme = window.localStorage.getItem("weatherguy-theme");
         if (isThemeId(savedTheme)) setTheme(savedTheme);
         setAutoRotate(window.localStorage.getItem("weatherguy-auto-rotate") === "true");
@@ -552,7 +566,10 @@ export function WeatherDashboard() {
 
   const requestFullscreen = async () => {
     if (!document.fullscreenElement) {
-      setWallboardSceneIndex(0);
+      const preferredScene = displayMode === "aviation"
+        ? enabledWallboardScenes.findIndex((scene) => scene.id === "aviation")
+        : 0;
+      setWallboardSceneIndex(Math.max(0, preferredScene));
       setWallboardPaused(false);
       await document.documentElement.requestFullscreen?.();
     }
@@ -564,6 +581,21 @@ export function WeatherDashboard() {
   const selectTheme = (nextTheme: ThemeId) => {
     setTheme(nextTheme);
     persistSetting("weatherguy-theme", nextTheme);
+  };
+
+  const selectDisplayProfile = (mode: DisplayMode) => {
+    setDisplayMode(mode);
+    persistSetting("weatherguy-display-mode", mode);
+
+    if (mode === "aviation") {
+      const nextScenes = wallboardScenes.aviation ? wallboardScenes : { ...wallboardScenes, aviation: true };
+      if (nextScenes !== wallboardScenes) {
+        setWallboardScenes(nextScenes);
+        persistSetting("weatherguy-wallboard-scenes", JSON.stringify(nextScenes));
+      }
+      const aviationIndex = WALLBOARD_SCENES.filter((scene) => nextScenes[scene.id]).findIndex((scene) => scene.id === "aviation");
+      setWallboardSceneIndex(Math.max(0, aviationIndex));
+    }
   };
 
   const addFavorite = () => {
@@ -640,11 +672,7 @@ export function WeatherDashboard() {
           </div>
           <label className="mode-picker" title="Change dashboard layout">
             <LayoutDashboard size={15} aria-hidden="true" />
-            <select value={displayMode} onChange={(event) => {
-              const mode = event.target.value as DisplayMode;
-              setDisplayMode(mode);
-              persistSetting("weatherguy-display-mode", mode);
-            }} aria-label="Display mode">
+            <select value={displayMode} onChange={(event) => selectDisplayProfile(event.target.value as DisplayMode)} aria-label="Display mode">
               <option value="desk">Desk</option>
               <option value="severe">Severe</option>
               <option value="aviation">Aviation</option>
@@ -886,6 +914,31 @@ export function WeatherDashboard() {
 
               {config && (
                 <>
+                  <div className="display-mode-preferences">
+                    <span className="settings-section-label">Desk profile</span>
+                    <p>Choose what wxDynamics puts first. The profile is saved on this browser and carries into fullscreen.</p>
+                    <div className="display-mode-options" role="radiogroup" aria-label="Dashboard operating profile">
+                      {DISPLAY_PROFILES.map((profile) => (
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={displayMode === profile.id}
+                          className={`display-mode-option ${displayMode === profile.id ? "active" : ""}`}
+                          key={profile.id}
+                          onClick={() => selectDisplayProfile(profile.id)}
+                        >
+                          <span className="display-mode-icon" aria-hidden="true">
+                            {profile.id === "desk" && <LayoutDashboard size={18} />}
+                            {profile.id === "severe" && <ShieldAlert size={18} />}
+                            {profile.id === "aviation" && <Plane size={18} />}
+                            {profile.id === "minimal" && <Navigation size={18} />}
+                          </span>
+                          <span><b>{profile.name}</b><small>{profile.detail}</small></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="theme-preferences">
                     <span className="settings-section-label">Color console</span>
                     <p>Switch the entire desk instantly. Your choice follows this browser into fullscreen.</p>

@@ -20,7 +20,20 @@ function epoch(value: unknown) {
   return new Date((typeof value === "number" ? value * 1000 : Date.now())).toISOString();
 }
 
-function nearbyAirport(item: JsonRecord): NearbyAirport {
+function distanceMiles(latitude: number, longitude: number, otherLat: number, otherLon: number) {
+  const radians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = radians(otherLat - latitude);
+  const dLon = radians(otherLon - longitude);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(otherLat)) * Math.sin(dLon / 2) ** 2;
+  return 3958.8 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function nearbyAirport(item: JsonRecord, latitude: number, longitude: number): NearbyAirport {
+  const ceiling = Array.isArray(item.clouds)
+    ? item.clouds.find((cloud: JsonRecord) => ["BKN", "OVC", "VV"].includes(cloud.cover))
+    : null;
+  const stationLat = Number(item.lat);
+  const stationLon = Number(item.lon);
   return {
     id: item.icaoId || "—",
     name: item.name || item.icaoId || "Airport",
@@ -28,6 +41,10 @@ function nearbyAirport(item: JsonRecord): NearbyAirport {
     temperatureF: typeof item.temp === "number" ? Math.round((item.temp * 9) / 5 + 32) : null,
     wind: `${typeof item.wdir === "number" ? String(item.wdir).padStart(3, "0") : "VRB"}° ${item.wspd ?? 0}kt${item.wgst ? ` G${item.wgst}` : ""}`,
     visibility: item.visib ? String(item.visib) : null,
+    ceilingFeet: typeof ceiling?.base === "number" ? ceiling.base : null,
+    distanceMiles: Number.isFinite(stationLat) && Number.isFinite(stationLon)
+      ? Math.round(distanceMiles(latitude, longitude, stationLat, stationLon))
+      : null,
     observedAt: item.reportTime || epoch(item.obsTime),
   };
 }
@@ -99,7 +116,7 @@ export async function GET(request: NextRequest) {
           return aDistance - bDistance;
         })
         .slice(0, 8)
-        .map(nearbyAirport)
+        .map((item) => nearbyAirport(item, latitude, longitude))
     : [];
   const pireps = pirepResult.status === "fulfilled" ? pirepResult.value.slice(0, 6).map(pilotReport) : [];
   const advisories = advisoryResult.status === "fulfilled"

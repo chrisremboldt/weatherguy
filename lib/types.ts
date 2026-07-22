@@ -239,6 +239,8 @@ export type NearbyAirport = {
   temperatureF: number | null;
   wind: string;
   visibility: string | null;
+  ceilingFeet: number | null;
+  distanceMiles: number | null;
   observedAt: string;
 };
 

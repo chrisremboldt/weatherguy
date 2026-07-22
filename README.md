@@ -17,7 +17,9 @@ Canonical production domain: [wxdynamics.com](https://wxdynamics.com)
 - Five-day NWS outlook
 - Active watches, warnings, and advisories for the selected point
 - Latest Area Forecast Discussion from the responsible forecast office
-- Nearest-airport METAR and TAF timeline, nearby airport categories, PIREPs, and regional SIGMETs
+- Flight Operations profile with current flight category, ceiling/visibility, surface wind, TAF floor, dew-point spread, freezing level, and observation age
+- Decoded TAF timeline, nearby-airport ceiling/visibility/wind/distance, PIREPs, regional advisories, and raw METAR/TAF text in-app
+- NWS aviation forecast discussion plus official GFA, icing, turbulence, winds-aloft, NOTAM/TFR, and Flight Service handoffs
 - SPC Day 1 outlook, tornado/wind/hail products, watches, mesoscale discussions, and storm reports
 - Air quality, nearest USGS earthquake, NOAA geomagnetic Kp, rivers, buoys, tropical, and fire tools
 - Sunrise and sunset
