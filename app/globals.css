@@ -71,10 +71,50 @@
   color-scheme: light;
   --ink: #e8eef1; --ink-rgb: 232, 238, 241; --ink-deep: #d9e2e7; --ink-deepest: #c8d4da;
   --ink-soft: #f3f7f8; --panel: #f8fbfc; --panel-rgb: 248, 251, 252; --panel-high: #ffffff; --control-rgb: 232, 239, 242;
-  --line-rgb: 31, 59, 75; --cloud: #142631; --copy: #314c5a; --copy-strong: #203b49; --muted: #516d7b; --faint: #78909c;
-  --signal: #007d70; --signal-rgb: 0, 125, 112; --sky: #146f9e; --sky-rgb: 20, 111, 158;
-  --amber: #a95f00; --amber-rgb: 169, 95, 0; --danger: #bb3048; --danger-rgb: 187, 48, 72; --grid-rgb: 56, 91, 109;
-  --danger-surface-rgb: 187, 48, 72; --danger-surface-strong-rgb: 154, 35, 56; --danger-copy: #861b30; --danger-copy-soft: #61313b; --danger-contrast: #4e1420;
+  --line-rgb: 31, 59, 75; --cloud: #142631; --copy: #314c5a; --copy-strong: #203b49; --muted: #385461; --faint: #3d5966;
+  --signal: #005f56; --signal-rgb: 0, 95, 86; --sky: #0d5880; --sky-rgb: 13, 88, 128;
+  --amber: #704000; --amber-rgb: 112, 64, 0; --danger: #922038; --danger-rgb: 146, 32, 56; --grid-rgb: 56, 91, 109;
+  --danger-surface-rgb: 146, 32, 56; --danger-surface-strong-rgb: 120, 27, 47; --danger-copy: #7b192f; --danger-copy-soft: #53313a; --danger-contrast: #2f0711;
+}
+
+:root[data-theme="bluebird"] {
+  color-scheme: light;
+  --ink: #dcecf4; --ink-rgb: 220, 236, 244; --ink-deep: #cedfe8; --ink-deepest: #bfd2dc;
+  --ink-soft: #eef7fb; --panel: #f8fcff; --panel-rgb: 248, 252, 255; --panel-high: #ffffff; --control-rgb: 226, 239, 245;
+  --line-rgb: 32, 68, 88; --cloud: #102b3d; --copy: #29495c; --copy-strong: #18394d; --muted: #335568; --faint: #39596b;
+  --signal: #005d72; --signal-rgb: 0, 93, 114; --sky: #174c8d; --sky-rgb: 23, 76, 141;
+  --amber: #704400; --amber-rgb: 112, 68, 0; --danger: #94203a; --danger-rgb: 148, 32, 58; --grid-rgb: 57, 104, 128;
+  --danger-surface-rgb: 148, 32, 58; --danger-surface-strong-rgb: 121, 26, 47; --danger-copy: #75142c; --danger-copy-soft: #51323c; --danger-contrast: #2f0711;
+}
+
+:root[data-theme="marine-layer"] {
+  color-scheme: light;
+  --ink: #dce9e7; --ink-rgb: 220, 233, 231; --ink-deep: #ccdcd9; --ink-deepest: #bbcfcf;
+  --ink-soft: #edf5f3; --panel: #f7fbfa; --panel-rgb: 247, 251, 250; --panel-high: #ffffff; --control-rgb: 223, 236, 234;
+  --line-rgb: 35, 70, 73; --cloud: #142d31; --copy: #304e52; --copy-strong: #203f43; --muted: #34565a; --faint: #38595c;
+  --signal: #005957; --signal-rgb: 0, 89, 87; --sky: #1b507d; --sky-rgb: 27, 80, 125;
+  --amber: #6f4300; --amber-rgb: 111, 67, 0; --danger: #912039; --danger-rgb: 145, 32, 57; --grid-rgb: 58, 104, 103;
+  --danger-surface-rgb: 145, 32, 57; --danger-surface-strong-rgb: 119, 26, 47; --danger-copy: #79172f; --danger-copy-soft: #503438; --danger-contrast: #2f0711;
+}
+
+:root[data-theme="first-light"] {
+  color-scheme: light;
+  --ink: #eee5d8; --ink-rgb: 238, 229, 216; --ink-deep: #dfd3c2; --ink-deepest: #cfc1ae;
+  --ink-soft: #f8f1e7; --panel: #fffaf2; --panel-rgb: 255, 250, 242; --panel-high: #ffffff; --control-rgb: 236, 225, 210;
+  --line-rgb: 74, 60, 47; --cloud: #30271f; --copy: #514438; --copy-strong: #43362b; --muted: #55473a; --faint: #594a3d;
+  --signal: #005a53; --signal-rgb: 0, 90, 83; --sky: #244d79; --sky-rgb: 36, 77, 121;
+  --amber: #6b3e00; --amber-rgb: 107, 62, 0; --danger: #8e2238; --danger-rgb: 142, 34, 56; --grid-rgb: 111, 87, 62;
+  --danger-surface-rgb: 142, 34, 56; --danger-surface-strong-rgb: 117, 28, 46; --danger-copy: #761a2e; --danger-copy-soft: #503531; --danger-contrast: #2f0711;
+}
+
+:root[data-theme="polar-station"] {
+  color-scheme: light;
+  --ink: #e3e8ed; --ink-rgb: 227, 232, 237; --ink-deep: #d3dae1; --ink-deepest: #c2ccd5;
+  --ink-soft: #f1f4f7; --panel: #fbfcfd; --panel-rgb: 251, 252, 253; --panel-high: #ffffff; --control-rgb: 228, 233, 238;
+  --line-rgb: 42, 64, 82; --cloud: #1d2a35; --copy: #3d4f5f; --copy-strong: #2a3d4e; --muted: #3b5263; --faint: #405565;
+  --signal: #005969; --signal-rgb: 0, 89, 105; --sky: #284b85; --sky-rgb: 40, 75, 133;
+  --amber: #6d4200; --amber-rgb: 109, 66, 0; --danger: #911e39; --danger-rgb: 145, 30, 57; --grid-rgb: 63, 91, 115;
+  --danger-surface-rgb: 145, 30, 57; --danger-surface-strong-rgb: 119, 25, 47; --danger-copy: #79152f; --danger-copy-soft: #50333d; --danger-contrast: #2f0711;
 }
 
 * {
@@ -315,6 +355,11 @@ a {
   color: var(--danger-copy);
 }
 
+.has-alerts .alert-message span,
+.has-alerts .alert-source {
+  color: var(--danger-copy-soft);
+}
+
 .alert-divider {
   height: 18px;
   background: var(--line-strong);
@@ -354,7 +399,7 @@ a {
 }
 
 .error-banner button {
-  color: #fff;
+  color: var(--danger-contrast);
   border: 0;
   border-bottom: 1px solid currentColor;
   background: transparent;

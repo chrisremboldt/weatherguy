@@ -12,8 +12,8 @@ test("auto-dim is opt-in and preserves an explicit saved preference", () => {
   assert.match(component, /setAutoDim\(window\.localStorage\.getItem\("weatherguy-auto-dim"\) === "true"\)/);
 });
 
-test("six named color schemes are selectable, persisted, and restored before paint", () => {
-  for (const name of ["Night Watch", "Blue Hour", "Aurora Field", "Solar Flare", "Phosphor Rain", "Cloud Deck"]) {
+test("ten named color schemes are selectable, persisted, and restored before paint", () => {
+  for (const name of ["Night Watch", "Blue Hour", "Aurora Field", "Solar Flare", "Phosphor Rain", "Cloud Deck", "Bluebird", "Marine Layer", "First Light", "Polar Station"]) {
     assert.match(themes, new RegExp(`name: "${name}"`));
   }
   assert.match(component, /role="radiogroup" aria-label="Dashboard color scheme"/);
@@ -23,9 +23,11 @@ test("six named color schemes are selectable, persisted, and restored before pai
 });
 
 test("every alternate theme overrides the full dashboard token set", () => {
-  for (const id of ["blue-hour", "aurora-field", "solar-flare", "phosphor-rain", "cloud-deck"]) {
+  for (const id of ["blue-hour", "aurora-field", "solar-flare", "phosphor-rain", "cloud-deck", "bluebird", "marine-layer", "first-light", "polar-station"]) {
     assert.match(styles, new RegExp(`:root\\[data-theme="${id}"\\]`));
   }
-  assert.match(styles, /:root\[data-theme="cloud-deck"\]\s*{[^}]*color-scheme:\s*light;/s);
+  for (const id of ["cloud-deck", "bluebird", "marine-layer", "first-light", "polar-station"]) {
+    assert.match(styles, new RegExp(`:root\\[data-theme="${id}"\\]\\s*\\{[^}]*color-scheme:\\s*light;`, "s"));
+  }
   assert.match(styles, /\.theme-option\.active\s*{[^}]*var\(--signal\)/s);
 });
