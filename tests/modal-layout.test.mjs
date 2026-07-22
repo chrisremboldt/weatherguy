@@ -13,3 +13,14 @@ test("settings modal keeps its controls visible around a scrolling content bay",
   assert.match(styles, /\.settings-modal-body\s*{[^}]*overflow-y:\s*auto;/s);
   assert.match(styles, /\.modal-backdrop\s*{[^}]*overflow:\s*hidden;/s);
 });
+
+test("location search becomes a focused one-click selection flow", () => {
+  assert.match(component, /const searchMode = searchQuery\.trim\(\)\.length > 0/);
+  assert.match(component, /\{!searchMode && \(\s*<div className="direct-location-controls">/s);
+  assert.match(component, /\{!searchMode && <button className="primary-button"[^>]*>Load this area<\/button>\}/s);
+  assert.match(component, /Choose a result to continue/);
+  assert.match(component, /search-result-action">Use this area/);
+  assert.match(component, /const chooseSearchResult = \(result: LocationSearchResult\) => \{\s*commitLocation\(/s);
+  assert.doesNotMatch(component, /result\.latitude\.toFixed\(2\)/);
+  assert.match(styles, /\.search-results-region\s*{[^}]*var\(--signal\)/s);
+});

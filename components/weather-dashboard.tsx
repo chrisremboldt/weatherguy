@@ -260,6 +260,7 @@ export function WeatherDashboard() {
   const [wallboardPaused, setWallboardPaused] = useState(false);
   const [largeDisplayWallboard, setLargeDisplayWallboard] = useState(false);
   const locationModalOpen = mounted && (settingsOpen || !config);
+  const searchMode = searchQuery.trim().length > 0;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -444,6 +445,21 @@ export function WeatherDashboard() {
     return () => window.clearInterval(timer);
   }, [enabledWallboardScenes.length, isFullscreen, showAllWallboardScenes, wallboardIntervalSeconds, wallboardPaused, wallboardRotate]);
 
+  const commitLocation = useCallback((next: LocationConfig) => {
+    window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
+    const params = new URLSearchParams({ lat: next.latitude.toFixed(4), lon: next.longitude.toFixed(4) });
+    if (next.customLabel) params.set("location", next.customLabel);
+    window.history.replaceState(null, "", `?${params.toString()}`);
+    setData(null);
+    setConfig(next);
+    setSettingsOpen(false);
+    setGeoError(null);
+    setSearchQuery("");
+    setSearchError(null);
+    setSearchResults([]);
+    setWallboardSceneIndex(0);
+  }, []);
+
   const saveLocation = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -457,24 +473,13 @@ export function WeatherDashboard() {
         setGeoError("Coordinates are outside the valid range.");
         return;
       }
-      const next: LocationConfig = {
+      commitLocation({
         latitude,
         longitude,
         customLabel: formConfig.customLabel?.trim() || undefined,
-      };
-      window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
-      const params = new URLSearchParams({ lat: latitude.toFixed(4), lon: longitude.toFixed(4) });
-      if (next.customLabel) params.set("location", next.customLabel);
-      window.history.replaceState(null, "", `?${params.toString()}`);
-      setData(null);
-      setConfig(next);
-      setSettingsOpen(false);
-      setGeoError(null);
-      setSearchError(null);
-      setSearchResults([]);
-      setWallboardSceneIndex(0);
+      });
     },
-    [formConfig],
+    [commitLocation, formConfig],
   );
 
   const useMyLocation = () => {
@@ -538,12 +543,11 @@ export function WeatherDashboard() {
   };
 
   const chooseSearchResult = (result: LocationSearchResult) => {
-    setFormConfig({
-      latitude: result.latitude.toFixed(4),
-      longitude: result.longitude.toFixed(4),
+    commitLocation({
+      latitude: result.latitude,
+      longitude: result.longitude,
       customLabel: result.label,
     });
-    setGeoError(null);
   };
 
   const requestFullscreen = async () => {
@@ -878,7 +882,7 @@ export function WeatherDashboard() {
               {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
             <div className="settings-modal-body">
-              <p className="settings-intro">Choose the desk’s visual channel, configure the fullscreen wallboard, or search any NWS-covered city or ZIP code. wxDynamics resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+              <p className="settings-intro">{config ? "Choose the desk’s visual channel, configure the fullscreen wallboard, or switch to another NWS-covered area." : "Search for a city or ZIP code, then choose a result. wxDynamics resolves the forecast office, radar site, and nearest reporting airport automatically."}</p>
 
               {config && (
                 <>
@@ -973,44 +977,52 @@ export function WeatherDashboard() {
                 <label htmlFor="location-search">City, state, territory, or ZIP code</label>
                 <div>
                   <Search size={17} aria-hidden="true" />
-                  <input id="location-search" type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="City and state, or ZIP code" autoComplete="off" />
+                  <input id="location-search" type="search" value={searchQuery} onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    setSearchResults([]);
+                    setSearchError(null);
+                  }} placeholder="City and state, or ZIP code" autoComplete="off" />
                   <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
                 </div>
               </form>
 
               {searchResults.length > 0 && (
-                <div className="search-results" aria-label="Location search results">
-                  {searchResults.map((result) => {
-                    const selected =
-                      Number(formConfig.latitude) === result.latitude &&
-                      Number(formConfig.longitude) === result.longitude;
-                    return (
-                      <button className={selected ? "selected" : ""} type="button" key={result.id} onClick={() => chooseSearchResult(result)}>
+                <div className="search-results-region" aria-live="polite">
+                  <div className="search-results-prompt"><strong>Choose a result to continue</strong><span>Clicking a place opens its live weather desk.</span></div>
+                  <div className="search-results" aria-label="Location search results">
+                    {searchResults.map((result) => (
+                      <button type="button" key={result.id} aria-label={`Use ${result.label}`} onClick={() => chooseSearchResult(result)}>
                         <MapPin size={15} aria-hidden="true" />
-                        <span><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
-                        <code>{result.latitude.toFixed(2)}, {result.longitude.toFixed(2)}</code>
+                        <span className="search-result-copy"><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
+                        <span className="search-result-action">Use this area <ChevronRight size={14} aria-hidden="true" /></span>
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               )}
               {searchError && <p className="form-error">{searchError}</p>}
 
-              <div className="settings-or"><span>or position directly</span></div>
-              <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
-              <form id="location-coordinate-form" onSubmit={saveLocation}>
-                <div className="coordinate-grid">
-                  <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
-                  <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
+              {!searchMode && (
+                <div className="direct-location-controls">
+                  <div className="settings-or"><span>or position directly</span></div>
+                  <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
+                  <form id="location-coordinate-form" onSubmit={saveLocation}>
+                    <div className="coordinate-grid">
+                      <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
+                      <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
+                    </div>
+                    {geoError && <p className="form-error">{geoError}</p>}
+                    <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
+                  </form>
                 </div>
-                {geoError && <p className="form-error">{geoError}</p>}
-                <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
-              </form>
+              )}
             </div>
-            <div className="form-actions">
-              {config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}
-              <button className="primary-button" type="submit" form="location-coordinate-form">Load this area</button>
-            </div>
+            {(config || !searchMode) && (
+              <div className="form-actions">
+                {config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}
+                {!searchMode && <button className="primary-button" type="submit" form="location-coordinate-form">Load this area</button>}
+              </div>
+            )}
           </section>
         </div>,
         document.body,
