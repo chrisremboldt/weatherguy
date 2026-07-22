@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import type {
   AirQuality,
-  ForecastSignalHour,
-  ForecastSignals,
   IntelligenceData,
   NearbyEarthquake,
   SpaceWeather,
 } from "@/lib/types";
+import { normalizeForecast } from "@/lib/forecast-signals";
 
 export const runtime = "nodejs";
 
@@ -27,58 +26,13 @@ function numberOrNull(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function roundedSum(values: unknown[]) {
-  const numbers = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
-  return numbers.length ? Math.round(numbers.reduce((sum, value) => sum + value, 0) * 100) / 100 : null;
-}
-
-function normalizeForecast(payload: JsonRecord): ForecastSignals {
-  const hourly = payload.hourly ?? {};
-  const times = Array.isArray(hourly.time) ? hourly.time : [];
-  const nowSeconds = Date.now() / 1000;
-  const firstFuture = Math.max(0, times.findIndex((time: unknown) => typeof time === "number" && time >= nowSeconds));
-  const at = (key: string, index: number) => numberOrNull(hourly[key]?.[index]);
-  const hours: ForecastSignalHour[] = times.slice(firstFuture, firstFuture + 72).map((time: number, offset: number) => {
-    const index = firstFuture + offset;
-    return {
-      time: new Date(time * 1000).toISOString(),
-      feelsLikeF: at("apparent_temperature", index),
-      precipitationIn: at("precipitation", index),
-      snowfallIn: at("snowfall", index),
-      cloudCoverPct: at("cloud_cover", index),
-      freezingLevelFt: at("freezing_level_height", index),
-    };
-  });
-
-  let bestOutdoorWindow: ForecastSignals["bestOutdoorWindow"] = null;
-  for (let index = 0; index <= Math.min(hours.length - 3, 30); index += 1) {
-    const sample = hours.slice(index, index + 3);
-    const suitable = sample.every(
-      (hour) =>
-        (hour.precipitationIn ?? 0) < 0.03 &&
-        (hour.cloudCoverPct ?? 0) < 78 &&
-        (hour.feelsLikeF ?? 65) >= 45 &&
-        (hour.feelsLikeF ?? 65) <= 88,
-    );
-    if (suitable) {
-      bestOutdoorWindow = {
-        start: sample[0].time,
-        end: new Date(new Date(sample[2].time).getTime() + 3_600_000).toISOString(),
-        reason: "Three dry hours with manageable cloud cover and apparent temperature",
-      };
-      break;
-    }
+async function getNwsGrid(latitude: number, longitude: number) {
+  const point = await getJson(`https://api.weather.gov/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`, 21_600);
+  const gridUrl = point.properties?.forecastGridData;
+  if (typeof gridUrl !== "string" || !gridUrl.startsWith("https://api.weather.gov/gridpoints/")) {
+    throw new Error("NWS grid forecast is unavailable for this location");
   }
-
-  return {
-    next24PrecipitationIn: roundedSum(hours.slice(0, 24).map((hour) => hour.precipitationIn)),
-    next72PrecipitationIn: roundedSum(hours.map((hour) => hour.precipitationIn)),
-    next72SnowfallIn: roundedSum(hours.map((hour) => hour.snowfallIn)),
-    peakCloudCoverPct: hours.length ? Math.round(Math.max(...hours.map((hour) => hour.cloudCoverPct ?? 0))) : null,
-    freezingLevelFt: hours[0]?.freezingLevelFt ?? null,
-    bestOutdoorWindow,
-    hours: hours.slice(0, 24),
-  };
+  return getJson(gridUrl, 900);
 }
 
 function aqiCategory(aqi: number | null) {
@@ -157,8 +111,9 @@ export async function GET(request: NextRequest) {
 
   const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}&hourly=apparent_temperature,precipitation,snowfall,cloud_cover,freezing_level_height&forecast_days=3&temperature_unit=fahrenheit&precipitation_unit=inch&timeformat=unixtime&timezone=auto`;
   const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}&current=us_aqi,pm2_5,ozone&hourly=us_aqi&forecast_days=2&timeformat=unixtime&timezone=auto`;
-  const [forecastResult, airResult, earthquakeResult, spaceResult] = await Promise.allSettled([
+  const [forecastResult, nwsGridResult, airResult, earthquakeResult, spaceResult] = await Promise.allSettled([
     getJson(forecastUrl, 900),
+    getNwsGrid(latitude, longitude),
     getJson(airUrl, 900),
     getJson("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson", 300),
     getJson<unknown>("https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json", 300),
@@ -172,7 +127,9 @@ export async function GET(request: NextRequest) {
 
   const payload: IntelligenceData = {
     fetchedAt: new Date().toISOString(),
-    forecast: forecastResult.status === "fulfilled" ? normalizeForecast(forecastResult.value) : null,
+    forecast: forecastResult.status === "fulfilled"
+      ? normalizeForecast(forecastResult.value, nwsGridResult.status === "fulfilled" ? nwsGridResult.value : null)
+      : null,
     airQuality: airResult.status === "fulfilled" ? normalizeAirQuality(airResult.value) : null,
     earthquake: earthquakeResult.status === "fulfilled" ? normalizeEarthquake(earthquakeResult.value, latitude, longitude) : null,
     spaceWeather: spaceResult.status === "fulfilled" ? normalizeSpaceWeather(spaceResult.value) : null,
