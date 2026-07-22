@@ -616,8 +616,8 @@ export function WeatherDashboard() {
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
           <div>
-            <strong className="brand-name">WEATHERGUY</strong>
-            <span className="brand-subtitle">Observation desk</span>
+            <strong className="brand-name">WX DYNAMICS</strong>
+            <span className="brand-subtitle">Weather intelligence</span>
           </div>
         </div>
 
@@ -874,11 +874,11 @@ export function WeatherDashboard() {
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeLocationSettings()}>
           <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
             <div className="settings-heading">
-              <div><span className="eyebrow">WeatherGuy controls</span><h2 id="settings-title">{config ? "Desk settings" : "Choose an area"}</h2></div>
+              <div><span className="eyebrow">wxDynamics controls</span><h2 id="settings-title">{config ? "Desk settings" : "Choose an area"}</h2></div>
               {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
             </div>
             <div className="settings-modal-body">
-              <p className="settings-intro">Choose the desk’s visual channel, configure the fullscreen wallboard, or search any NWS-covered city or ZIP code. WeatherGuy resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
+              <p className="settings-intro">Choose the desk’s visual channel, configure the fullscreen wallboard, or search any NWS-covered city or ZIP code. wxDynamics resolves the forecast office, radar site, and nearest reporting airport automatically.</p>
 
               {config && (
                 <>

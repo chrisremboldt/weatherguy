@@ -22,10 +22,19 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WeatherGuy — Observation Desk",
-  description: "An always-on NOAA weather, radar, forecast, and aviation display.",
-  applicationName: "WeatherGuy",
+  metadataBase: new URL("https://wxdynamics.com"),
+  title: "wxDynamics — Weather Intelligence Desk",
+  description: "An always-on NOAA weather intelligence, radar, forecast, and aviation display.",
+  applicationName: "wxDynamics",
   manifest: "/manifest.webmanifest",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "wxDynamics",
+    title: "wxDynamics — Weather Intelligence Desk",
+    description: "Live NOAA weather intelligence, radar, satellite, forecasts, alerts, and aviation conditions for any U.S. location.",
+  },
 };
 
 export const viewport: Viewport = {

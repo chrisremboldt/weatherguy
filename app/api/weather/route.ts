@@ -16,7 +16,7 @@ const NWS_BASE = "https://api.weather.gov";
 const AVIATION_BASE = "https://aviationweather.gov/api/data";
 const USER_AGENT =
   process.env.NWS_USER_AGENT ??
-  "WeatherGuy/1.0 (https://github.com/chrisremboldt/weatherguy)";
+  "wxDynamics/1.0 (https://wxdynamics.com)";
 
 // The upstream NOAA/Aviation payloads are schemaless until normalized below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

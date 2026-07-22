@@ -8,7 +8,7 @@ type JsonRecord = Record<string, any>;
 
 async function getJson(url: string, revalidate: number) {
   const response = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "WeatherGuy/1.0" },
+    headers: { Accept: "application/json", "User-Agent": "wxDynamics/1.0 (https://wxdynamics.com)" },
     next: { revalidate },
     signal: AbortSignal.timeout(12_000),
   });

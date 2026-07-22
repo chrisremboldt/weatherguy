@@ -14,7 +14,7 @@ type JsonRecord = Record<string, any>;
 
 async function getJson<T = JsonRecord>(url: string, revalidate: number): Promise<T> {
   const response = await fetch(url, {
-    headers: { Accept: "application/json", "User-Agent": "WeatherGuy/1.0" },
+    headers: { Accept: "application/json", "User-Agent": "wxDynamics/1.0 (https://wxdynamics.com)" },
     next: { revalidate },
     signal: AbortSignal.timeout(12_000),
   });

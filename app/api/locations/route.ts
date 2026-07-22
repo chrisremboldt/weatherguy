@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("format", "json");
 
     const response = await fetch(url, {
-      headers: { "User-Agent": "WeatherGuy/1.0 (location search)" },
+      headers: { "User-Agent": "wxDynamics/1.0 (https://wxdynamics.com; location search)" },
       next: { revalidate: 86_400 },
       signal: AbortSignal.timeout(8_000),
     });

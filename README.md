@@ -1,8 +1,10 @@
-# WeatherGuy
+# wxDynamics
 
-WeatherGuy turns an unused iMac, monitor, or TV into an always-on weather observation desk. It combines authoritative U.S. government feeds into one large-screen display with no API keys and no database.
+wxDynamics turns an unused iMac, monitor, or TV into an always-on weather intelligence desk. It combines authoritative U.S. government feeds into one large-screen display with no API keys and no database.
 
-On first run, search for any U.S. city, state, ZIP code, or supported territory; use the browser's location; or enter coordinates directly. The selection persists in that browser and the resulting `?lat=…&lon=…` URL is shareable. WeatherGuy automatically resolves the correct National Weather Service office, radar site, and nearest reporting airport for the selected point.
+On first run, search for any U.S. city, state, ZIP code, or supported territory; use the browser's location; or enter coordinates directly. The selection persists in that browser and the resulting `?lat=…&lon=…` URL is shareable. wxDynamics automatically resolves the correct National Weather Service office, radar site, and nearest reporting airport for the selected point.
+
+Canonical production domain: [wxdynamics.com](https://wxdynamics.com)
 
 ## What is on the desk
 
@@ -81,7 +83,7 @@ No API keys, storage products, cron jobs, or custom build settings are required.
 After deployment, open the Vercel URL in Chrome and use the fullscreen control in the upper-right corner. For a dedicated macOS kiosk, launch Chrome with an app window:
 
 ```bash
-open -a "Google Chrome" --args --app="https://your-project.vercel.app" --start-fullscreen
+open -a "Google Chrome" --args --app="https://wxdynamics.com" --start-fullscreen
 ```
 
 Useful operating-system settings:
@@ -93,7 +95,7 @@ Useful operating-system settings:
 
 ### Tailnet-only alternative
 
-Vercel is the simplest target, but WeatherGuy can also stay private on a Tailnet:
+Vercel is the simplest target, but wxDynamics can also stay private on a Tailnet:
 
 ```bash
 npm run build
