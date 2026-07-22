@@ -13,6 +13,7 @@ export type DashboardLocation = {
 
 export type CurrentObservation = {
   timestamp: string;
+  source: "NWS" | "METAR";
   description: string;
   temperatureF: number | null;
   dewpointF: number | null;

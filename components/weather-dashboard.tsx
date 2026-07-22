@@ -152,8 +152,8 @@ function cardinalDirection(degrees: number | null) {
 function observationAge(timestamp: string) {
   const minutes = Math.max(0, Math.round((Date.now() - new Date(timestamp).getTime()) / 60_000));
   if (minutes < 2) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
-  return `${Math.round(minutes / 60)} hr ago`;
+  if (minutes < 60) return `${minutes}m ago`;
+  return `${Math.round(minutes / 60)}h ago`;
 }
 
 function apparentTemperatureF(temperatureF: number | null, humidityPct: number | null, windSpeedMph: number | null) {
@@ -305,7 +305,7 @@ export function WeatherDashboard() {
 
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 1_000);
-    const refresh = window.setInterval(() => setRefreshKey((value) => value + 1), 5 * 60_000);
+    const refresh = window.setInterval(() => setRefreshKey((value) => value + 1), 60_000);
     return () => {
       window.clearInterval(clock);
       window.clearInterval(refresh);
@@ -323,7 +323,7 @@ export function WeatherDashboard() {
       setError(null);
       try {
         const response = await fetch(
-          `/api/weather?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}&schema=2`,
+          `/api/weather?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}&schema=3`,
           { signal: controller.signal },
         );
         const payload = await response.json();
@@ -667,7 +667,7 @@ export function WeatherDashboard() {
           <section className="panel current-panel">
             <div className="panel-heading compact">
               <div><span className="eyebrow">Observed conditions</span><h2>Right now</h2></div>
-              <span className="freshness">{data ? observationAge(data.current.timestamp) : "acquiring"}</span>
+              <span className="freshness">{data ? `${data.location.stationId} ${data.current.source ?? "NWS"} · ${observationAge(data.current.timestamp)}` : "acquiring"}</span>
             </div>
             <div className="current-hero">
               <div className="condition-icon"><WeatherIcon condition={data?.current.description ?? "cloudy"} size={72} strokeWidth={1.25} /></div>
