@@ -973,54 +973,66 @@ export function WeatherDashboard() {
                 </>
               )}
 
-              <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
-                <label htmlFor="location-search">City, state, territory, or ZIP code</label>
-                <div>
-                  <Search size={17} aria-hidden="true" />
-                  <input id="location-search" type="search" value={searchQuery} onChange={(event) => {
-                    setSearchQuery(event.target.value);
-                    setSearchResults([]);
-                    setSearchError(null);
-                  }} placeholder="City and state, or ZIP code" autoComplete="off" />
-                  <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
-                </div>
-              </form>
-
-              {searchResults.length > 0 && (
-                <div className="search-results-region" aria-live="polite">
-                  <div className="search-results-prompt"><strong>Choose a result to continue</strong><span>Clicking a place opens its live weather desk.</span></div>
-                  <div className="search-results" aria-label="Location search results">
-                    {searchResults.map((result) => (
-                      <button type="button" key={result.id} aria-label={`Use ${result.label}`} onClick={() => chooseSearchResult(result)}>
-                        <MapPin size={15} aria-hidden="true" />
-                        <span className="search-result-copy"><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
-                        <span className="search-result-action">Use this area <ChevronRight size={14} aria-hidden="true" /></span>
-                      </button>
-                    ))}
+              <div className={config ? "location-preferences" : "welcome-location-controls"}>
+                {config && (
+                  <div className="location-preferences-heading">
+                    <span className="settings-section-label">Weather area</span>
+                    <p>Search for another place, use this device, or enter coordinates directly.</p>
                   </div>
-                </div>
-              )}
-              {searchError && <p className="form-error">{searchError}</p>}
+                )}
 
-              {!searchMode && (
-                <div className="direct-location-controls">
-                  <div className="settings-or"><span>or position directly</span></div>
-                  <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
-                  <form id="location-coordinate-form" onSubmit={saveLocation}>
-                    <div className="coordinate-grid">
-                      <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
-                      <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
+                <form className="location-search-form" onSubmit={(event) => void searchLocations(event)}>
+                  <label htmlFor="location-search">City, state, territory, or ZIP code</label>
+                  <div>
+                    <Search size={17} aria-hidden="true" />
+                    <input id="location-search" type="search" value={searchQuery} onChange={(event) => {
+                      setSearchQuery(event.target.value);
+                      setSearchResults([]);
+                      setSearchError(null);
+                    }} placeholder="City and state, or ZIP code" autoComplete="off" />
+                    <button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</button>
+                  </div>
+                </form>
+
+                {searchResults.length > 0 && (
+                  <div className="search-results-region" aria-live="polite">
+                    <div className="search-results-prompt"><strong>Choose a result to continue</strong><span>Clicking a place opens its live weather desk.</span></div>
+                    <div className="search-results" aria-label="Location search results">
+                      {searchResults.map((result) => (
+                        <button type="button" key={result.id} aria-label={`Use ${result.label}`} onClick={() => chooseSearchResult(result)}>
+                          <MapPin size={15} aria-hidden="true" />
+                          <span className="search-result-copy"><strong>{result.name}</strong><small>{Array.from(new Set([result.region, result.country].filter(Boolean))).join(" · ")}</small></span>
+                          <span className="search-result-action">Use this area <ChevronRight size={14} aria-hidden="true" /></span>
+                        </button>
+                      ))}
                     </div>
-                    {geoError && <p className="form-error">{geoError}</p>}
-                    <p className="coverage-note">Forecast and radar coverage: United States and supported territories.</p>
-                  </form>
-                </div>
-              )}
+                  </div>
+                )}
+                {searchError && <p className="form-error">{searchError}</p>}
+
+                {!searchMode && (
+                  <div className="direct-location-controls">
+                    <div className="settings-or"><span>or position directly</span></div>
+                    <button className="locate-button" type="button" onClick={useMyLocation}><LocateFixed size={18} /> Use this device’s location</button>
+                    <form id="location-coordinate-form" onSubmit={saveLocation}>
+                      <div className="coordinate-grid">
+                        <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
+                        <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
+                      </div>
+                      {geoError && <p className="form-error">{geoError}</p>}
+                      <div className="coordinate-action-row">
+                        <p className="coverage-note">United States and supported territories</p>
+                        <button className="coordinate-submit-button" type="submit">Use coordinates</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
             </div>
-            {(config || !searchMode) && (
+            {config && (
               <div className="form-actions">
-                {config && <button type="button" onClick={closeLocationSettings}>Cancel</button>}
-                {!searchMode && <button className="primary-button" type="submit" form="location-coordinate-form">Load this area</button>}
+                <span>Changes save automatically</span>
+                <button className="primary-button" type="button" onClick={closeLocationSettings}>Done</button>
               </div>
             )}
           </section>
