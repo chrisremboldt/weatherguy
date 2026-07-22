@@ -532,6 +532,10 @@ h2 {
   padding: 18px clamp(16px, 2vw, 28px) 12px;
 }
 
+.current-nowcast {
+  display: none;
+}
+
 .condition-icon {
   color: var(--sky);
   filter: drop-shadow(0 0 20px rgba(159, 229, 255, 0.16));
@@ -2546,7 +2550,8 @@ h2 {
 
   .app-shell.is-fullscreen .current-hero {
     min-height: 82px;
-    flex: 1 1 auto;
+    flex: 0 0 clamp(108px, 15vh, 148px);
+    justify-content: center;
     gap: 10px;
     padding: 8px 12px;
   }
@@ -2554,6 +2559,89 @@ h2 {
   .app-shell.is-fullscreen .condition-icon svg { width: 54px; height: 54px; }
   .app-shell.is-fullscreen .temperature-block > strong { font-size: clamp(58px, 8vh, 88px); }
   .app-shell.is-fullscreen .temperature-block span { margin-top: 8px; font-size: 12px; }
+
+  .app-shell.is-fullscreen .current-nowcast {
+    min-height: 116px;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    border-top: 1px solid var(--line);
+    background:
+      linear-gradient(90deg, rgba(99, 226, 183, 0.025), transparent 45%, rgba(159, 229, 255, 0.025)),
+      rgba(7, 23, 29, 0.2);
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid var(--line);
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-summary > span {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6px 8px;
+    border-right: 1px solid var(--line);
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-summary > span:last-child { border-right: 0; }
+
+  .app-shell.is-fullscreen .current-nowcast-summary b,
+  .app-shell.is-fullscreen .current-nowcast-hours b {
+    overflow: hidden;
+    color: var(--faint);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 6px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-summary strong {
+    margin-top: 2px;
+    color: var(--cloud);
+    font-family: var(--font-display), "Arial Narrow", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-summary small {
+    margin-top: 2px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 7px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-hours {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-hours > span {
+    min-width: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    place-items: center;
+    gap: 1px;
+    padding: 5px 2px 4px;
+    border-right: 1px solid rgba(171, 213, 218, 0.1);
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-hours > span:last-child { border-right: 0; }
+  .app-shell.is-fullscreen .current-nowcast-hours svg { align-self: center; color: var(--sky); }
+  .app-shell.is-fullscreen .current-nowcast-hours strong { font-family: var(--font-display), "Arial Narrow", sans-serif; font-size: 13px; font-weight: 500; }
+  .app-shell.is-fullscreen .current-nowcast-hours small { color: var(--sky); font-family: var(--font-mono), ui-monospace, monospace; font-size: 6px; }
+  .app-shell.is-fullscreen .current-nowcast-hours em,
+  .app-shell.is-fullscreen .current-nowcast-hours i { display: none; }
+
   .app-shell.is-fullscreen .metric { min-height: 48px; padding: 6px 8px; }
   .app-shell.is-fullscreen .metric-label { font-size: 8px; }
   .app-shell.is-fullscreen .metric-copy strong { font-size: 9px; }
@@ -2828,6 +2916,64 @@ h2 {
   .app-shell.is-fullscreen .metar-raw { min-height: 35px; font-size: 8px; line-height: 1.35; }
   .app-shell.is-fullscreen .aviation-facts { margin-top: 7px; padding-top: 7px; }
   .app-shell.is-fullscreen .aviation-facts span { font-size: 8px; }
+}
+
+@media (min-width: 900px) and (min-height: 1200px) {
+  .app-shell.is-fullscreen .current-nowcast-hours {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-hours > span {
+    grid-template-columns: 48px 28px 46px minmax(0, 1fr) 38px;
+    grid-template-rows: auto auto;
+    align-items: center;
+    justify-items: start;
+    gap: 1px 8px;
+    padding: 7px 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(171, 213, 218, 0.1);
+  }
+
+  .app-shell.is-fullscreen .current-nowcast-hours > span:last-child { border-bottom: 0; }
+  .app-shell.is-fullscreen .current-nowcast-hours b,
+  .app-shell.is-fullscreen .current-nowcast-hours > span > svg,
+  .app-shell.is-fullscreen .current-nowcast-hours > span > strong,
+  .app-shell.is-fullscreen .current-nowcast-hours > span > small { grid-row: 1 / 3; }
+  .app-shell.is-fullscreen .current-nowcast-hours b { grid-column: 1; font-size: 8px; }
+  .app-shell.is-fullscreen .current-nowcast-hours > span > svg { grid-column: 2; justify-self: center; }
+  .app-shell.is-fullscreen .current-nowcast-hours > span > strong { grid-column: 3; font-size: 22px; }
+  .app-shell.is-fullscreen .current-nowcast-hours em {
+    min-width: 0;
+    display: block;
+    grid-column: 4;
+    grid-row: 1;
+    overflow: hidden;
+    color: var(--cloud);
+    font-size: 10px;
+    font-style: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .app-shell.is-fullscreen .current-nowcast-hours i {
+    min-width: 0;
+    display: block;
+    grid-column: 4;
+    grid-row: 2;
+    overflow: hidden;
+    color: var(--muted);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 7px;
+    font-style: normal;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .app-shell.is-fullscreen .current-nowcast-hours > span > small {
+    grid-column: 5;
+    justify-self: end;
+    font-size: 8px;
+  }
 }
 
 @media (max-width: 620px) {

@@ -156,6 +156,29 @@ function observationAge(timestamp: string) {
   return `${Math.round(minutes / 60)} hr ago`;
 }
 
+function apparentTemperatureF(temperatureF: number | null, humidityPct: number | null, windSpeedMph: number | null) {
+  if (temperatureF === null) return null;
+  if (temperatureF >= 80 && humidityPct !== null && humidityPct >= 40) {
+    const humidity = humidityPct;
+    const heatIndex =
+      -42.379 +
+      2.04901523 * temperatureF +
+      10.14333127 * humidity -
+      0.22475541 * temperatureF * humidity -
+      0.00683783 * temperatureF ** 2 -
+      0.05481717 * humidity ** 2 +
+      0.00122874 * temperatureF ** 2 * humidity +
+      0.00085282 * temperatureF * humidity ** 2 -
+      0.00000199 * temperatureF ** 2 * humidity ** 2;
+    return Math.round(heatIndex);
+  }
+  if (temperatureF <= 50 && windSpeedMph !== null && windSpeedMph > 3) {
+    const windFactor = windSpeedMph ** 0.16;
+    return Math.round(35.74 + 0.6215 * temperatureF - 35.75 * windFactor + 0.4275 * temperatureF * windFactor);
+  }
+  return Math.round(temperatureF);
+}
+
 function TemperatureTrace({ periods }: { periods: HourlyPeriod[] }) {
   if (periods.length < 2) return null;
   const temperatures = periods.map((period) => period.temperatureF);
@@ -362,6 +385,23 @@ export function WeatherDashboard() {
   const timeZone = data?.location.timeZone ?? "UTC";
   const hourly = data?.hourly.slice(0, 9) ?? [];
   const daily = useMemo(() => data?.daily.filter((period) => period.isDaytime).slice(0, 5) ?? [], [data]);
+  const nearTermHours = hourly.slice(1, 5);
+  const nearTermTarget = hourly[Math.min(3, Math.max(0, hourly.length - 1))];
+  const currentFeelsLike = data
+    ? apparentTemperatureF(data.current.temperatureF, data.current.humidityPct, data.current.windSpeedMph)
+    : null;
+  const nearTermTrend = data?.current.temperatureF !== null && data?.current.temperatureF !== undefined && nearTermTarget
+    ? nearTermTarget.temperatureF - data.current.temperatureF
+    : null;
+  const nearTermTrendLabel = nearTermTrend === null
+    ? "—"
+    : Math.abs(nearTermTrend) < 2
+      ? "Steady"
+      : `${nearTermTrend > 0 ? "↑" : "↓"} ${Math.abs(Math.round(nearTermTrend))}°`;
+  const nearTermRainPeak = hourly.slice(0, 4).reduce(
+    (peak, period) => Math.max(peak, period.precipitationPct ?? 0),
+    0,
+  );
   const localHour = Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(now));
   const nightDimmed = mounted && autoDim && (localHour >= 22 || localHour < 6);
   const enabledWallboardScenes = useMemo(
@@ -634,6 +674,28 @@ export function WeatherDashboard() {
               <div className="temperature-block">
                 <strong>{data?.current.temperatureF ?? "—"}<sup>°</sup></strong>
                 <span>{data?.current.description ?? "Loading observation"}</span>
+              </div>
+            </div>
+            <div className="current-nowcast" aria-label="Short-term weather outlook">
+              <div className="current-nowcast-summary">
+                <span><b>Feels like</b><strong>{currentFeelsLike ?? "—"}°</strong><small>humidity + wind</small></span>
+                <span><b>Next 3 hours</b><strong>{nearTermTrendLabel}</strong><small>{nearTermTarget ? `by ${formatHour(nearTermTarget.startTime, timeZone).hour}` : "trend pending"}</small></span>
+                <span><b>Rain peak</b><strong>{nearTermRainPeak}%</strong><small>next 3 hours</small></span>
+              </div>
+              <div className="current-nowcast-hours">
+                {nearTermHours.map((period) => {
+                  const label = formatHour(period.startTime, timeZone);
+                  return (
+                    <span key={period.startTime}>
+                      <b>{label.hour}</b>
+                      <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={17} />
+                      <strong>{period.temperatureF}°</strong>
+                      <em>{period.shortForecast}</em>
+                      <small>{period.precipitationPct ?? 0}%</small>
+                      <i>{period.windDirection} {period.windSpeed}</i>
+                    </span>
+                  );
+                })}
               </div>
             </div>
             <div className="metrics-grid">
