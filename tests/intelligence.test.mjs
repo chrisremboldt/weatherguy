@@ -6,6 +6,7 @@ import { normalizeForecast, nwsPrecipitationIn, uvRisk } from "../lib/forecast-s
 
 const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 const component = await readFile(new URL("../components/intelligence-grid.tsx", import.meta.url), "utf8");
+const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
 const route = await readFile(new URL("../app/api/intelligence/route.ts", import.meta.url), "utf8");
 
 test("Storm Center contains the complete SPC image and its legend", () => {
@@ -106,5 +107,8 @@ test("the intelligence request and interface expose cloud-adjusted UV forecast g
   assert.match(component, /UV now/);
   assert.match(component, /UV peak \/ 24h/);
   assert.match(component, /Three-day UV peaks/);
+  assert.match(dashboard, /UV estimate/);
+  assert.match(dashboard, /currentUvIndex/);
+  assert.match(dashboard, /currentUvCategory.*model/);
   assert.match(styles, /\.uv-outlook\s*{/);
 });

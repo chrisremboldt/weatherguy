@@ -1,7 +1,6 @@
 "use client";
 
 import { Activity, ChevronRight, CloudSun, Flame, Leaf, Radio, ShipWheel, Sparkles, Sun, Waves } from "lucide-react";
-import { useEffect, useState } from "react";
 import type { IntelligenceData } from "@/lib/types";
 
 function value(value: number | null | undefined, suffix = "") {
@@ -25,21 +24,7 @@ function riskClass(category: string | undefined) {
   return `uv-risk-${(category ?? "unavailable").toLowerCase().replaceAll(" ", "-")}`;
 }
 
-export function IntelligenceGrid({ latitude, longitude, timeZone, refreshKey }: { latitude: number; longitude: number; timeZone: string; refreshKey: number }) {
-  const [data, setData] = useState<IntelligenceData | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch(`/api/intelligence?lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`, { signal: controller.signal })
-      .then(async (response) => {
-        const payload = (await response.json()) as IntelligenceData;
-        if (!response.ok) throw new Error("Intelligence feeds are unavailable.");
-        setData(payload);
-      })
-      .catch(() => setData(null));
-    return () => controller.abort();
-  }, [latitude, longitude, refreshKey]);
-
+export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | null; timeZone: string }) {
   const forecast = data?.forecast;
   const aqi = data?.airQuality;
   const quake = data?.earthquake;

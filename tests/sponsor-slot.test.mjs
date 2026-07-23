@@ -28,8 +28,8 @@ test("fullscreen adds a separate 10-second sponsor phase without shortening weat
   assert.match(styles, /\.app-shell\.is-fullscreen \.wallboard-scene-sponsor\s*{/);
 });
 
-test("very large fullscreen displays keep a compact sponsor signal without taking a scene column", () => {
-  assert.match(dashboard, /showAllWallboardScenes && \(\s*<a className="wallboard-sponsor-chip"/s);
+test("persistent fullscreen overviews keep a compact sponsor signal without taking a scene column", () => {
+  assert.match(dashboard, /\(showAllWallboardScenes \|\| showDeskOverview\) && \(\s*<a className="wallboard-sponsor-chip"/s);
   assert.match(styles, /\.app-shell\.is-fullscreen\.wallboard-expanded \.wallboard-scene-sponsor\s*{\s*display:\s*none;/s);
   assert.match(styles, /\.app-shell\.is-fullscreen\.wallboard-expanded \.wallboard-cycle\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
 });

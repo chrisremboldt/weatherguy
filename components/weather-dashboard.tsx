@@ -35,6 +35,7 @@ import type {
   HourlyPeriod,
   DisplayMode,
   FavoriteLocation,
+  IntelligenceData,
   LocationConfig,
   LocationSearchResult,
   WeatherDashboardData,
@@ -72,6 +73,7 @@ const DISPLAY_PROFILES: Array<{ id: DisplayMode; name: string; detail: string }>
 ];
 
 const EXPANDED_WALLBOARD_QUERY = "(min-width: 3000px) and (min-height: 900px)";
+const DESK_OVERVIEW_QUERY = "(min-width: 1280px) and (min-height: 720px)";
 
 type WallboardSceneId = (typeof WALLBOARD_SCENES)[number]["id"];
 type WallboardScenes = Record<WallboardSceneId, boolean>;
@@ -202,6 +204,10 @@ function apparentTemperatureF(temperatureF: number | null, humidityPct: number |
   return Math.round(temperatureF);
 }
 
+function uvRiskClass(category: string | undefined) {
+  return `uv-risk-${(category ?? "unavailable").toLowerCase().replaceAll(" ", "-")}`;
+}
+
 function TemperatureTrace({ periods }: { periods: HourlyPeriod[] }) {
   if (periods.length < 2) return null;
   const temperatures = periods.map((period) => period.temperatureF);
@@ -252,6 +258,7 @@ export function WeatherDashboard() {
   const [config, setConfig] = useState<LocationConfig | null>(initialLocation);
   const [formConfig, setFormConfig] = useState<LocationFormConfig>(() => formFromLocation(initialLocation()));
   const [data, setData] = useState<WeatherDashboardData | null>(null);
+  const [intelligence, setIntelligence] = useState<IntelligenceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -279,8 +286,12 @@ export function WeatherDashboard() {
   const [wallboardSceneIndex, setWallboardSceneIndex] = useState(0);
   const [wallboardPaused, setWallboardPaused] = useState(false);
   const [largeDisplayWallboard, setLargeDisplayWallboard] = useState(false);
+  const [deskOverviewDisplay, setDeskOverviewDisplay] = useState(false);
   const locationModalOpen = mounted && (settingsOpen || !config);
   const searchMode = searchQuery.trim().length > 0;
+  const intelligenceCoordinates = data
+    ? `lat=${data.location.latitude.toFixed(4)}&lon=${data.location.longitude.toFixed(4)}`
+    : null;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -326,6 +337,14 @@ export function WeatherDashboard() {
     syncLargeDisplay();
     media.addEventListener("change", syncLargeDisplay);
     return () => media.removeEventListener("change", syncLargeDisplay);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia(DESK_OVERVIEW_QUERY);
+    const syncDeskOverview = () => setDeskOverviewDisplay(media.matches);
+    syncDeskOverview();
+    media.addEventListener("change", syncDeskOverview);
+    return () => media.removeEventListener("change", syncDeskOverview);
   }, []);
 
   useEffect(() => {
@@ -397,6 +416,24 @@ export function WeatherDashboard() {
   }, [config, refreshKey]);
 
   useEffect(() => {
+    if (!intelligenceCoordinates) return;
+    const controller = new AbortController();
+
+    fetch(`/api/intelligence?${intelligenceCoordinates}`, { signal: controller.signal })
+      .then(async (response) => {
+        const payload = (await response.json()) as IntelligenceData;
+        if (!response.ok) throw new Error("Intelligence feeds are unavailable.");
+        setIntelligence(payload);
+      })
+      .catch((requestError) => {
+        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
+        setIntelligence(null);
+      });
+
+    return () => controller.abort();
+  }, [intelligenceCoordinates, refreshKey]);
+
+  useEffect(() => {
     if (!autoRotate || favorites.length < 2) return;
     const timer = window.setInterval(() => {
       setConfig((current) => {
@@ -463,15 +500,22 @@ export function WeatherDashboard() {
     ? SPONSOR_WALLBOARD_SECONDS
     : wallboardIntervalSeconds;
   const showAllWallboardScenes = isFullscreen && largeDisplayWallboard && enabledWallboardScenes.length > 1;
+  const showDeskOverview =
+    isFullscreen &&
+    displayMode === "desk" &&
+    deskOverviewDisplay &&
+    !largeDisplayWallboard &&
+    wallboardScenes.forecast &&
+    wallboardScenes.intelligence;
 
   useEffect(() => {
-    if (!isFullscreen || showAllWallboardScenes || !wallboardRotate || wallboardPaused || wallboardCycleScenes.length < 2) return;
+    if (!isFullscreen || showAllWallboardScenes || showDeskOverview || !wallboardRotate || wallboardPaused || wallboardCycleScenes.length < 2) return;
     const timer = window.setTimeout(
       () => setWallboardSceneIndex((current) => (current + 1) % wallboardCycleScenes.length),
       activeWallboardDurationSeconds * 1_000,
     );
     return () => window.clearTimeout(timer);
-  }, [activeWallboardDurationSeconds, activeWallboardScene, isFullscreen, showAllWallboardScenes, wallboardCycleScenes.length, wallboardPaused, wallboardRotate]);
+  }, [activeWallboardDurationSeconds, activeWallboardScene, isFullscreen, showAllWallboardScenes, showDeskOverview, wallboardCycleScenes.length, wallboardPaused, wallboardRotate]);
 
   const commitLocation = useCallback((next: LocationConfig) => {
     window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
@@ -479,6 +523,7 @@ export function WeatherDashboard() {
     if (next.customLabel) params.set("location", next.customLabel);
     window.history.replaceState(null, "", `?${params.toString()}`);
     setData(null);
+    setIntelligence(null);
     setConfig(next);
     setSettingsOpen(false);
     setGeoError(null);
@@ -632,12 +677,7 @@ export function WeatherDashboard() {
 
   const loadFavorite = (favorite: FavoriteLocation) => {
     const next: LocationConfig = { latitude: favorite.latitude, longitude: favorite.longitude, customLabel: favorite.label };
-    window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
-    const params = new URLSearchParams({ lat: favorite.latitude.toFixed(4), lon: favorite.longitude.toFixed(4), location: favorite.label });
-    window.history.replaceState(null, "", `?${params.toString()}`);
-    setConfig(next);
-    setWallboardSceneIndex(0);
-    setSettingsOpen(false);
+    commitLocation(next);
   };
 
   const toggleWallboardScene = (sceneId: WallboardSceneId) => {
@@ -661,7 +701,7 @@ export function WeatherDashboard() {
   };
 
   return (
-    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""}`}>
+    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -755,6 +795,11 @@ export function WeatherDashboard() {
                 <span><b>Feels like</b><strong>{currentFeelsLike ?? "—"}°</strong><small>humidity + wind</small></span>
                 <span><b>Next 3 hours</b><strong>{nearTermTrendLabel}</strong><small>{nearTermTarget ? `by ${formatHour(nearTermTarget.startTime, timeZone).hour}` : "trend pending"}</small></span>
                 <span><b>Rain peak</b><strong>{nearTermRainPeak}%</strong><small>next 3 hours</small></span>
+                <span className={`current-uv ${uvRiskClass(intelligence?.forecast?.currentUvCategory)}`} title={intelligence?.forecast?.uvGuidance}>
+                  <b>UV estimate</b>
+                  <strong>{intelligence?.forecast?.currentUvIndex ?? "—"}</strong>
+                  <small>{intelligence?.forecast?.currentUvCategory ? `${intelligence.forecast.currentUvCategory} · model` : "acquiring model"}</small>
+                </span>
               </div>
               <div className="current-nowcast-hours">
                 {nearTermHours.map((period) => {
@@ -802,18 +847,18 @@ export function WeatherDashboard() {
         <section className="wallboard-bay" aria-label="Fullscreen wallboard scenes">
           <div className="wallboard-cycle">
             <div className="wallboard-cycle-status">
-              <span>{showAllWallboardScenes ? "Large display" : "Wallboard cycle"}</span>
-              <strong aria-live="polite">{showAllWallboardScenes ? "All stations open" : activeWallboardSceneLabel}</strong>
-              <small>{showAllWallboardScenes ? `${enabledWallboardScenes.length} live` : `${activeWallboardScenePosition + 1} / ${wallboardCycleScenes.length} · ${activeWallboardDurationSeconds}s`}</small>
+              <span>{showAllWallboardScenes ? "Large display" : showDeskOverview ? "Weather overview" : "Wallboard cycle"}</span>
+              <strong aria-live="polite">{showAllWallboardScenes ? "All stations open" : showDeskOverview ? "Live essentials open" : activeWallboardSceneLabel}</strong>
+              <small>{showAllWallboardScenes ? `${enabledWallboardScenes.length} live` : showDeskOverview ? "No rotation" : `${activeWallboardScenePosition + 1} / ${wallboardCycleScenes.length} · ${activeWallboardDurationSeconds}s`}</small>
             </div>
-            {showAllWallboardScenes && (
+            {(showAllWallboardScenes || showDeskOverview) && (
               <a className="wallboard-sponsor-chip" href="https://lightconesystems.com/" target="_blank" rel="sponsored noreferrer">
                 <span>Sponsored signal</span>
                 <strong>Lightcone Ledger</strong>
                 <ChevronRight size={12} aria-hidden="true" />
               </a>
             )}
-            {!showAllWallboardScenes && (
+            {!showAllWallboardScenes && !showDeskOverview && (
               <>
                 <div className="wallboard-scene-tabs" aria-label="Choose wallboard scene">
                   {wallboardCycleScenes.map((scene, index) => (
@@ -846,7 +891,7 @@ export function WeatherDashboard() {
             )}
           </div>
 
-          <div className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : activeWallboardScene !== "forecast") : undefined}>
+          <div className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : showDeskOverview ? false : activeWallboardScene !== "forecast") : undefined}>
             <section className="panel hourly-panel">
           <div className="panel-heading compact">
             <div><span className="eyebrow">Temperature / probability</span><h2>Next nine hours</h2></div>
@@ -903,15 +948,15 @@ export function WeatherDashboard() {
 
           {data && (
             <>
-              <div className={`wallboard-scene wallboard-scene-intelligence ${wallboardScenes.intelligence ? "enabled" : ""} ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.intelligence : activeWallboardScene !== "intelligence") : undefined}>
-                <IntelligenceGrid latitude={data.location.latitude} longitude={data.location.longitude} timeZone={data.location.timeZone} refreshKey={refreshKey} />
+              <div className={`wallboard-scene wallboard-scene-intelligence ${wallboardScenes.intelligence ? "enabled" : ""} ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.intelligence : showDeskOverview ? false : activeWallboardScene !== "intelligence") : undefined}>
+                <IntelligenceGrid data={intelligence} timeZone={data.location.timeZone} />
               </div>
-              <div className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : activeWallboardScene !== "aviation") : undefined}>
-                <AviationConsole data={data} refreshKey={refreshKey} />
+              <div className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : showDeskOverview ? true : activeWallboardScene !== "aviation") : undefined}>
+                <AviationConsole data={data} intelligence={intelligence} refreshKey={refreshKey} />
               </div>
             </>
           )}
-          <div className={`wallboard-scene wallboard-scene-sponsor ${activeWallboardScene === "sponsor" ? "active" : ""}`} aria-hidden={!isFullscreen || showAllWallboardScenes || activeWallboardScene !== "sponsor"}>
+          <div className={`wallboard-scene wallboard-scene-sponsor ${activeWallboardScene === "sponsor" ? "active" : ""}`} aria-hidden={!isFullscreen || showAllWallboardScenes || showDeskOverview || activeWallboardScene !== "sponsor"}>
             <div className="sponsor-intermission">
               <div className="sponsor-intermission-mark" aria-hidden="true">
                 <Plane size={34} />
@@ -1024,7 +1069,7 @@ export function WeatherDashboard() {
 
                   <div className="wallboard-preferences">
                     <span className="settings-section-label">Fullscreen wallboard</span>
-                    <p>Radar, satellite, and current conditions stay fixed. Standard displays rotate these briefing scenes; very large displays open every enabled scene at once.</p>
+                    <p>Radar, satellite, and current conditions stay fixed. Weather Desk opens its essential forecast and intelligence panels together when space allows; specialized and smaller layouts use these scenes, while very large displays open every enabled scene.</p>
                     <div className="wallboard-scene-options">
                       {WALLBOARD_SCENES.map((scene) => (
                         <label key={scene.id}>

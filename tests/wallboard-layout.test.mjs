@@ -12,3 +12,16 @@ test("very large fullscreen displays open all enabled wallboard scenes", () => {
   assert.match(styles, /@media \(min-width: 3000px\) and \(min-height: 900px\)/);
   assert.match(styles, /\.wallboard-scene\.enabled\s*{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/s);
 });
+
+test("Weather Desk fullscreen opens forecast and intelligence together when they fit", () => {
+  assert.match(component, /DESK_OVERVIEW_QUERY = "\(min-width: 1280px\) and \(min-height: 720px\)"/);
+  assert.match(component, /showDeskOverview =\s*isFullscreen &&\s*displayMode === "desk"/s);
+  assert.match(component, /showAllWallboardScenes \|\| showDeskOverview \|\| !wallboardRotate/);
+  assert.match(component, /showDeskOverview \? "Live essentials open"/);
+  assert.match(component, /showDeskOverview \? "No rotation"/);
+  assert.match(component, /wallboard-desk-overview/);
+  assert.match(styles, /@media \(min-width: 1280px\) and \(min-height: 720px\)/);
+  assert.match(styles, /\.wallboard-desk-overview \.dashboard-grid\s*{[^}]*clamp\(286px, 34vh, 340px\)/s);
+  assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-forecast,[^}]*\.wallboard-desk-overview \.wallboard-scene-intelligence\s*{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/s);
+  assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-forecast \.outlook-panel,[\s\S]*?\.wallboard-desk-overview \.wallboard-scene-intelligence \.field-tools\s*{[^}]*display:\s*none;/);
+});

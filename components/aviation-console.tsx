@@ -44,30 +44,25 @@ const PILOT_PRODUCTS = [
   { label: "Official briefing", detail: "Flight Service planning and briefing", href: "https://www.1800wxbrief.com/", icon: RadioTower },
 ] as const;
 
-export function AviationConsole({ data, refreshKey }: { data: WeatherDashboardData; refreshKey: number }) {
+export function AviationConsole({ data, intelligence, refreshKey }: { data: WeatherDashboardData; intelligence: IntelligenceData | null; refreshKey: number }) {
   const [regional, setRegional] = useState<AviationData | null>(null);
-  const [intelligence, setIntelligence] = useState<IntelligenceData | null>(null);
   const [hazardView, setHazardView] = useState<"advisories" | "pireps" | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     const coordinates = `lat=${data.location.latitude.toFixed(4)}&lon=${data.location.longitude.toFixed(4)}`;
-    void Promise.allSettled([
-      fetch(`/api/aviation?${coordinates}`, { signal: controller.signal }).then(async (response) => {
+    fetch(`/api/aviation?${coordinates}`, { signal: controller.signal })
+      .then(async (response) => {
         const payload = (await response.json()) as AviationData;
         if (!response.ok) throw new Error("Aviation feeds are unavailable.");
         return payload;
-      }),
-      fetch(`/api/intelligence?${coordinates}`, { signal: controller.signal }).then(async (response) => {
-        const payload = (await response.json()) as IntelligenceData;
-        if (!response.ok) throw new Error("Forecast signals are unavailable.");
-        return payload;
-      }),
-    ]).then(([aviationResult, intelligenceResult]) => {
-      if (controller.signal.aborted) return;
-      setRegional(aviationResult.status === "fulfilled" ? aviationResult.value : null);
-      setIntelligence(intelligenceResult.status === "fulfilled" ? intelligenceResult.value : null);
-    });
+      })
+      .then((payload) => {
+        if (!controller.signal.aborted) setRegional(payload);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setRegional(null);
+      });
     return () => controller.abort();
   }, [data.location.latitude, data.location.longitude, refreshKey]);
 
