@@ -18,7 +18,18 @@ test("ad inquiries open a pre-addressed email with the requested subject", () =>
   assert.match(dashboard, />Contact for ad space inquiries<\/a>/);
 });
 
-test("the sponsor slot stays out of the fullscreen operational wallboard", () => {
-  assert.match(styles, /\.app-shell\.is-fullscreen \.sponsor-slot\s*{\s*display:\s*none;\s*}/s);
+test("fullscreen adds a separate 10-second sponsor phase without shortening weather scenes", () => {
+  assert.match(dashboard, /const SPONSOR_WALLBOARD_SECONDS = 10;/);
+  assert.match(dashboard, /\(\) => \[\.\.\.enabledWallboardScenes, SPONSOR_WALLBOARD_SCENE\]/);
+  assert.match(dashboard, /activeWallboardScene === "sponsor"\s*\?\s*SPONSOR_WALLBOARD_SECONDS\s*:\s*wallboardIntervalSeconds/);
+  assert.match(dashboard, /setTimeout\([\s\S]*activeWallboardDurationSeconds \* 1_000/s);
+  assert.match(dashboard, /wallboard-scene wallboard-scene-sponsor/);
+  assert.match(dashboard, /Sponsored signal · 10 seconds/);
+  assert.match(styles, /\.app-shell\.is-fullscreen \.wallboard-scene-sponsor\s*{/);
 });
 
+test("very large fullscreen displays keep a compact sponsor signal without taking a scene column", () => {
+  assert.match(dashboard, /showAllWallboardScenes && \(\s*<a className="wallboard-sponsor-chip"/s);
+  assert.match(styles, /\.app-shell\.is-fullscreen\.wallboard-expanded \.wallboard-scene-sponsor\s*{\s*display:\s*none;/s);
+  assert.match(styles, /\.app-shell\.is-fullscreen\.wallboard-expanded \.wallboard-cycle\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
+});

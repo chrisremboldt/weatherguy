@@ -57,6 +57,13 @@ const WALLBOARD_SCENES = [
   { id: "aviation", label: "Aviation", detail: "TAF, nearby airports, advisories, and pilot reports" },
 ] as const;
 
+const SPONSOR_WALLBOARD_SCENE = {
+  id: "sponsor",
+  label: "Lightcone",
+  detail: "A 10-second sponsor signal from Lightcone Ledger",
+} as const;
+const SPONSOR_WALLBOARD_SECONDS = 10;
+
 const DISPLAY_PROFILES: Array<{ id: DisplayMode; name: string; detail: string }> = [
   { id: "desk", name: "Weather desk", detail: "Balanced radar, forecast, and situational awareness" },
   { id: "severe", name: "Storm watch", detail: "Warnings and convective intelligence move forward" },
@@ -445,19 +452,26 @@ export function WeatherDashboard() {
     () => WALLBOARD_SCENES.filter((scene) => wallboardScenes[scene.id]),
     [wallboardScenes],
   );
-  const activeWallboardScene = enabledWallboardScenes[wallboardSceneIndex % enabledWallboardScenes.length]?.id ?? "forecast";
-  const activeWallboardScenePosition = Math.max(0, enabledWallboardScenes.findIndex((scene) => scene.id === activeWallboardScene));
-  const activeWallboardSceneLabel = enabledWallboardScenes[activeWallboardScenePosition]?.label ?? "Forecast";
+  const wallboardCycleScenes = useMemo(
+    () => [...enabledWallboardScenes, SPONSOR_WALLBOARD_SCENE],
+    [enabledWallboardScenes],
+  );
+  const activeWallboardScene = wallboardCycleScenes[wallboardSceneIndex % wallboardCycleScenes.length]?.id ?? "forecast";
+  const activeWallboardScenePosition = Math.max(0, wallboardCycleScenes.findIndex((scene) => scene.id === activeWallboardScene));
+  const activeWallboardSceneLabel = wallboardCycleScenes[activeWallboardScenePosition]?.label ?? "Forecast";
+  const activeWallboardDurationSeconds = activeWallboardScene === "sponsor"
+    ? SPONSOR_WALLBOARD_SECONDS
+    : wallboardIntervalSeconds;
   const showAllWallboardScenes = isFullscreen && largeDisplayWallboard && enabledWallboardScenes.length > 1;
 
   useEffect(() => {
-    if (!isFullscreen || showAllWallboardScenes || !wallboardRotate || wallboardPaused || enabledWallboardScenes.length < 2) return;
-    const timer = window.setInterval(
-      () => setWallboardSceneIndex((current) => (current + 1) % enabledWallboardScenes.length),
-      wallboardIntervalSeconds * 1_000,
+    if (!isFullscreen || showAllWallboardScenes || !wallboardRotate || wallboardPaused || wallboardCycleScenes.length < 2) return;
+    const timer = window.setTimeout(
+      () => setWallboardSceneIndex((current) => (current + 1) % wallboardCycleScenes.length),
+      activeWallboardDurationSeconds * 1_000,
     );
-    return () => window.clearInterval(timer);
-  }, [enabledWallboardScenes.length, isFullscreen, showAllWallboardScenes, wallboardIntervalSeconds, wallboardPaused, wallboardRotate]);
+    return () => window.clearTimeout(timer);
+  }, [activeWallboardDurationSeconds, activeWallboardScene, isFullscreen, showAllWallboardScenes, wallboardCycleScenes.length, wallboardPaused, wallboardRotate]);
 
   const commitLocation = useCallback((next: LocationConfig) => {
     window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
@@ -636,7 +650,7 @@ export function WeatherDashboard() {
 
   const showAdjacentWallboardScene = (direction: -1 | 1) => {
     setWallboardSceneIndex((current) => (
-      (current + direction + enabledWallboardScenes.length) % enabledWallboardScenes.length
+      (current + direction + wallboardCycleScenes.length) % wallboardCycleScenes.length
     ));
   };
 
@@ -790,12 +804,19 @@ export function WeatherDashboard() {
             <div className="wallboard-cycle-status">
               <span>{showAllWallboardScenes ? "Large display" : "Wallboard cycle"}</span>
               <strong aria-live="polite">{showAllWallboardScenes ? "All stations open" : activeWallboardSceneLabel}</strong>
-              <small>{showAllWallboardScenes ? `${enabledWallboardScenes.length} live` : `${activeWallboardScenePosition + 1} / ${enabledWallboardScenes.length}`}</small>
+              <small>{showAllWallboardScenes ? `${enabledWallboardScenes.length} live` : `${activeWallboardScenePosition + 1} / ${wallboardCycleScenes.length} · ${activeWallboardDurationSeconds}s`}</small>
             </div>
+            {showAllWallboardScenes && (
+              <a className="wallboard-sponsor-chip" href="https://lightconesystems.com/" target="_blank" rel="sponsored noreferrer">
+                <span>Sponsored signal</span>
+                <strong>Lightcone Ledger</strong>
+                <ChevronRight size={12} aria-hidden="true" />
+              </a>
+            )}
             {!showAllWallboardScenes && (
               <>
                 <div className="wallboard-scene-tabs" aria-label="Choose wallboard scene">
-                  {enabledWallboardScenes.map((scene, index) => (
+                  {wallboardCycleScenes.map((scene, index) => (
                     <button
                       className={activeWallboardScene === scene.id ? "active" : ""}
                       type="button"
@@ -809,16 +830,16 @@ export function WeatherDashboard() {
                 </div>
                 <div className="wallboard-cycle-actions">
                   <button type="button" onClick={() => showAdjacentWallboardScene(-1)} aria-label="Previous wallboard scene"><ChevronLeft size={14} /></button>
-                  {wallboardRotate && enabledWallboardScenes.length > 1 && (
+                  {wallboardRotate && wallboardCycleScenes.length > 1 && (
                     <button type="button" onClick={() => setWallboardPaused((current) => !current)} aria-label={wallboardPaused ? "Resume wallboard rotation" : "Pause wallboard rotation"}>
                       {wallboardPaused ? <Play size={14} /> : <Pause size={14} />}
                     </button>
                   )}
                   <button type="button" onClick={() => showAdjacentWallboardScene(1)} aria-label="Next wallboard scene"><ChevronRight size={14} /></button>
                 </div>
-                {wallboardRotate && !wallboardPaused && enabledWallboardScenes.length > 1 && (
+                {wallboardRotate && !wallboardPaused && wallboardCycleScenes.length > 1 && (
                   <span className="wallboard-progress" aria-hidden="true">
-                    <i key={`${activeWallboardScene}-${wallboardSceneIndex}`} style={{ animationDuration: `${wallboardIntervalSeconds}s` }} />
+                    <i key={`${activeWallboardScene}-${wallboardSceneIndex}`} style={{ animationDuration: `${activeWallboardDurationSeconds}s` }} />
                   </span>
                 )}
               </>
@@ -890,6 +911,27 @@ export function WeatherDashboard() {
               </div>
             </>
           )}
+          <div className={`wallboard-scene wallboard-scene-sponsor ${activeWallboardScene === "sponsor" ? "active" : ""}`} aria-hidden={!isFullscreen || showAllWallboardScenes || activeWallboardScene !== "sponsor"}>
+            <div className="sponsor-intermission">
+              <div className="sponsor-intermission-mark" aria-hidden="true">
+                <Plane size={34} />
+                <i />
+              </div>
+              <div className="sponsor-intermission-copy">
+                <span className="eyebrow">Sponsored signal · 10 seconds</span>
+                <h2>Lightcone Ledger</h2>
+                <p>Dispatch and proof for controlled UAS operations.</p>
+                <span>Deterministic release checks. Durable evidence. No AI in the evaluation loop.</span>
+              </div>
+              <span className="release-rail release-rail-wallboard" aria-hidden="true">
+                <i>Record</i><i>Check</i><i>Release</i><i>Prove</i>
+              </span>
+              <div className="sponsor-intermission-actions">
+                <a href="https://lightconesystems.com/" target="_blank" rel="sponsored noreferrer">Explore Lightcone <ChevronRight size={15} aria-hidden="true" /></a>
+                <a href="mailto:chris.remboldt@gmail.com?subject=wxdynamics%20ad%20space">Contact for ad space inquiries</a>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -1006,7 +1048,7 @@ export function WeatherDashboard() {
                         }} />
                       </label>
                       <label>
-                        <span><b>Scene time</b><small>A full three-scene pass takes about one minute at 20 seconds</small></span>
+                        <span><b>Weather scene time</b><small>Every weather scene keeps this duration; the sponsor signal uses 10 seconds</small></span>
                         <select value={wallboardIntervalSeconds} disabled={!wallboardRotate} onChange={(event) => {
                           const seconds = Number(event.target.value);
                           setWallboardIntervalSeconds(seconds);
