@@ -908,14 +908,18 @@ export function WeatherDashboard() {
               {forecastDays.map((day) => (
                 <article className="forecast-day-card" key={day.key} title={day.detailedForecast}>
                   <span className="forecast-day-heading"><b>{day.label}</b><small>{day.dateLabel}</small></span>
-                  <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} />
-                  <span className="forecast-temperatures">
-                    <span><small>High</small><strong>{day.highF ?? "—"}°</strong></span>
-                    <span><small>Low</small><strong>{day.lowF ?? "—"}°</strong></span>
+                  <span className="forecast-day-core">
+                    <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} />
+                    <span className="forecast-temperatures">
+                      <span><small>High</small><strong>{day.highF ?? "—"}°</strong></span>
+                      <span><small>Low</small><strong>{day.lowF ?? "—"}°</strong></span>
+                    </span>
+                    <span className="forecast-day-condition">{day.shortForecast}</span>
                   </span>
-                  <span className="forecast-day-condition">{day.shortForecast}</span>
                   <span className={`forecast-day-rain ${(day.precipitationPct ?? 0) >= 40 ? "likely" : ""}`}>
-                    <Droplets size={11} aria-hidden="true" /> {day.precipitationPct ?? 0}% max
+                    <span><Droplets size={11} aria-hidden="true" /> Rain</span>
+                    <strong>{day.precipitationPct ?? 0}% max</strong>
+                    <i aria-hidden="true"><span style={{ width: `${day.precipitationPct ?? 0}%` }} /></i>
                   </span>
                 </article>
               ))}
