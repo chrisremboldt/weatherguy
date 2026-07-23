@@ -23,5 +23,5 @@ test("Weather Desk fullscreen opens forecast and intelligence together when they
   assert.match(styles, /@media \(min-width: 1280px\) and \(min-height: 720px\)/);
   assert.match(styles, /\.wallboard-desk-overview \.dashboard-grid\s*{[^}]*clamp\(286px, 34vh, 340px\)/s);
   assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-forecast,[^}]*\.wallboard-desk-overview \.wallboard-scene-intelligence\s*{[^}]*opacity:\s*1;[^}]*visibility:\s*visible;/s);
-  assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-forecast \.outlook-panel,[\s\S]*?\.wallboard-desk-overview \.wallboard-scene-intelligence \.field-tools\s*{[^}]*display:\s*none;/);
+  assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-forecast \.discussion-panel,[\s\S]*?\.wallboard-desk-overview \.wallboard-scene-intelligence \.field-tools\s*{[^}]*display:\s*none;/);
 });

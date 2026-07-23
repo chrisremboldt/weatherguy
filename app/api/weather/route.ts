@@ -66,7 +66,7 @@ function normalizeHourly(forecast: JsonRecord): HourlyPeriod[] {
 }
 
 function normalizeDaily(forecast: JsonRecord): DailyPeriod[] {
-  return (forecast.properties?.periods ?? []).slice(0, 10).map((period: JsonRecord) => ({
+  return (forecast.properties?.periods ?? []).slice(0, 14).map((period: JsonRecord) => ({
     startTime: period.startTime,
     name: period.name,
     temperatureF: period.temperature,

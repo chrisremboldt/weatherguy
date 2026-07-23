@@ -235,9 +235,6 @@ a {
 .alert-source,
 .source-strip,
 .metric-label,
-.hour-day,
-.rain-chance,
-.day-pop,
 .aviation-facts b {
   color: var(--muted);
   font-family: var(--font-mono), ui-monospace, monospace;
@@ -412,7 +409,7 @@ a {
   grid-template-areas:
     "sensor sensor status"
     "hourly hourly status"
-    "outlook discussion discussion"
+    "discussion discussion discussion"
     "intel intel intel"
     "aviation-console aviation-console aviation-console";
   gap: 12px;
@@ -830,130 +827,211 @@ h2 {
   grid-area: hourly;
 }
 
-.hourly-chart {
-  position: relative;
-  min-height: 156px;
+.forecast-panel-body {
+  min-height: 282px;
   display: grid;
-  grid-template-columns: repeat(9, minmax(62px, 1fr));
+  grid-template-rows: minmax(198px, 1fr) 84px;
+}
+
+.seven-day-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  overflow-x: auto;
+}
+
+.forecast-day-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 36px auto minmax(30px, 1fr) auto;
+  justify-items: center;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px 9px;
+  border-right: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(var(--sky-rgb), 0.018), transparent 42%),
+    rgba(var(--ink-rgb), 0.08);
+}
+
+.forecast-day-card:last-child { border-right: 0; }
+.forecast-day-card > svg { color: var(--sky); }
+
+.forecast-day-heading {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+.forecast-day-heading b {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forecast-day-heading small {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 7px;
+}
+
+.forecast-temperatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 10px;
+}
+
+.forecast-temperatures > span {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.forecast-temperatures small {
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 6px;
+  text-transform: uppercase;
+}
+
+.forecast-temperatures strong {
+  color: var(--cloud);
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.forecast-temperatures > span:last-child strong { color: var(--muted); }
+
+.forecast-day-condition {
+  display: -webkit-box;
+  align-self: start;
+  overflow: hidden;
+  color: var(--copy);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.forecast-day-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.forecast-day-rain.likely,
+.compact-hourly-cells small.likely {
+  color: var(--sky);
+}
+
+.compact-hourly-strip {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  border-top: 1px solid var(--line-strong);
+  background: rgba(var(--ink-rgb), 0.32);
+}
+
+.compact-hourly-label {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 9px 11px;
+  border-right: 1px solid var(--line);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  text-transform: uppercase;
+}
+
+.compact-hourly-label span,
+.compact-hourly-label small {
+  color: var(--faint);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+}
+
+.compact-hourly-label strong {
+  margin: 3px 0 2px;
+  color: var(--copy);
+  font-size: 9px;
+  letter-spacing: 0.025em;
+}
+
+.compact-hourly-chart {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
   isolation: isolate;
 }
 
 .temperature-trace {
   position: absolute;
   z-index: 0;
-  top: 42px;
+  top: 13px;
   left: 0;
   width: 100%;
-  height: 85px;
-  opacity: 0.72;
+  height: 34px;
+  opacity: 0.58;
   pointer-events: none;
 }
 
-.hour-cell {
+.compact-hourly-cells {
   position: relative;
   z-index: 1;
+  min-width: 504px;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(56px, 1fr));
+}
+
+.compact-hourly-cells > span {
   min-width: 0;
   display: grid;
-  grid-template-rows: 18px 20px 31px 32px 18px;
-  justify-items: center;
-  align-items: center;
-  padding: 11px 4px 8px;
-  border-right: 1px solid rgba(var(--line-rgb), 0.08);
+  grid-template-rows: auto 1fr auto;
+  place-items: center;
+  padding: 8px 3px 6px;
+  border-right: 1px solid rgba(var(--line-rgb), 0.09);
 }
 
-.hour-cell:last-child {
-  border-right: 0;
-}
+.compact-hourly-cells > span:last-child { border-right: 0; }
 
-.hour-day {
+.compact-hourly-cells b,
+.compact-hourly-cells small {
   color: var(--faint);
-  font-size: 9px;
-}
-
-.hour-time {
-  color: var(--muted);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 400;
-}
-
-.hour-icon {
-  color: var(--sky);
-}
-
-.hour-temp {
-  align-self: start;
-  padding: 2px 4px;
-  background: rgba(var(--panel-rgb), 0.74);
-  font-family: var(--font-display), "Arial Narrow", sans-serif;
-  font-size: 24px;
+  font-size: 7px;
   font-weight: 500;
-}
-
-.rain-chance {
-  color: var(--faint);
-}
-
-.rain-chance.likely {
-  color: var(--sky);
-}
-
-.outlook-panel {
-  grid-area: outlook;
-}
-
-.daily-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.day-row {
-  min-height: 40px;
-  display: grid;
-  grid-template-columns: 34px 24px 40px minmax(0, 1fr) 34px;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-bottom: 1px solid rgba(var(--line-rgb), 0.09);
-}
-
-.day-row:last-child {
-  border-bottom: 0;
-}
-
-.day-name,
-.day-row > strong,
-.day-pop {
-  font-family: var(--font-mono), ui-monospace, monospace;
-}
-
-.day-name {
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.day-row > svg {
-  color: var(--sky);
-}
-
-.day-row > strong {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.day-condition {
-  overflow: hidden;
-  color: #b2c7c9;
-  font-size: 12px;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.day-pop {
-  text-align: right;
-  color: var(--sky);
-  font-size: 10px;
+.compact-hourly-cells strong {
+  padding: 1px 3px;
+  color: var(--cloud);
+  background: rgba(var(--panel-rgb), 0.76);
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.compact-hourly-cells small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .discussion-panel {
@@ -1552,7 +1630,7 @@ h2 {
     grid-template-areas:
       "radar status"
       "hourly status"
-      "outlook discussion";
+      "discussion discussion";
   }
 
   .radar-stage {
@@ -1564,10 +1642,9 @@ h2 {
     font-size: 82px;
   }
 
-  .hourly-chart {
-    overflow-x: auto;
-    grid-template-columns: repeat(9, minmax(76px, 1fr));
-  }
+  .seven-day-grid { grid-template-columns: repeat(7, minmax(126px, 1fr)); }
+  .compact-hourly-chart { overflow-x: auto; }
+  .compact-hourly-cells { min-width: 630px; }
 }
 
 @media (max-width: 820px) {
@@ -1605,8 +1682,7 @@ h2 {
   }
 
   .hourly-panel { order: 3; }
-  .outlook-panel { order: 4; }
-  .discussion-panel { order: 5; }
+  .discussion-panel { order: 4; }
 
   .source-strip {
     overflow-x: auto;
@@ -2818,7 +2894,6 @@ h2 {
 .favorite-list button:last-child { border: 0; }
 
 .mode-minimal .hourly-panel,
-.mode-minimal .outlook-panel,
 .mode-minimal .discussion-panel,
 .mode-minimal .intelligence-grid,
 .mode-minimal .aviation-console-panel,
@@ -2851,7 +2926,7 @@ h2 {
     "aviation-console aviation-console status"
     "sensor sensor status"
     "hourly hourly hourly"
-    "outlook discussion discussion"
+    "discussion discussion discussion"
     "intel intel intel";
 }
 
@@ -2895,7 +2970,7 @@ h2 {
       "sensor sensor"
       "status status"
       "hourly hourly"
-      "outlook discussion"
+      "discussion discussion"
       "intel intel"
       "aviation-console aviation-console";
   }
@@ -2907,7 +2982,7 @@ h2 {
       "sensor sensor"
       "status status"
       "hourly hourly"
-      "outlook discussion"
+      "discussion discussion"
       "intel intel";
   }
 
@@ -2935,8 +3010,10 @@ h2 {
   .radar-map { height: min(74vw, 560px); min-height: 400px; }
   .status-column { display: grid; grid-template-columns: 1fr; }
   .hourly-panel { order: 1; }
-  .outlook-panel { order: 2; }
-  .discussion-panel { order: 3; }
+  .discussion-panel { order: 2; }
+  .seven-day-grid { grid-template-columns: repeat(7, minmax(126px, 1fr)); }
+  .compact-hourly-chart { overflow-x: auto; }
+  .compact-hourly-cells { min-width: 630px; }
   .intelligence-grid { order: 4; }
   .aviation-console-panel { order: 5; }
   .mode-aviation .aviation-console-panel { order: -1; }
@@ -2981,6 +3058,16 @@ h2 {
   .signal-matrix > span:nth-child(n + 7) { border-bottom: 1px solid var(--line); }
   .signal-matrix > span:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
   .intelligence-grid { display: grid; }
+  .compact-hourly-strip { grid-template-columns: 1fr; }
+  .compact-hourly-label {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 7px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .compact-hourly-label strong { margin: 0; }
   .preference-actions { grid-template-columns: 1fr; }
   .theme-options { grid-template-columns: 1fr; }
   .display-mode-options { grid-template-columns: 1fr; }
@@ -3361,7 +3448,17 @@ h2 {
   .app-shell.is-fullscreen .current-nowcast-hours > span:last-child { border-right: 0; }
   .app-shell.is-fullscreen .current-nowcast-hours svg { align-self: center; color: var(--sky); }
   .app-shell.is-fullscreen .current-nowcast-hours strong { font-family: var(--font-display), "Arial Narrow", sans-serif; font-size: 13px; font-weight: 500; }
-  .app-shell.is-fullscreen .current-nowcast-hours small { color: var(--sky); font-family: var(--font-mono), ui-monospace, monospace; font-size: 6px; }
+  .app-shell.is-fullscreen .current-nowcast-hours small {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--muted);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 6px;
+    white-space: nowrap;
+  }
+  .app-shell.is-fullscreen .current-nowcast-hours small.likely { color: var(--sky); }
+  .app-shell.is-fullscreen .current-nowcast-hours small svg { width: 7px; height: 7px; }
   .app-shell.is-fullscreen .current-nowcast-hours em,
   .app-shell.is-fullscreen .current-nowcast-hours i { display: none; }
 
@@ -3622,11 +3719,10 @@ h2 {
   }
 
   .app-shell.is-fullscreen .wallboard-scene-forecast {
-    grid-template-columns: minmax(0, 1.8fr) minmax(230px, 0.62fr) minmax(280px, 0.82fr);
+    grid-template-columns: minmax(0, 2.2fr) minmax(280px, 0.82fr);
   }
 
   .app-shell.is-fullscreen .wallboard-scene.active .hourly-panel,
-  .app-shell.is-fullscreen .wallboard-scene.active .outlook-panel,
   .app-shell.is-fullscreen .wallboard-scene.active .discussion-panel,
   .app-shell.is-fullscreen .wallboard-scene.active .intelligence-grid,
   .app-shell.is-fullscreen .wallboard-scene.active .aviation-console-panel {
@@ -3649,38 +3745,50 @@ h2 {
     padding: 5px 9px;
   }
 
-  .app-shell.is-fullscreen .hourly-chart {
+  .app-shell.is-fullscreen .forecast-panel-body {
     min-height: 0;
     height: calc(100% - 39px);
-    grid-template-columns: repeat(9, minmax(48px, 1fr));
+    grid-template-rows: minmax(0, 1fr) 64px;
     overflow: hidden;
   }
 
-  .app-shell.is-fullscreen .hour-cell {
-    grid-template-rows: 13px 16px 25px 26px 14px;
-    align-content: center;
-    padding: 4px 2px;
+  .app-shell.is-fullscreen .seven-day-grid {
+    min-height: 0;
+    grid-template-columns: repeat(7, minmax(78px, 1fr));
+    overflow: hidden;
   }
 
-  .app-shell.is-fullscreen .temperature-trace { top: 30px; height: 65px; }
-  .app-shell.is-fullscreen .hour-temp { font-size: 19px; }
-  .app-shell.is-fullscreen .hour-time,
-  .app-shell.is-fullscreen .hour-day,
-  .app-shell.is-fullscreen .rain-chance { font-size: 7px; }
-  .app-shell.is-fullscreen .hour-icon svg { width: 17px; height: 17px; }
-
-  .app-shell.is-fullscreen .day-row {
-    min-height: 26px;
-    grid-template-columns: 26px 18px 34px minmax(0, 1fr) 28px;
-    gap: 4px;
-    padding: 3px 7px;
+  .app-shell.is-fullscreen .forecast-day-card {
+    grid-template-rows: auto 28px auto minmax(24px, 1fr) auto;
+    gap: 2px;
+    padding: 5px 4px;
   }
+  .app-shell.is-fullscreen .forecast-day-card > svg { width: 24px; height: 24px; }
+  .app-shell.is-fullscreen .forecast-day-heading b { font-size: 7px; }
+  .app-shell.is-fullscreen .forecast-day-heading small { font-size: 5px; }
+  .app-shell.is-fullscreen .forecast-temperatures { gap: 5px; }
+  .app-shell.is-fullscreen .forecast-temperatures small { font-size: 5px; }
+  .app-shell.is-fullscreen .forecast-temperatures strong { font-size: 17px; }
+  .app-shell.is-fullscreen .forecast-day-condition { font-size: 8px; line-height: 1.15; }
+  .app-shell.is-fullscreen .forecast-day-rain { gap: 3px; font-size: 6px; }
+  .app-shell.is-fullscreen .forecast-day-rain svg { width: 8px; height: 8px; }
 
-  .app-shell.is-fullscreen .day-row svg { width: 16px; height: 16px; }
-  .app-shell.is-fullscreen .day-name,
-  .app-shell.is-fullscreen .day-pop { font-size: 7px; }
-  .app-shell.is-fullscreen .day-row > strong { font-size: 11px; }
-  .app-shell.is-fullscreen .day-condition { font-size: 9px; }
+  .app-shell.is-fullscreen .compact-hourly-strip { grid-template-columns: 90px minmax(0, 1fr); }
+  .app-shell.is-fullscreen .compact-hourly-label { padding: 5px 7px; }
+  .app-shell.is-fullscreen .compact-hourly-label span,
+  .app-shell.is-fullscreen .compact-hourly-label small { font-size: 5px; }
+  .app-shell.is-fullscreen .compact-hourly-label strong { margin: 2px 0 1px; font-size: 7px; }
+  .app-shell.is-fullscreen .compact-hourly-chart { overflow: hidden; }
+  .app-shell.is-fullscreen .compact-hourly-cells {
+    min-width: 0;
+    grid-template-columns: repeat(9, minmax(42px, 1fr));
+  }
+  .app-shell.is-fullscreen .compact-hourly-cells > span { padding: 4px 2px 3px; }
+  .app-shell.is-fullscreen .compact-hourly-cells b,
+  .app-shell.is-fullscreen .compact-hourly-cells small { font-size: 5px; }
+  .app-shell.is-fullscreen .compact-hourly-cells strong { font-size: 13px; }
+  .app-shell.is-fullscreen .compact-hourly-cells small svg { width: 6px; height: 6px; }
+  .app-shell.is-fullscreen .temperature-trace { top: 9px; height: 25px; }
   .app-shell.is-fullscreen .discussion-panel > p {
     min-height: 0;
     margin: 8px 10px 5px;
@@ -3864,7 +3972,6 @@ h2 {
 
   .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-aviation,
   .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-sponsor,
-  .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-forecast .outlook-panel,
   .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-forecast .discussion-panel,
   .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-intelligence .severe-center,
   .app-shell.is-fullscreen.wallboard-desk-overview .wallboard-scene-intelligence .field-tools {
@@ -3942,7 +4049,6 @@ h2 {
   }
 
   .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .hourly-panel,
-  .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .outlook-panel,
   .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .discussion-panel,
   .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene.enabled .aviation-console-panel {
     display: block;
@@ -3953,7 +4059,7 @@ h2 {
   }
 
   .app-shell.is-fullscreen.wallboard-expanded .wallboard-scene-forecast {
-    grid-template-columns: minmax(0, 1.8fr) minmax(180px, 0.68fr) minmax(220px, 0.82fr);
+    grid-template-columns: minmax(0, 2.2fr) minmax(220px, 0.82fr);
   }
 }
 

@@ -44,6 +44,7 @@ import { WeatherIcon } from "@/components/weather-icon";
 import { AviationConsole } from "@/components/aviation-console";
 import { IntelligenceGrid } from "@/components/intelligence-grid";
 import { SensorDeck } from "@/components/sensor-deck";
+import { buildForecastDays } from "@/lib/forecast-days";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
 
 type LocationFormConfig = {
@@ -53,7 +54,7 @@ type LocationFormConfig = {
 };
 
 const WALLBOARD_SCENES = [
-  { id: "forecast", label: "Forecast", detail: "Hourly trend, outlook, and forecaster reasoning" },
+  { id: "forecast", label: "Forecast", detail: "Seven-day outlook, compact hourly trend, and forecaster reasoning" },
   { id: "intelligence", label: "Intelligence", detail: "Decision signals, storm center, environment, and field tools" },
   { id: "aviation", label: "Aviation", detail: "TAF, nearby airports, advisories, and pilot reports" },
 ] as const;
@@ -465,7 +466,7 @@ export function WeatherDashboard() {
 
   const timeZone = data?.location.timeZone ?? "UTC";
   const hourly = data?.hourly.slice(0, 9) ?? [];
-  const daily = useMemo(() => data?.daily.filter((period) => period.isDaytime).slice(0, 5) ?? [], [data]);
+  const forecastDays = useMemo(() => buildForecastDays(data?.daily ?? [], timeZone), [data, timeZone]);
   const nearTermHours = hourly.slice(1, 5);
   const nearTermTarget = hourly[Math.min(3, Math.max(0, hourly.length - 1))];
   const currentFeelsLike = data
@@ -810,7 +811,12 @@ export function WeatherDashboard() {
                       <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={17} />
                       <strong>{period.temperatureF}°</strong>
                       <em>{period.shortForecast}</em>
-                      <small>{period.precipitationPct ?? 0}%</small>
+                      <small
+                        className={(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}
+                        aria-label={`${period.precipitationPct ?? 0}% chance of rain`}
+                      >
+                        <Droplets size={8} aria-hidden="true" /> {period.precipitationPct ?? 0}% rain
+                      </small>
                       <i>{period.windDirection} {period.windSpeed}</i>
                     </span>
                   );
@@ -892,42 +898,52 @@ export function WeatherDashboard() {
           </div>
 
           <div className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : showDeskOverview ? false : activeWallboardScene !== "forecast") : undefined}>
-            <section className="panel hourly-panel">
+            <section className="panel hourly-panel forecast-panel">
           <div className="panel-heading compact">
-            <div><span className="eyebrow">Temperature / probability</span><h2>Next nine hours</h2></div>
-            <span className="panel-note">NWS hourly grid</span>
+            <div><span className="eyebrow">Planning horizon / point forecast</span><h2>Seven-day forecast</h2></div>
+            <span className="panel-note">NWS days + nights</span>
           </div>
-          <div className="hourly-chart">
-            <TemperatureTrace periods={hourly} />
-            {hourly.map((period, index) => {
-              const label = formatHour(period.startTime, timeZone);
-              return (
-                <div className="hour-cell" key={period.startTime}>
-                  <span className="hour-day">{index === 0 ? "NOW" : label.day}</span>
-                  <strong className="hour-time">{index === 0 ? "" : label.hour}</strong>
-                  <div className="hour-icon"><WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={21} /></div>
-                  <strong className="hour-temp">{period.temperatureF}°</strong>
-                  <span className={`rain-chance ${(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}`}>{period.precipitationPct ?? 0}%</span>
-                </div>
-              );
-            })}
-          </div>
-            </section>
-
-            <section className="panel outlook-panel">
-          <div className="panel-heading compact">
-            <div><span className="eyebrow">Five day signal</span><h2>Outlook</h2></div>
-          </div>
-          <div className="daily-list">
-            {daily.map((period) => (
-              <div className="day-row" key={period.startTime} title={period.detailedForecast}>
-                <span className="day-name">{period.name.slice(0, 3)}</span>
-                <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={20} />
-                <strong>{period.temperatureF}°</strong>
-                <span className="day-condition">{period.shortForecast}</span>
-                <span className="day-pop">{period.precipitationPct ?? 0}%</span>
+          <div className="forecast-panel-body">
+            <div className="seven-day-grid" aria-label="Seven-day weather forecast">
+              {forecastDays.map((day) => (
+                <article className="forecast-day-card" key={day.key} title={day.detailedForecast}>
+                  <span className="forecast-day-heading"><b>{day.label}</b><small>{day.dateLabel}</small></span>
+                  <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} />
+                  <span className="forecast-temperatures">
+                    <span><small>High</small><strong>{day.highF ?? "—"}°</strong></span>
+                    <span><small>Low</small><strong>{day.lowF ?? "—"}°</strong></span>
+                  </span>
+                  <span className="forecast-day-condition">{day.shortForecast}</span>
+                  <span className={`forecast-day-rain ${(day.precipitationPct ?? 0) >= 40 ? "likely" : ""}`}>
+                    <Droplets size={11} aria-hidden="true" /> {day.precipitationPct ?? 0}% max
+                  </span>
+                </article>
+              ))}
+            </div>
+            <div className="compact-hourly-strip">
+              <div className="compact-hourly-label">
+                <span>Near term</span>
+                <strong>Next nine hours</strong>
+                <small>Temperature / rain</small>
               </div>
-            ))}
+              <div className="compact-hourly-chart">
+                <TemperatureTrace periods={hourly} />
+                <div className="compact-hourly-cells">
+                  {hourly.map((period, index) => {
+                    const label = formatHour(period.startTime, timeZone);
+                    return (
+                      <span key={period.startTime}>
+                        <b>{index === 0 ? "Now" : label.hour}</b>
+                        <strong>{period.temperatureF}°</strong>
+                        <small className={(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}>
+                          <Droplets size={8} aria-hidden="true" /> {period.precipitationPct ?? 0}%
+                        </small>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
             </section>
 
