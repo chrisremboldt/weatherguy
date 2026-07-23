@@ -1,4 +1,4 @@
-import type { ForecastSignalHour, ForecastSignals } from "@/lib/types";
+import type { ForecastSignalHour, ForecastSignals, UvForecastDay } from "@/lib/types";
 
 // External forecast payloads are schemaless until normalized here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,6 +11,31 @@ function numberOrNull(value: unknown) {
 function roundedSum(values: unknown[]) {
   const numbers = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   return numbers.length ? Math.round(numbers.reduce((sum, value) => sum + value, 0) * 100) / 100 : null;
+}
+
+function roundedUv(value: unknown) {
+  const index = numberOrNull(value);
+  return index === null ? null : Math.max(0, Math.round(index * 10) / 10);
+}
+
+export function uvRisk(index: number | null) {
+  if (index === null) return { category: "Unavailable", guidance: "UV guidance is unavailable" };
+  if (index < 3) return { category: "Low", guidance: "Minimal protection needed" };
+  if (index < 6) return { category: "Moderate", guidance: "Use shade, SPF 30, a hat, and sunglasses" };
+  if (index < 8) return { category: "High", guidance: "Reduce midday exposure and use full sun protection" };
+  if (index < 11) return { category: "Very high", guidance: "Extra protection; avoid prolonged midday exposure" };
+  return { category: "Extreme", guidance: "Avoid midday exposure and use full sun protection" };
+}
+
+function localDateKey(iso: string, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
 function isoDurationMs(value: unknown) {
@@ -63,6 +88,7 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
       snowfallIn: at("snowfall", index),
       cloudCoverPct: at("cloud_cover", index),
       freezingLevelFt: at("freezing_level_height", index),
+      uvIndex: roundedUv(hourly.uv_index?.[index]),
     };
   });
 
@@ -89,6 +115,31 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
   const quantitativePrecipitation = nwsGrid?.properties?.quantitativePrecipitation;
   const nws24 = nwsPrecipitationIn(quantitativePrecipitation, 24, nowMs);
   const nws72 = nwsPrecipitationIn(quantitativePrecipitation, 72, nowMs);
+  const currentUvIndex = roundedUv(payload.current?.uv_index) ?? hours[0]?.uvIndex ?? null;
+  const currentUvRisk = uvRisk(currentUvIndex);
+  const next24UvHours = hours.slice(0, 24).filter(
+    (hour): hour is ForecastSignalHour & { uvIndex: number } => hour.uvIndex !== null,
+  );
+  const peakUvHour = next24UvHours.reduce<(ForecastSignalHour & { uvIndex: number }) | null>(
+    (peak, hour) => !peak || hour.uvIndex > peak.uvIndex ? hour : peak,
+    null,
+  );
+  const next24UvIndexMax = peakUvHour?.uvIndex ?? null;
+  const next24UvRisk = uvRisk(next24UvIndexMax);
+  const timeZone = typeof payload.timezone === "string" ? payload.timezone : "UTC";
+  const dailyUv = new Map<string, UvForecastDay>();
+  for (const hour of hours) {
+    if (hour.uvIndex === null) continue;
+    const key = localDateKey(hour.time, timeZone);
+    const previous = dailyUv.get(key);
+    if (!previous || hour.uvIndex > previous.maxIndex) {
+      dailyUv.set(key, {
+        date: hour.time,
+        maxIndex: hour.uvIndex,
+        category: uvRisk(hour.uvIndex).category,
+      });
+    }
+  }
 
   return {
     next24PrecipitationIn: nws24 ?? roundedSum(hours.slice(0, 24).map((hour) => hour.precipitationIn)),
@@ -97,6 +148,13 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
     peakCloudCoverPct: hours.length ? Math.round(Math.max(...hours.map((hour) => hour.cloudCoverPct ?? 0))) : null,
     freezingLevelFt: hours[0]?.freezingLevelFt ?? null,
     bestOutdoorWindow,
+    currentUvIndex,
+    currentUvCategory: currentUvRisk.category,
+    next24UvIndexMax,
+    next24UvPeakAt: peakUvHour?.time ?? null,
+    next24UvCategory: next24UvRisk.category,
+    uvGuidance: next24UvRisk.guidance,
+    uvForecast: [...dailyUv.values()].slice(0, 3),
     hours: hours.slice(0, 24),
   };
 }

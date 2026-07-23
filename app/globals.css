@@ -2144,7 +2144,7 @@ h2 {
 }
 
 .signal-matrix > span:nth-child(3n) { border-right: 0; }
-.signal-matrix > span:nth-child(n + 4) { border-bottom: 0; }
+.signal-matrix > span:nth-child(n + 7) { border-bottom: 0; }
 .signal-matrix b,
 .best-window b,
 .environment-list b,
@@ -2163,6 +2163,68 @@ h2 {
   font-family: var(--font-display), "Arial Narrow", sans-serif;
   font-size: 21px;
   font-weight: 500;
+}
+
+.uv-signal {
+  --uv-risk-rgb: var(--line-rgb);
+  position: relative;
+  gap: 1px;
+  background: linear-gradient(180deg, rgba(var(--uv-risk-rgb), 0.04), transparent 52%);
+  box-shadow: inset 0 2px rgba(var(--uv-risk-rgb), 0.5);
+}
+
+.uv-signal.uv-risk-low { --uv-risk-rgb: var(--signal-rgb); }
+.uv-signal.uv-risk-moderate,
+.uv-signal.uv-risk-high { --uv-risk-rgb: var(--amber-rgb); }
+.uv-signal.uv-risk-very-high,
+.uv-signal.uv-risk-extreme { --uv-risk-rgb: var(--danger-rgb); }
+
+.uv-signal > b {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.uv-signal > small {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uv-outlook {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 3px;
+}
+
+.uv-outlook i {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-style: normal;
+}
+
+.uv-outlook em {
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 6px;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.signal-matrix .uv-outlook strong {
+  overflow: hidden;
+  color: var(--copy-strong);
+  font-size: 13px;
+  text-overflow: ellipsis;
 }
 
 .best-window {
@@ -2916,8 +2978,8 @@ h2 {
   .signal-matrix { grid-template-columns: repeat(2, 1fr); }
   .signal-matrix > span:nth-child(3n) { border-right: 1px solid var(--line); }
   .signal-matrix > span:nth-child(even) { border-right: 0; }
-  .signal-matrix > span:nth-child(n + 4) { border-bottom: 1px solid var(--line); }
-  .signal-matrix > span:nth-last-child(-n + 2) { border-bottom: 0; }
+  .signal-matrix > span:nth-child(n + 7) { border-bottom: 1px solid var(--line); }
+  .signal-matrix > span:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
   .intelligence-grid { display: grid; }
   .preference-actions { grid-template-columns: 1fr; }
   .theme-options { grid-template-columns: 1fr; }
@@ -3629,9 +3691,21 @@ h2 {
     display: grid;
   }
 
-  .app-shell.is-fullscreen .signal-matrix > span { min-height: 45px; padding: 5px 7px; }
+  .app-shell.is-fullscreen .signal-panel {
+    display: grid;
+    grid-template-rows: 39px minmax(0, 1fr) 32px;
+    overflow: hidden;
+  }
+  .app-shell.is-fullscreen .signal-panel .signal-matrix {
+    min-height: 0;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+  .app-shell.is-fullscreen .signal-matrix > span { min-height: 0; padding: 3px 7px; }
   .app-shell.is-fullscreen .signal-matrix strong { font-size: 17px; }
-  .app-shell.is-fullscreen .best-window { min-height: 37px; padding: 5px 8px; font-size: 8px; }
+  .app-shell.is-fullscreen .signal-panel .uv-signal > small { font-size: 6px; }
+  .app-shell.is-fullscreen .signal-panel .uv-outlook em { font-size: 5px; }
+  .app-shell.is-fullscreen .signal-panel .uv-outlook strong { font-size: 11px; }
+  .app-shell.is-fullscreen .best-window { min-height: 0; padding: 4px 8px; font-size: 8px; }
   .app-shell.is-fullscreen .severe-center {
     min-height: 0;
     display: grid;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ChevronRight, CloudSun, Flame, Leaf, Radio, ShipWheel, Sparkles, Waves } from "lucide-react";
+import { Activity, ChevronRight, CloudSun, Flame, Leaf, Radio, ShipWheel, Sparkles, Sun, Waves } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { IntelligenceData } from "@/lib/types";
 
@@ -11,6 +11,18 @@ function value(value: number | null | undefined, suffix = "") {
 function timeRange(start: string, end: string, timeZone: string) {
   const format = (iso: string) => new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", hour: "numeric" }).format(new Date(iso));
   return `${format(start)}–${format(end)}`;
+}
+
+function timeLabel(iso: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric" }).format(new Date(iso));
+}
+
+function dayLabel(iso: string, timeZone: string) {
+  return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(new Date(iso));
+}
+
+function riskClass(category: string | undefined) {
+  return `uv-risk-${(category ?? "unavailable").toLowerCase().replaceAll(" ", "-")}`;
 }
 
 export function IntelligenceGrid({ latitude, longitude, timeZone, refreshKey }: { latitude: number; longitude: number; timeZone: string; refreshKey: number }) {
@@ -47,6 +59,29 @@ export function IntelligenceGrid({ latitude, longitude, timeZone, refreshKey }: 
           <span><b>Snow / 72h</b><strong>{value(forecast?.next72SnowfallIn, '"')}</strong></span>
           <span><b>Cloud peak</b><strong>{value(forecast?.peakCloudCoverPct, "%")}</strong></span>
           <span><b>Freezing level</b><strong>{forecast?.freezingLevelFt ? `${Math.round(forecast.freezingLevelFt).toLocaleString()} ft` : "—"}</strong></span>
+          <span className={`uv-signal ${riskClass(forecast?.currentUvCategory)}`} title={forecast?.uvGuidance}>
+            <b><Sun size={12} aria-hidden="true" /> UV now</b>
+            <strong>{value(forecast?.currentUvIndex)}</strong>
+            <small>{forecast?.currentUvCategory ?? "Acquiring"}</small>
+          </span>
+          <span className={`uv-signal ${riskClass(forecast?.next24UvCategory)}`} title={forecast?.uvGuidance}>
+            <b>UV peak / 24h</b>
+            <strong>{value(forecast?.next24UvIndexMax)}</strong>
+            <small>{forecast?.next24UvPeakAt ? `${forecast.next24UvCategory} · ${timeLabel(forecast.next24UvPeakAt, timeZone)}` : "Acquiring forecast"}</small>
+          </span>
+          <span className="uv-signal uv-outlook-cell" title="Cloud-adjusted daily maximum UV forecast">
+            <b>Three-day UV peaks</b>
+            <span className="uv-outlook">
+              {(forecast?.uvForecast ?? []).map((day) => (
+                <i className={riskClass(day.category)} key={day.date}>
+                  <em>{dayLabel(day.date, timeZone)}</em>
+                  <strong>{day.maxIndex}</strong>
+                </i>
+              ))}
+              {!forecast?.uvForecast.length && <i><em>—</em><strong>—</strong></i>}
+            </span>
+            <small>{forecast?.uvGuidance ?? "Acquiring sun-exposure guidance"}</small>
+          </span>
         </div>
         <div className="best-window">
           <Sparkles size={16} />

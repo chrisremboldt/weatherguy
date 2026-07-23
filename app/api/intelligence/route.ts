@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Valid latitude and longitude are required." }, { status: 400 });
   }
 
-  const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}&hourly=apparent_temperature,precipitation,snowfall,cloud_cover,freezing_level_height&forecast_days=3&temperature_unit=fahrenheit&precipitation_unit=inch&timeformat=unixtime&timezone=auto`;
+  const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}&current=uv_index&hourly=apparent_temperature,precipitation,snowfall,cloud_cover,freezing_level_height,uv_index&forecast_days=3&temperature_unit=fahrenheit&precipitation_unit=inch&timeformat=unixtime&timezone=auto`;
   const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}&current=us_aqi,pm2_5,ozone&hourly=us_aqi&forecast_days=2&timeformat=unixtime&timezone=auto`;
   const [forecastResult, nwsGridResult, airResult, earthquakeResult, spaceResult] = await Promise.allSettled([
     getJson(forecastUrl, 900),

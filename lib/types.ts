@@ -180,6 +180,13 @@ export type ForecastSignalHour = {
   snowfallIn: number | null;
   cloudCoverPct: number | null;
   freezingLevelFt: number | null;
+  uvIndex: number | null;
+};
+
+export type UvForecastDay = {
+  date: string;
+  maxIndex: number;
+  category: string;
 };
 
 export type ForecastSignals = {
@@ -189,6 +196,13 @@ export type ForecastSignals = {
   peakCloudCoverPct: number | null;
   freezingLevelFt: number | null;
   bestOutdoorWindow: { start: string; end: string; reason: string } | null;
+  currentUvIndex: number | null;
+  currentUvCategory: string;
+  next24UvIndexMax: number | null;
+  next24UvPeakAt: string | null;
+  next24UvCategory: string;
+  uvGuidance: string;
+  uvForecast: UvForecastDay[];
   hours: ForecastSignalHour[];
 };
 
