@@ -893,6 +893,25 @@ export function WeatherDashboard() {
         </section>
       </div>
 
+      <aside className="sponsor-slot" aria-label="Sponsored project">
+        <a className="sponsor-project" href="https://lightconesystems.com/" target="_blank" rel="sponsored noreferrer">
+          <span className="sponsor-mark" aria-hidden="true"><Plane size={18} /></span>
+          <span className="sponsor-copy">
+            <span className="sponsor-kicker">Sponsored signal</span>
+            <strong>Lightcone Ledger</strong>
+            <small>Dispatch and proof for controlled UAS operations.</small>
+          </span>
+          <span className="release-rail" aria-hidden="true">
+            <i>Record</i><i>Check</i><i>Release</i><i>Prove</i>
+          </span>
+          <span className="sponsor-visit">Visit Lightcone <ChevronRight size={14} /></span>
+        </a>
+        <div className="sponsor-inquiries">
+          <span>Reserved sponsor position</span>
+          <a href="mailto:chris.remboldt@gmail.com?subject=wxdynamics%20ad%20space">Contact for ad space inquiries</a>
+        </div>
+      </aside>
+
       <footer className="source-strip">
         <span><i className={!online || error ? "status-dot degraded" : "status-dot"} /> {!online ? "Offline · cached desk remains available" : offlineSnapshot ? "Serving the last saved snapshot" : error ? "Live feed degraded" : "All live feeds connected"}</span>
         <span>Weather: NOAA / National Weather Service</span>
