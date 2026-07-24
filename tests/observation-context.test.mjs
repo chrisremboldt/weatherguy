@@ -17,6 +17,14 @@ test("the status column adds a mode-aware station recorder with trend, nearby, a
   assert.match(styles, /\.context-panel\s*{[^}]*flex:\s*1 1 260px;/s);
 });
 
+test("compact desktop stacks airport weather and the recorder instead of stretching a blank card", () => {
+  assert.match(styles, /@media \(min-width: 821px\) and \(max-width: 1150px\)/);
+  assert.match(styles, /\.status-column \.current-panel\s*{[^}]*grid-row:\s*1 \/ 3;/s);
+  assert.match(styles, /\.status-column \.aviation-panel\s*{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
+  assert.match(styles, /\.status-column \.context-panel\s*{[^}]*grid-column:\s*2;[^}]*grid-row:\s*2;/s);
+  assert.match(styles, /\.status-column \.context-trend\s*{[^}]*grid-template-rows:\s*minmax\(78px, 1fr\) auto;/s);
+});
+
 test("recent station history uses NWS observations with a six-hour METAR fallback", () => {
   assert.match(route, /observations\?start=\$\{encodeURIComponent\(observationHistoryStart\)\}&limit=100/);
   assert.match(route, /format=json&taf=false&hours=6/);
