@@ -2,14 +2,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { normalizeForecast, nwsPrecipitationIn, uvRisk } from "../lib/forecast-signals.ts";
+import { normalizeForecast, nwsPrecipitationIn, selectBestOutdoorWindow, uvRisk } from "../lib/forecast-signals.ts";
 
 const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 const component = await readFile(new URL("../components/intelligence-grid.tsx", import.meta.url), "utf8");
 const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
 const route = await readFile(new URL("../app/api/intelligence/route.ts", import.meta.url), "utf8");
 
-test("Storm Center contains the complete SPC image and its legend", () => {
+test("Storm Center contains complete Day 1 and Day 2 SPC images with their legends", () => {
+  assert.match(component, /day1otlk\.png/);
+  assert.match(component, /day2otlk\.png/);
+  assert.match(component, /<figcaption>Day 1<\/figcaption>/);
+  assert.match(component, /<figcaption>Day 2<\/figcaption>/);
+  assert.match(styles, /\.spc-stage\s*{[^}]*grid-template-columns:\s*repeat\(2,/s);
   assert.match(styles, /\.spc-stage img\s*{[^}]*object-fit:\s*contain;/s);
   assert.doesNotMatch(styles, /\.spc-stage img\s*{[^}]*object-fit:\s*cover;/s);
 });
@@ -64,6 +69,43 @@ test("U.S. forecast totals prefer NWS QPF while retaining Open-Meteo as the worl
   assert.equal(nwsForecast.next72PrecipitationIn, 1);
   assert.equal(fallbackForecast.next24PrecipitationIn, 6);
   assert.equal(fallbackForecast.next72PrecipitationIn, 18);
+});
+
+test("the outdoor-window ranking accepts dry overcast weather instead of rejecting every cloudy hour", () => {
+  const start = Date.parse("2026-07-24T12:00:00Z");
+  const hours = Array.from({ length: 8 }, (_, index) => ({
+    time: new Date(start + index * 3_600_000).toISOString(),
+    feelsLikeF: 72,
+    precipitationIn: 0,
+    snowfallIn: 0,
+    cloudCoverPct: 100,
+    freezingLevelFt: 12_000,
+    uvIndex: 1,
+  }));
+
+  const window = selectBestOutdoorWindow(hours, "America/Chicago");
+
+  assert.equal(window?.start, hours[0].time);
+  assert.equal(window?.end, new Date(start + 3 * 3_600_000).toISOString());
+  assert.match(window?.reason ?? "", /comfortable despite extensive cloud cover/);
+});
+
+test("the outdoor-window ranking skips a rainy opening period for a later dry stretch", () => {
+  const start = Date.parse("2026-07-24T12:00:00Z");
+  const hours = Array.from({ length: 9 }, (_, index) => ({
+    time: new Date(start + index * 3_600_000).toISOString(),
+    feelsLikeF: 74,
+    precipitationIn: index < 3 ? 0.08 : 0,
+    snowfallIn: 0,
+    cloudCoverPct: 95,
+    freezingLevelFt: 12_000,
+    uvIndex: 1,
+  }));
+
+  const window = selectBestOutdoorWindow(hours, "America/Chicago");
+
+  assert.equal(window?.start, hours[3].time);
+  assert.match(window?.reason ?? "", /comfortable despite extensive cloud cover/);
 });
 
 test("UV guidance includes current conditions, a timed 24-hour peak, and three local-day peaks", () => {

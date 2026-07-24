@@ -50,6 +50,78 @@ function isoDurationMs(value: unknown) {
   return duration > 0 ? duration : null;
 }
 
+function localHour(iso: string, timeZone: string) {
+  return Number(new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).format(new Date(iso)));
+}
+
+export function selectBestOutdoorWindow(
+  hours: ForecastSignalHour[],
+  timeZone: string,
+): ForecastSignals["bestOutdoorWindow"] {
+  if (hours.length < 3) return null;
+
+  const candidates = Array.from({ length: Math.min(hours.length - 2, 31) }, (_, index) => {
+    const sample = hours.slice(index, index + 3);
+    const feelsLike = sample
+      .map((hour) => hour.feelsLikeF)
+      .filter((temperature): temperature is number => temperature !== null);
+    const cloudCover = sample
+      .map((hour) => hour.cloudCoverPct)
+      .filter((cover): cover is number => cover !== null);
+    const totalRain = sample.reduce((sum, hour) => sum + (hour.precipitationIn ?? 0), 0);
+    const averageFeelsLike = feelsLike.length
+      ? feelsLike.reduce((sum, temperature) => sum + temperature, 0) / feelsLike.length
+      : null;
+    const averageCloudCover = cloudCover.length
+      ? cloudCover.reduce((sum, cover) => sum + cover, 0) / cloudCover.length
+      : null;
+    const daytimeHours = sample.filter((hour) => {
+      const hourOfDay = localHour(hour.time, timeZone);
+      return hourOfDay >= 6 && hourOfDay < 21;
+    }).length;
+    const temperaturePenalty = feelsLike.reduce((penalty, temperature) => {
+      if (temperature < 50) return penalty + (50 - temperature) * 1.8;
+      if (temperature > 86) return penalty + (temperature - 86) * 2.2;
+      return penalty + Math.abs(temperature - 70) * 0.05;
+    }, feelsLike.length ? 0 : 4);
+    const rainPenalty =
+      totalRain * 700 +
+      sample.filter((hour) => (hour.precipitationIn ?? 0) >= 0.03).length * 18;
+    const daylightPenalty = (3 - daytimeHours) * 24;
+    const cloudPenalty = (averageCloudCover ?? 50) * 0.025;
+    const recencyPenalty = index * 0.2;
+
+    return {
+      sample,
+      totalRain,
+      averageFeelsLike,
+      averageCloudCover,
+      score: temperaturePenalty + rainPenalty + daylightPenalty + cloudPenalty + recencyPenalty,
+    };
+  });
+
+  const best = candidates.reduce((winner, candidate) => candidate.score < winner.score ? candidate : winner);
+  const reason = best.totalRain >= 0.08
+    ? "Lowest-impact three-hour stretch; rain remains possible"
+    : best.averageFeelsLike !== null && best.averageFeelsLike > 86
+      ? "Lowest rain risk available, but it will feel hot"
+      : best.averageFeelsLike !== null && best.averageFeelsLike < 50
+        ? "Lowest rain risk available, but it will feel cool"
+        : best.averageCloudCover !== null && best.averageCloudCover >= 80
+          ? "Dry and comfortable despite extensive cloud cover"
+          : "Dry with manageable apparent temperatures";
+
+  return {
+    start: best.sample[0].time,
+    end: new Date(new Date(best.sample[2].time).getTime() + 3_600_000).toISOString(),
+    reason,
+  };
+}
+
 export function nwsPrecipitationIn(field: JsonRecord | undefined, horizonHours: number, nowMs = Date.now()) {
   if (!field || field.uom !== "wmoUnit:mm" || !Array.isArray(field.values)) return null;
   const windowEnd = nowMs + horizonHours * 3_600_000;
@@ -92,25 +164,8 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
     };
   });
 
-  let bestOutdoorWindow: ForecastSignals["bestOutdoorWindow"] = null;
-  for (let index = 0; index <= Math.min(hours.length - 3, 30); index += 1) {
-    const sample = hours.slice(index, index + 3);
-    const suitable = sample.every(
-      (hour) =>
-        (hour.precipitationIn ?? 0) < 0.03 &&
-        (hour.cloudCoverPct ?? 0) < 78 &&
-        (hour.feelsLikeF ?? 65) >= 45 &&
-        (hour.feelsLikeF ?? 65) <= 88,
-    );
-    if (suitable) {
-      bestOutdoorWindow = {
-        start: sample[0].time,
-        end: new Date(new Date(sample[2].time).getTime() + 3_600_000).toISOString(),
-        reason: "Three dry hours with manageable cloud cover and apparent temperature",
-      };
-      break;
-    }
-  }
+  const timeZone = typeof payload.timezone === "string" ? payload.timezone : "UTC";
+  const bestOutdoorWindow = selectBestOutdoorWindow(hours, timeZone);
 
   const quantitativePrecipitation = nwsGrid?.properties?.quantitativePrecipitation;
   const nws24 = nwsPrecipitationIn(quantitativePrecipitation, 24, nowMs);
@@ -126,7 +181,6 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
   );
   const next24UvIndexMax = peakUvHour?.uvIndex ?? null;
   const next24UvRisk = uvRisk(next24UvIndexMax);
-  const timeZone = typeof payload.timezone === "string" ? payload.timezone : "UTC";
   const dailyUv = new Map<string, UvForecastDay>();
   for (const hour of hours) {
     if (hour.uvIndex === null) continue;

@@ -70,7 +70,11 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
         </div>
         <div className="best-window">
           <Sparkles size={16} />
-          <span><b>Best outdoor window</b>{forecast?.bestOutdoorWindow ? timeRange(forecast.bestOutdoorWindow.start, forecast.bestOutdoorWindow.end, timeZone) : "No three-hour window meets the comfort filter"}</span>
+          <span>
+            <b>Best 3-hour outdoor window</b>
+            <strong>{forecast?.bestOutdoorWindow ? timeRange(forecast.bestOutdoorWindow.start, forecast.bestOutdoorWindow.end, timeZone) : "Outlook unavailable"}</strong>
+            <small>{forecast?.bestOutdoorWindow?.reason ?? "Waiting for enough hourly forecast data"}</small>
+          </span>
         </div>
       </article>
 
@@ -81,9 +85,17 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
         </div>
         <div className="storm-center-body">
           <div className="spc-stage">
-            {/* SPC's operational outlook image updates in place throughout the day. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.png" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
+            <figure>
+              <figcaption>Day 1</figcaption>
+              {/* SPC's operational outlook images update in place throughout the day. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://www.spc.noaa.gov/products/outlook/day1otlk.png" alt="NOAA Storm Prediction Center Day 1 convective outlook" />
+            </figure>
+            <figure>
+              <figcaption>Day 2</figcaption>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://www.spc.noaa.gov/products/outlook/day2otlk.png" alt="NOAA Storm Prediction Center Day 2 convective outlook" />
+            </figure>
           </div>
           <nav className="spc-links" aria-label="Storm Prediction Center products">
             <a href="https://www.spc.noaa.gov/products/outlook/day1probotlk.html" target="_blank" rel="noreferrer"><span><b>Tornado / wind / hail</b><small>Day 1 probability maps</small></span><ChevronRight size={13} /></a>
