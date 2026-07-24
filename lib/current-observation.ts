@@ -1,4 +1,4 @@
-import type { CurrentObservation } from "./types";
+import type { CurrentObservation, ObservationHistoryPoint } from "./types";
 
 // NOAA's NWS and AviationWeather APIs are schemaless until they are normalized here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -111,6 +111,28 @@ export function metarObservationTimestamp(metar: JsonRecord | undefined): string
   return isoTimestamp(metar.reportTime) ?? isoTimestamp(metar.receiptTime);
 }
 
+function historyPoint(candidate: ObservationCandidate): ObservationHistoryPoint | null {
+  if (!candidate.timestamp) return null;
+  const hasSignal = [
+    candidate.temperatureF,
+    candidate.dewpointF,
+    candidate.pressureInHg,
+    candidate.windSpeedMph,
+    candidate.windGustMph,
+  ].some((value) => value !== null);
+  if (!hasSignal) return null;
+
+  return {
+    timestamp: candidate.timestamp,
+    source: candidate.source,
+    temperatureF: candidate.temperatureF,
+    dewpointF: candidate.dewpointF,
+    pressureInHg: candidate.pressureInHg,
+    windSpeedMph: candidate.windSpeedMph,
+    windGustMph: candidate.windGustMph,
+  };
+}
+
 function decodeMetarToken(rawToken: string) {
   let token = rawToken.toUpperCase();
   const words: string[] = [];
@@ -213,6 +235,42 @@ function firstValue<K extends keyof ObservationCandidate>(
     if (value !== null && value !== undefined && value !== "") return value;
   }
   return null as ObservationCandidate[K];
+}
+
+export function selectObservationHistory(
+  nwsCollection: JsonRecord | null,
+  metars: JsonRecord[],
+): ObservationHistoryPoint[] {
+  const collapseHourly = (points: ObservationHistoryPoint[]) => {
+    const sorted = [...points].sort((left, right) => Date.parse(left.timestamp) - Date.parse(right.timestamp));
+    const latestTime = Date.parse(sorted.at(-1)?.timestamp ?? "");
+    const recent = Number.isFinite(latestTime)
+      ? sorted.filter((point) => Date.parse(point.timestamp) >= latestTime - 6 * 3_600_000)
+      : sorted;
+    const buckets = new Map<number, ObservationHistoryPoint>();
+
+    for (const point of recent) {
+      const bucket = Math.floor(Date.parse(point.timestamp) / 3_600_000);
+      const existing = buckets.get(bucket);
+      buckets.set(bucket, {
+        ...point,
+        windSpeedMph: Math.max(existing?.windSpeedMph ?? 0, point.windSpeedMph ?? 0) || null,
+        windGustMph: Math.max(existing?.windGustMph ?? 0, point.windGustMph ?? 0) || null,
+      });
+    }
+
+    return Array.from(buckets.values()).slice(-7);
+  };
+  const nwsPoints = collapseHourly((nwsCollection?.features ?? [])
+    .map((feature: JsonRecord) => historyPoint(normalizeNwsObservation(feature)))
+    .filter((point: ObservationHistoryPoint | null): point is ObservationHistoryPoint => point !== null));
+  const metarPoints = collapseHourly(metars
+    .map((metar) => normalizeMetarObservation(metar))
+    .map((candidate) => candidate ? historyPoint(candidate) : null)
+    .filter((point): point is ObservationHistoryPoint => point !== null));
+  const preferred = nwsPoints.length >= 3 ? nwsPoints : metarPoints;
+
+  return preferred;
 }
 
 export function selectCurrentObservation(

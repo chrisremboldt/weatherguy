@@ -811,6 +811,317 @@ h2 {
   border-top: 1px solid var(--line);
 }
 
+.context-panel {
+  min-height: 260px;
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.context-panel-heading {
+  min-height: 91px;
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.context-panel-heading > div:first-child {
+  min-width: 0;
+}
+
+.context-panel-heading h2 {
+  overflow: hidden;
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-tabs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(var(--ink-rgb), 0.46);
+}
+
+.context-tabs button {
+  min-width: 0;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+  color: var(--faint);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.context-tabs button:hover,
+.context-tabs button:focus-visible {
+  color: var(--cloud);
+  border-color: var(--line);
+  outline: 0;
+}
+
+.context-tabs button.active {
+  color: var(--signal);
+  border-color: rgba(var(--signal-rgb), 0.34);
+  background: rgba(var(--signal-rgb), 0.075);
+}
+
+.context-panel-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  overflow: hidden;
+}
+
+.context-trend {
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-rows: minmax(128px, 1fr) auto;
+}
+
+.station-trace {
+  position: relative;
+  min-height: 128px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(var(--sky-rgb), 0.025), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgba(var(--line-rgb), 0.08) 25%);
+}
+
+.station-trace svg {
+  position: absolute;
+  inset: 21px 8px 20px;
+  width: calc(100% - 16px);
+  height: calc(100% - 41px);
+  overflow: visible;
+}
+
+.station-trace-grid {
+  fill: none;
+  stroke: rgba(var(--line-rgb), 0.15);
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+
+.station-temperature-line,
+.station-dewpoint-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.65;
+  vector-effect: non-scaling-stroke;
+}
+
+.station-temperature-line {
+  stroke: var(--sky);
+  filter: drop-shadow(0 0 3px rgba(var(--sky-rgb), 0.28));
+}
+
+.station-dewpoint-line {
+  stroke: var(--signal);
+  stroke-dasharray: 3 2;
+}
+
+.station-trace-key {
+  position: absolute;
+  top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+}
+
+.station-trace-key::before {
+  content: "";
+  width: 12px;
+  height: 1px;
+  background: currentColor;
+}
+
+.station-trace-key.temperature { left: 9px; color: var(--sky); }
+.station-trace-key.dewpoint { right: 9px; color: var(--signal); }
+.station-trace-key.dewpoint::before { border-top: 1px dashed currentColor; background: transparent; }
+
+.station-trace-times {
+  position: absolute;
+  right: 9px;
+  bottom: 6px;
+  left: 9px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+}
+
+.station-trace-empty {
+  min-height: 128px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  line-height: 1.5;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.station-trend-readout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+
+.station-trend-readout > span {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px 9px;
+  border-right: 1px solid var(--line);
+}
+
+.station-trend-readout > span:last-child { border-right: 0; }
+.station-trend-readout b {
+  color: var(--faint);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.station-trend-readout strong {
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--copy-strong);
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-nearby {
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-rows: repeat(5, minmax(42px, 1fr));
+}
+
+.context-nearby > div {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 76px 40px minmax(82px, 1fr) minmax(86px, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--line);
+}
+
+.context-nearby > div:last-child { border-bottom: 0; }
+.context-nearby > div > span { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.context-nearby strong { color: var(--cloud); font-family: var(--font-mono), ui-monospace, monospace; font-size: 9px; }
+.context-nearby i { font-family: var(--font-mono), ui-monospace, monospace; font-size: 7px; font-style: normal; }
+.context-nearby b { color: var(--copy-strong); font-family: var(--font-display), "Arial Narrow", sans-serif; font-size: 16px; font-weight: 500; }
+.context-nearby small,
+.context-nearby em {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-nearby em { color: var(--faint); text-align: right; }
+.context-nearby > p {
+  align-self: center;
+  padding: 16px;
+  color: var(--faint);
+  font-size: 10px;
+  text-align: center;
+}
+
+.context-briefing {
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 13px;
+  background: linear-gradient(135deg, rgba(var(--signal-rgb), 0.035), transparent 58%);
+}
+
+.context-briefing.has-alert {
+  background: linear-gradient(135deg, rgba(var(--danger-rgb), 0.09), transparent 58%);
+}
+
+.context-briefing-state {
+  color: var(--signal);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.context-briefing.has-alert .context-briefing-state { color: var(--danger-contrast); }
+.context-briefing > strong {
+  margin-top: 7px;
+  color: var(--cloud);
+  font-family: var(--font-display), "Arial Narrow", sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+.context-briefing > p {
+  display: -webkit-box;
+  margin-top: 9px;
+  overflow: hidden;
+  color: var(--copy);
+  font-size: 10px;
+  line-height: 1.48;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+.context-briefing > small {
+  margin-top: auto;
+  padding-top: 10px;
+  overflow: hidden;
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-context-strip {
+  display: none;
+}
+
 .aviation-facts span {
   display: flex;
   flex-direction: column;
@@ -3076,6 +3387,7 @@ h2 {
   }
 
   .status-column { display: grid; grid-template-columns: 1.15fr 0.85fr; }
+  .status-column .context-panel { grid-column: 1 / -1; }
   .mode-minimal .dashboard-grid { grid-template-areas: "sensor sensor" "status status"; }
   .sensor-grid .radar-stage,
   .satellite-stage,
@@ -3133,6 +3445,12 @@ h2 {
 
 @media (max-width: 560px) {
   .brand-lockup { gap: 6px; }
+  .context-tabs button { padding: 0 5px; }
+  .context-nearby > div {
+    grid-template-columns: 68px 36px minmax(70px, 1fr) auto;
+  }
+  .context-nearby > div > small:nth-of-type(2) { display: none; }
+  .context-nearby > div > em { display: none; }
   .brand-lockup .radar-mark { width: 25px; height: 25px; }
   .brand-name { font-size: 15px; }
   .location-lockup strong { max-width: 92px; font-size: 9px; }
@@ -3426,6 +3744,10 @@ h2 {
     flex-direction: column;
     gap: 8px;
     overflow: hidden;
+  }
+
+  .app-shell.is-fullscreen .context-panel {
+    display: none;
   }
 
   .app-shell.is-fullscreen .current-panel {
@@ -4197,6 +4519,70 @@ h2 {
   .app-shell.is-fullscreen .metar-raw { min-height: 35px; font-size: 8px; line-height: 1.35; }
   .app-shell.is-fullscreen .aviation-facts { margin-top: 7px; padding-top: 7px; }
   .app-shell.is-fullscreen .aviation-facts span { font-size: 8px; }
+}
+
+@media (min-width: 900px) and (min-height: 1000px) {
+  .app-shell.is-fullscreen .current-context-strip {
+    min-height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    grid-template-columns: 76px minmax(58px, 1fr) auto auto auto;
+    align-items: center;
+    gap: 7px;
+    padding: 3px 8px;
+    overflow: hidden;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    background:
+      linear-gradient(90deg, rgba(var(--sky-rgb), 0.035), transparent 55%, rgba(var(--signal-rgb), 0.025)),
+      rgba(var(--ink-rgb), 0.22);
+  }
+
+  .app-shell.is-fullscreen .current-context-strip > span {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .app-shell.is-fullscreen .current-context-strip > span:not(.current-context-label) {
+    padding-left: 7px;
+    border-left: 1px solid var(--line);
+  }
+
+  .app-shell.is-fullscreen .current-context-strip b {
+    overflow: hidden;
+    color: var(--copy);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 7px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+  }
+
+  .app-shell.is-fullscreen .current-context-label {
+    color: var(--signal);
+    text-transform: uppercase;
+  }
+
+  .app-shell.is-fullscreen .station-trace.compact {
+    min-height: 28px;
+    height: 28px;
+    background: transparent;
+  }
+
+  .app-shell.is-fullscreen .station-trace.compact svg {
+    inset: 2px 0;
+    width: 100%;
+    height: calc(100% - 4px);
+  }
+
+  .app-shell.is-fullscreen .current-context-strip .station-trace-empty {
+    min-height: 28px;
+    height: 28px;
+    padding: 0;
+    font-size: 6px;
+  }
 }
 
 @media (min-width: 900px) and (min-height: 1200px) {

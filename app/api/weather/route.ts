@@ -8,7 +8,11 @@ import type {
   WeatherAlert,
   WeatherDashboardData,
 } from "@/lib/types";
-import { metarObservationTimestamp, selectCurrentObservation } from "@/lib/current-observation";
+import {
+  metarObservationTimestamp,
+  selectCurrentObservation,
+  selectObservationHistory,
+} from "@/lib/current-observation";
 
 export const runtime = "nodejs";
 
@@ -235,13 +239,20 @@ export async function GET(request: NextRequest) {
     const station = stationResult.value.features?.[0];
     if (!station) throw new Error("No nearby NWS observation station was found.");
     const stationId = station.properties.stationIdentifier as string;
+    const observationHistoryStart = new Date(
+      Math.floor((Date.now() - 7 * 3_600_000) / 600_000) * 600_000,
+    ).toISOString();
 
     const latestProduct =
       productsResult.status === "fulfilled" ? productsResult.value["@graph"]?.[0] : null;
-    const [observationResult, aviationResult, tafResult, discussionResult] = await Promise.allSettled([
+    const [observationResult, observationHistoryResult, aviationResult, tafResult, discussionResult] = await Promise.allSettled([
       getJson<JsonRecord>(`${NWS_BASE}/stations/${stationId}/observations/latest`, 0),
+      getJson<JsonRecord>(
+        `${NWS_BASE}/stations/${stationId}/observations?start=${encodeURIComponent(observationHistoryStart)}&limit=100`,
+        60,
+      ),
       getJson<JsonRecord[]>(
-        `${AVIATION_BASE}/metar?ids=${encodeURIComponent(stationId)}&format=json&taf=false`,
+        `${AVIATION_BASE}/metar?ids=${encodeURIComponent(stationId)}&format=json&taf=false&hours=6`,
         0,
         "application/json",
       ),
@@ -262,13 +273,21 @@ export async function GET(request: NextRequest) {
     if (hourlyResult.status === "rejected") notices.push("Hourly forecast is temporarily unavailable.");
     if (dailyResult.status === "rejected") notices.push("Daily forecast is temporarily unavailable.");
     if (alertsResult.status === "rejected") notices.push("NWS alerts could not be refreshed.");
+    if (observationHistoryResult.status === "rejected") notices.push("Recent station history is temporarily unavailable.");
     if (aviationResult.status === "rejected") notices.push("Aviation Weather is temporarily unavailable.");
     if (tafResult.status === "rejected") notices.push("The nearest-airport TAF is temporarily unavailable.");
     if (discussionResult.status === "rejected") notices.push("Forecast discussion is temporarily unavailable.");
 
-    const aviationMetar = aviationResult.status === "fulfilled"
-      ? aviationResult.value.find((metar) => String(metar.icaoId).toUpperCase() === stationId.toUpperCase())
-      : undefined;
+    const stationMetars = aviationResult.status === "fulfilled"
+      ? aviationResult.value
+          .filter((metar) => String(metar.icaoId).toUpperCase() === stationId.toUpperCase())
+          .sort((left, right) => {
+            const leftTime = metarObservationTimestamp(left);
+            const rightTime = metarObservationTimestamp(right);
+            return Date.parse(rightTime ?? "") - Date.parse(leftTime ?? "");
+          })
+      : [];
+    const aviationMetar = stationMetars[0];
 
     const dashboard: WeatherDashboardData = {
       fetchedAt: new Date().toISOString(),
@@ -285,6 +304,10 @@ export async function GET(request: NextRequest) {
         stationName: station.properties.name || stationId,
       },
       current: selectCurrentObservation(observationResult.value, aviationMetar),
+      observationHistory: selectObservationHistory(
+        observationHistoryResult.status === "fulfilled" ? observationHistoryResult.value : null,
+        stationMetars,
+      ),
       hourly: hourlyResult.status === "fulfilled" ? normalizeHourly(hourlyResult.value) : [],
       daily: dailyResult.status === "fulfilled" ? normalizeDaily(dailyResult.value) : [],
       alerts: alertsResult.status === "fulfilled" ? normalizeAlerts(alertsResult.value) : [],

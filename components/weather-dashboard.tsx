@@ -32,6 +32,7 @@ import {
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
+  AviationData,
   HourlyPeriod,
   DisplayMode,
   FavoriteLocation,
@@ -43,6 +44,7 @@ import type {
 import { WeatherIcon } from "@/components/weather-icon";
 import { AviationConsole } from "@/components/aviation-console";
 import { IntelligenceGrid } from "@/components/intelligence-grid";
+import { FullscreenObservationStrip, ObservationContext } from "@/components/observation-context";
 import { SensorDeck } from "@/components/sensor-deck";
 import { buildForecastDays } from "@/lib/forecast-days";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
@@ -260,6 +262,7 @@ export function WeatherDashboard() {
   const [formConfig, setFormConfig] = useState<LocationFormConfig>(() => formFromLocation(initialLocation()));
   const [data, setData] = useState<WeatherDashboardData | null>(null);
   const [intelligence, setIntelligence] = useState<IntelligenceData | null>(null);
+  const [regionalAviation, setRegionalAviation] = useState<AviationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -435,6 +438,24 @@ export function WeatherDashboard() {
   }, [intelligenceCoordinates, refreshKey]);
 
   useEffect(() => {
+    if (!intelligenceCoordinates) return;
+    const controller = new AbortController();
+
+    fetch(`/api/aviation?${intelligenceCoordinates}`, { signal: controller.signal })
+      .then(async (response) => {
+        const payload = (await response.json()) as AviationData;
+        if (!response.ok) throw new Error("Regional aviation feeds are unavailable.");
+        setRegionalAviation(payload);
+      })
+      .catch((requestError) => {
+        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
+        setRegionalAviation(null);
+      });
+
+    return () => controller.abort();
+  }, [intelligenceCoordinates, refreshKey]);
+
+  useEffect(() => {
     if (!autoRotate || favorites.length < 2) return;
     const timer = window.setInterval(() => {
       setConfig((current) => {
@@ -525,6 +546,7 @@ export function WeatherDashboard() {
     window.history.replaceState(null, "", `?${params.toString()}`);
     setData(null);
     setIntelligence(null);
+    setRegionalAviation(null);
     setConfig(next);
     setSettingsOpen(false);
     setGeoError(null);
@@ -823,6 +845,7 @@ export function WeatherDashboard() {
                 })}
               </div>
             </div>
+            {data && <FullscreenObservationStrip data={data} />}
             <div className="metrics-grid">
               <Metric icon={<Wind size={18} />} label="Wind" value={data ? `${cardinalDirection(data.current.windDirectionDeg)} ${data.current.windSpeedMph ?? "—"} mph${data.current.windGustMph ? ` · G${data.current.windGustMph}` : ""}` : "—"} />
               <Metric icon={<Droplets size={18} />} label="Humidity" value={data?.current.humidityPct === null || !data ? "—" : `${Math.round(data.current.humidityPct)}% · dew ${data.current.dewpointF}°`} />
@@ -848,6 +871,7 @@ export function WeatherDashboard() {
               <span><b>Altimeter</b>{data?.aviation?.altimeterInHg ? data.aviation.altimeterInHg.toFixed(2) : "—"}</span>
             </div>
           </section>
+          {data && <ObservationContext data={data} regional={regionalAviation} mode={displayMode} />}
         </aside>
 
         <section className="wallboard-bay" aria-label="Fullscreen wallboard scenes">
@@ -972,7 +996,7 @@ export function WeatherDashboard() {
                 <IntelligenceGrid data={intelligence} timeZone={data.location.timeZone} />
               </div>
               <div className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : showDeskOverview ? true : activeWallboardScene !== "aviation") : undefined}>
-                <AviationConsole data={data} intelligence={intelligence} refreshKey={refreshKey} />
+                <AviationConsole data={data} intelligence={intelligence} regional={regionalAviation} />
               </div>
             </>
           )}

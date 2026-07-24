@@ -25,6 +25,16 @@ export type CurrentObservation = {
   pressureInHg: number | null;
 };
 
+export type ObservationHistoryPoint = {
+  timestamp: string;
+  source: "NWS" | "METAR";
+  temperatureF: number | null;
+  dewpointF: number | null;
+  pressureInHg: number | null;
+  windSpeedMph: number | null;
+  windGustMph: number | null;
+};
+
 export type HourlyPeriod = {
   startTime: string;
   temperatureF: number;
@@ -116,6 +126,7 @@ export type WeatherDashboardData = {
   fetchedAt: string;
   location: DashboardLocation;
   current: CurrentObservation;
+  observationHistory: ObservationHistoryPoint[];
   hourly: HourlyPeriod[];
   daily: DailyPeriod[];
   alerts: WeatherAlert[];

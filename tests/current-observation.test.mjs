@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { selectCurrentObservation } from "../lib/current-observation.ts";
+import { selectCurrentObservation, selectObservationHistory } from "../lib/current-observation.ts";
 
 const olderNwsObservation = {
   properties: {
@@ -88,4 +88,31 @@ test("NWS remains the source when AviationWeather has no same-station report", (
   assert.equal(current.timestamp, "2026-07-22T01:35:00.000Z");
   assert.equal(current.temperatureF, 86);
   assert.equal(current.description, "Mostly Cloudy");
+});
+
+test("station history prefers a usable NWS series and falls back to METAR history", () => {
+  const nwsCollection = {
+    features: [0, 1, 2].map((index) => ({
+      properties: {
+        ...olderNwsObservation.properties,
+        timestamp: new Date(Date.parse("2026-07-22T00:00:00Z") + index * 3_600_000).toISOString(),
+        temperature: { value: 20 + index },
+      },
+    })),
+  };
+  const metars = [0, 1, 2, 3].map((index) => ({
+    ...newerMetar,
+    obsTime: Date.parse("2026-07-22T00:00:00Z") / 1000 + index * 3_600,
+    temp: 15 + index,
+  }));
+
+  const nwsHistory = selectObservationHistory(nwsCollection, metars);
+  const metarFallback = selectObservationHistory({ features: nwsCollection.features.slice(0, 2) }, metars);
+
+  assert.equal(nwsHistory.length, 3);
+  assert.ok(nwsHistory.every((point) => point.source === "NWS"));
+  assert.deepEqual(nwsHistory.map((point) => point.temperatureF), [68, 70, 72]);
+  assert.equal(metarFallback.length, 4);
+  assert.ok(metarFallback.every((point) => point.source === "METAR"));
+  assert.deepEqual(metarFallback.map((point) => point.temperatureF), [59, 61, 63, 64]);
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronRight, Cloud, Compass, FileText, Gauge, Map, Plane, RadioTower, Snowflake, Wind, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { AviationData, IntelligenceData, TafPeriod, WeatherDashboardData } from "@/lib/types";
 
 function shortTime(iso: string, timeZone: string) {
@@ -44,27 +44,8 @@ const PILOT_PRODUCTS = [
   { label: "Official briefing", detail: "Flight Service planning and briefing", href: "https://www.1800wxbrief.com/", icon: RadioTower },
 ] as const;
 
-export function AviationConsole({ data, intelligence, refreshKey }: { data: WeatherDashboardData; intelligence: IntelligenceData | null; refreshKey: number }) {
-  const [regional, setRegional] = useState<AviationData | null>(null);
+export function AviationConsole({ data, intelligence, regional }: { data: WeatherDashboardData; intelligence: IntelligenceData | null; regional: AviationData | null }) {
   const [hazardView, setHazardView] = useState<"advisories" | "pireps" | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const coordinates = `lat=${data.location.latitude.toFixed(4)}&lon=${data.location.longitude.toFixed(4)}`;
-    fetch(`/api/aviation?${coordinates}`, { signal: controller.signal })
-      .then(async (response) => {
-        const payload = (await response.json()) as AviationData;
-        if (!response.ok) throw new Error("Aviation feeds are unavailable.");
-        return payload;
-      })
-      .then((payload) => {
-        if (!controller.signal.aborted) setRegional(payload);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setRegional(null);
-      });
-    return () => controller.abort();
-  }, [data.location.latitude, data.location.longitude, refreshKey]);
 
   const tafPeriods = data.aviationForecast?.periods ?? [];
   const currentCategory = data.aviation?.flightCategory ?? "—";
