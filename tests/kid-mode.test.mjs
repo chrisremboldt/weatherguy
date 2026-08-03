@@ -17,8 +17,10 @@ test("Kid mode is opt-in, persisted, and lazily loaded", () => {
 test("keyboard activity starts a timed takeover without exiting fullscreen", () => {
   assert.match(party, /const KID_MODE_IDLE_MS = 10_000/);
   assert.match(party, /window\.addEventListener\("keydown", onKeyDown, \{ capture: true \}\)/);
-  assert.match(party, /const activatingControl = isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\)/);
-  assert.match(party, /if \(isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\)\) return;/);
+  assert.match(party, /const fullscreenSpaceSmash = event\.key === " " && Boolean\(document\.fullscreenElement\)/);
+  assert.match(party, /const activatingControl = isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\) && !fullscreenSpaceSmash/);
+  assert.match(party, /if \(isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\) && !fullscreenSpaceSmash\) return;/);
+  assert.match(dashboard, /event\.currentTarget\.blur\(\); void requestFullscreen\(\)/);
   assert.match(party, /idleTimer = window\.setTimeout\(endParty, KID_MODE_IDLE_MS\)/);
   assert.match(party, /suspendedRef\.current/);
   assert.doesNotMatch(party, /exitFullscreen/);

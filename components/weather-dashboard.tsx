@@ -768,7 +768,7 @@ export function WeatherDashboard() {
           <button className="icon-button" onClick={() => setRefreshKey((value) => value + 1)} title="Refresh data" aria-label="Refresh weather data">
             <RefreshCw size={18} className={loading ? "spin" : ""} />
           </button>
-          <button className="icon-button" onClick={() => void requestFullscreen()} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"}>
+          <button className="icon-button" onClick={(event) => { event.currentTarget.blur(); void requestFullscreen(); }} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"}>
             {isFullscreen ? <Minimize size={18} /> : <Expand size={18} />}
           </button>
           <button className="icon-button" onClick={openLocationSettings} title="Open settings" aria-label="Open settings">

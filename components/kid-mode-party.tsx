@@ -556,15 +556,16 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      const fullscreenSpaceSmash = event.key === " " && Boolean(document.fullscreenElement);
       if (!activeRef.current) {
-        const activatingControl = isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ");
+        const activatingControl = isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ") && !fullscreenSpaceSmash;
         if (suspendedRef.current || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || activatingControl) return;
         event.preventDefault();
         event.stopPropagation();
         startParty(event.key);
         return;
       }
-      if (isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ")) return;
+      if (isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ") && !fullscreenSpaceSmash) return;
       event.preventDefault();
       event.stopPropagation();
       resetIdleTimer();
