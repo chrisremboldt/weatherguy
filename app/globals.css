@@ -3258,7 +3258,7 @@ h2 {
 
 .preference-toggles {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
   margin-top: 9px;
 }
@@ -3292,6 +3292,243 @@ h2 {
 
 .favorite-list button:first-child { justify-content: flex-start; border: 0; }
 .favorite-list button:last-child { border: 0; }
+
+.kid-party-root {
+  --kid-hue: 210;
+  --kid-bg-1: hsl(var(--kid-hue) 95% 52%);
+  --kid-bg-2: hsl(calc(var(--kid-hue) + 80) 95% 52%);
+  --kid-bg-3: hsl(calc(var(--kid-hue) + 160) 95% 48%);
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+  color: white;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,.28), transparent 22%),
+    radial-gradient(circle at 80% 15%, rgba(255,255,255,.22), transparent 18%),
+    linear-gradient(135deg, var(--kid-bg-1), var(--kid-bg-2) 52%, var(--kid-bg-3));
+  font-family: ui-rounded, "SF Pro Rounded", "Segoe UI Rounded", system-ui, sans-serif;
+  perspective: 1000px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  isolation: isolate;
+}
+
+.kid-party-root::before {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  z-index: -2;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.08) 0deg 8deg, transparent 8deg 18deg);
+  animation: kid-party-slow-spin 28s linear infinite;
+  transform: translateZ(-180px) scale(1.25);
+}
+
+.kid-party-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  box-shadow: inset 0 0 140px rgba(0,0,40,.38);
+  pointer-events: none;
+}
+
+@keyframes kid-party-slow-spin {
+  to { transform: translateZ(-180px) scale(1.25) rotate(360deg); }
+}
+
+.kid-party-sparkles,
+.kid-party-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.kid-party-stage { transform-style: preserve-3d; }
+
+.kid-party-title {
+  position: absolute;
+  left: clamp(18px, 4vw, 64px);
+  top: clamp(18px, 4vw, 58px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  opacity: .72;
+  transform: rotate(-4deg);
+  pointer-events: none;
+  text-shadow: 0 5px 18px rgba(0,0,0,.2);
+}
+
+.kid-party-title span {
+  font-size: clamp(14px, 2vw, 24px);
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.kid-party-title strong {
+  margin-top: -5px;
+  font-size: clamp(44px, 8vw, 104px);
+  font-weight: 1000;
+  letter-spacing: -.06em;
+  line-height: .88;
+}
+
+.kid-party-shape {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--kid-size);
+  height: var(--kid-size);
+  filter: drop-shadow(0 10px 12px rgba(0,0,0,.18));
+  transform-style: preserve-3d;
+  animation: kid-party-float-away var(--kid-life) cubic-bezier(.12,.7,.16,1) forwards;
+}
+
+.kid-party-cube { --kid-half: calc(var(--kid-size) / 2); }
+
+.kid-party-face {
+  position: absolute;
+  width: var(--kid-size);
+  height: var(--kid-size);
+  border: max(2px, calc(var(--kid-size) * .035)) solid rgba(255,255,255,.8);
+  border-radius: calc(var(--kid-size) * .15);
+  background: linear-gradient(145deg, rgba(255,255,255,.45), rgba(255,255,255,.04)), hsl(var(--kid-shape-hue) 95% 56%);
+  box-shadow: inset 0 0 calc(var(--kid-size) * .25) rgba(255,255,255,.35), inset 0 0 calc(var(--kid-size) * .15) rgba(0,0,0,.15);
+  backface-visibility: visible;
+}
+
+.kid-party-face.front { transform: translateZ(var(--kid-half)); }
+.kid-party-face.back { transform: rotateY(180deg) translateZ(var(--kid-half)); }
+.kid-party-face.right { transform: rotateY(90deg) translateZ(var(--kid-half)); }
+.kid-party-face.left { transform: rotateY(-90deg) translateZ(var(--kid-half)); }
+.kid-party-face.top { transform: rotateX(90deg) translateZ(var(--kid-half)); }
+.kid-party-face.bottom { transform: rotateX(-90deg) translateZ(var(--kid-half)); }
+
+.kid-party-orb {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 28% 24%, white 0 6%, rgba(255,255,255,.75) 7%, transparent 18%),
+    radial-gradient(circle at 34% 30%, hsl(calc(var(--kid-shape-hue) + 55) 100% 78%), hsl(var(--kid-shape-hue) 96% 54%) 42%, hsl(calc(var(--kid-shape-hue) - 40) 86% 28%) 100%);
+  box-shadow: inset calc(var(--kid-size) * -.14) calc(var(--kid-size) * -.18) calc(var(--kid-size) * .24) rgba(0,0,0,.32), 0 calc(var(--kid-size) * .2) calc(var(--kid-size) * .28) rgba(0,0,0,.23);
+}
+
+.kid-party-ring {
+  border: calc(var(--kid-size) * .18) solid hsl(var(--kid-shape-hue) 96% 58%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 calc(var(--kid-size) * .12) rgba(255,255,255,.85), 0 0 calc(var(--kid-size) * .18) rgba(255,255,255,.55), 0 calc(var(--kid-size) * .18) calc(var(--kid-size) * .28) rgba(0,0,0,.22);
+}
+
+@keyframes kid-party-float-away {
+  0% {
+    opacity: 0;
+    transform: translate3d(calc(var(--kid-x) - 50vw), calc(var(--kid-y) - 50vh), -220px) scale(.05) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+  }
+  12%, 70% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--kid-x) - 50vw + var(--kid-drift-x)), calc(var(--kid-y) - 50vh + var(--kid-drift-y)), 320px) scale(1.5) rotateX(var(--kid-rx)) rotateY(var(--kid-ry)) rotateZ(var(--kid-rz));
+  }
+}
+
+.kid-party-symbol {
+  position: absolute;
+  left: var(--kid-x);
+  top: var(--kid-y);
+  color: hsl(var(--kid-symbol-hue) 100% 72%);
+  font-size: clamp(84px, 22vw, 330px);
+  font-weight: 1000;
+  line-height: 1;
+  filter: saturate(1.25);
+  -webkit-text-stroke: clamp(2px, .55vw, 8px) rgba(255,255,255,.95);
+  text-shadow: 0 .04em 0 hsl(calc(var(--kid-symbol-hue) - 15) 90% 46%), 0 .08em 0 hsl(calc(var(--kid-symbol-hue) - 25) 85% 38%), 0 .12em .18em rgba(0,0,0,.28), 0 0 .25em rgba(255,255,255,.65);
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  animation: kid-party-symbol-pop 1.45s cubic-bezier(.1,.82,.1,1) forwards;
+  pointer-events: none;
+}
+
+@keyframes kid-party-symbol-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) translateZ(-400px) scale(.02) rotate(-24deg); }
+  22% { opacity: 1; transform: translate(-50%, -50%) translateZ(120px) scale(1.08) rotate(6deg); }
+  45% { transform: translate(-50%, -50%) translateZ(30px) scale(.92) rotate(-3deg); }
+  72% { opacity: 1; transform: translate(-50%, -50%) translateZ(100px) scale(1) rotate(2deg); }
+  100% { opacity: 0; transform: translate(-50%, -65%) translateZ(260px) scale(1.45) rotate(var(--kid-twist)); }
+}
+
+.kid-party-sound-toggle {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 30;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  color: white;
+  border: 2px solid rgba(255,255,255,.6);
+  border-radius: 50%;
+  background: rgba(20,12,70,.26);
+  box-shadow: 0 8px 22px rgba(0,0,0,.2), inset 0 0 18px rgba(255,255,255,.16);
+  font-size: 27px;
+  line-height: 1;
+  opacity: .58;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: transform 160ms ease, opacity 160ms ease, background 160ms ease;
+}
+
+.kid-party-sound-toggle:hover,
+.kid-party-sound-toggle:focus-visible { opacity: 1; outline: 3px solid white; outline-offset: 3px; transform: scale(1.08); }
+.kid-party-sound-toggle:active { transform: scale(.92); }
+.kid-party-sound-toggle[aria-pressed="false"] { background: rgba(20,12,40,.42); opacity: .38; }
+
+.kid-party-help {
+  position: fixed;
+  right: 14px;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 8;
+  padding: 7px 10px;
+  color: rgba(255,255,255,.72);
+  border-radius: 999px;
+  background: rgba(0,0,0,.18);
+  font-size: 12px;
+  opacity: .28;
+  pointer-events: none;
+}
+
+.kid-party-sr-exit {
+  position: fixed;
+  left: 10px;
+  top: 10px;
+  z-index: 40;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.kid-party-sr-exit:focus-visible {
+  width: auto;
+  height: auto;
+  padding: 12px 16px;
+  overflow: visible;
+  color: #35155e;
+  border: 3px solid white;
+  border-radius: 999px;
+  background: #ffe75a;
+  clip-path: none;
+  font-weight: 900;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kid-party-root::before { animation: none; }
+  .kid-party-shape { animation-duration: .55s !important; }
+  .kid-party-symbol { animation-duration: .5s; }
+}
 
 .mode-minimal .hourly-panel,
 .mode-minimal .discussion-panel,

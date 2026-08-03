@@ -22,6 +22,7 @@ import {
   Search,
   Settings2,
   ShieldAlert,
+  Sparkles,
   Star,
   Trash2,
   Sunrise,
@@ -29,6 +30,7 @@ import {
   Wind,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
@@ -48,6 +50,11 @@ import { FullscreenObservationStrip, ObservationContext } from "@/components/obs
 import { SensorDeck } from "@/components/sensor-deck";
 import { buildForecastDays } from "@/lib/forecast-days";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
+
+const KidModeParty = dynamic(
+  () => import("@/components/kid-mode-party").then((module) => module.KidModeParty),
+  { ssr: false },
+);
 
 type LocationFormConfig = {
   latitude: string;
@@ -280,6 +287,7 @@ export function WeatherDashboard() {
   const [autoRotate, setAutoRotate] = useState(false);
   const [autoDim, setAutoDim] = useState(false);
   const [alertAudio, setAlertAudio] = useState(false);
+  const [kidModeEnabled, setKidModeEnabled] = useState(false);
   const [copied, setCopied] = useState(false);
   const [offlineSnapshot, setOfflineSnapshot] = useState(false);
   const [online, setOnline] = useState(true);
@@ -310,6 +318,7 @@ export function WeatherDashboard() {
         setAutoRotate(window.localStorage.getItem("weatherguy-auto-rotate") === "true");
         setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") === "true");
         setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
+        setKidModeEnabled(window.localStorage.getItem("weatherguy-kid-mode") === "true");
         setWallboardScenes(savedWallboardScenes(window.localStorage.getItem("weatherguy-wallboard-scenes")));
         setWallboardRotate(window.localStorage.getItem("weatherguy-wallboard-rotate") !== "false");
         const savedInterval = Number(window.localStorage.getItem("weatherguy-wallboard-interval"));
@@ -1161,6 +1170,7 @@ export function WeatherDashboard() {
                       <label><span><Moon size={16} /><b>Auto-dim</b><small>10 PM–6 AM local time</small></span><input type="checkbox" checked={autoDim} onChange={(event) => { setAutoDim(event.target.checked); persistSetting("weatherguy-auto-dim", String(event.target.checked)); }} /></label>
                       <label><span>{alertAudio ? <Bell size={16} /> : <BellOff size={16} />}<b>Alert tone</b><small>One chime when alerts appear</small></span><input type="checkbox" checked={alertAudio} onChange={(event) => { setAlertAudio(event.target.checked); persistSetting("weatherguy-alert-audio", String(event.target.checked)); }} /></label>
                       <label><span><RefreshCw size={16} /><b>Rotate favorites</b><small>Change area every 15 minutes</small></span><input type="checkbox" checked={autoRotate} onChange={(event) => { setAutoRotate(event.target.checked); persistSetting("weatherguy-auto-rotate", String(event.target.checked)); }} /></label>
+                      <label><span><Sparkles size={16} /><b>Kid mode</b><small>Any key starts a 10-second keyboard party</small></span><input type="checkbox" aria-label="Kid mode" checked={kidModeEnabled} onChange={(event) => { setKidModeEnabled(event.target.checked); persistSetting("weatherguy-kid-mode", String(event.target.checked)); }} /></label>
                     </div>
                     {favorites.length > 0 && (
                       <div className="favorite-list">
@@ -1242,6 +1252,7 @@ export function WeatherDashboard() {
         </div>,
         document.body,
       )}
+      {mounted && kidModeEnabled ? <KidModeParty suspended={locationModalOpen} /> : null}
     </main>
   );
 }

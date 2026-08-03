@@ -25,6 +25,7 @@ Canonical production domain: [wxdynamics.com](https://wxdynamics.com)
 - Sunrise and sunset
 - Desk, Severe, Aviation, and Minimal layouts; fullscreen kiosk mode; auto-dimming; and burn-in drift
 - Family-share URLs, saved favorites, optional location rotation and alert tone
+- Optional Kid mode turns keyboard mashing into a 10-second sound-and-color party, then restores the weather wallboard
 - Installable PWA shell and a last-good local snapshot for brief network interruptions
 
 The server-side data adapter tolerates partial upstream outages. A missing Area Forecast Discussion or aviation report does not take down the rest of the display, and METAR values fill occasional gaps in the NWS observation feed.
