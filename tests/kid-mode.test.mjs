@@ -17,14 +17,26 @@ test("Kid mode is opt-in, persisted, and lazily loaded", () => {
 test("keyboard activity starts a timed takeover without exiting fullscreen", () => {
   assert.match(party, /const KID_MODE_IDLE_MS = 10_000/);
   assert.match(party, /window\.addEventListener\("keydown", onKeyDown, \{ capture: true \}\)/);
-  assert.match(party, /const fullscreenSpaceSmash = event\.key === " " && Boolean\(document\.fullscreenElement\)/);
-  assert.match(party, /const activatingControl = isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\) && !fullscreenSpaceSmash/);
-  assert.match(party, /if \(isInteractiveTarget\(event\.target\) && \(event\.key === "Enter" \|\| event\.key === " "\) && !fullscreenSpaceSmash\) return;/);
+  assert.match(party, /const fullscreenKidGuard = Boolean\(document\.fullscreenElement\) && !suspendedRef\.current/);
+  assert.match(party, /!fullscreenKidGuard && \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey \|\| activatingControl\)/);
+  assert.match(party, /window\.addEventListener\("keyup", onKeyUp, \{ capture: true \}\)/);
+  assert.match(party, /event\.stopImmediatePropagation\(\)/);
   assert.match(dashboard, /event\.currentTarget\.blur\(\); void requestFullscreen\(\)/);
   assert.match(party, /idleTimer = window\.setTimeout\(endParty, KID_MODE_IDLE_MS\)/);
   assert.match(party, /suspendedRef\.current/);
   assert.doesNotMatch(party, /exitFullscreen/);
   assert.doesNotMatch(party, /requestFullscreen/);
+});
+
+test("fullscreen Kid mode progressively locks shortcuts and isolates the weather controls", () => {
+  assert.match(party, /keyboard\.lock\(\)/);
+  assert.match(party, /document\.addEventListener\("fullscreenchange", syncKeyboardLock\)/);
+  assert.match(party, /document\.removeEventListener\("fullscreenchange", syncKeyboardLock\)/);
+  assert.match(party, /keyboard\.unlock\(\)/);
+  assert.match(party, /dashboardShell\.inert = true/);
+  assert.match(party, /dashboardShell\.inert = dashboardWasInert/);
+  assert.match(party, /rootRef\.current\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(party, /tabIndex=\{-1\}/);
 });
 
 test("the party keeps the original sound controls, performance caps, and parent escape", () => {

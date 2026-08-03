@@ -49,6 +49,13 @@ type KidPartyRuntime = {
   toggleSound: () => void;
 };
 
+type KeyboardLockNavigator = Navigator & {
+  keyboard?: {
+    lock: (keyCodes?: string[]) => Promise<void>;
+    unlock: () => void;
+  };
+};
+
 function isInteractiveTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || Boolean(target.closest("input, textarea, select, button, [role='dialog']"));
@@ -69,6 +76,38 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
   }, [suspended]);
 
   useEffect(() => {
+    const keyboard = (navigator as KeyboardLockNavigator).keyboard;
+    if (!keyboard) return;
+
+    let disposed = false;
+    let requestId = 0;
+    const syncKeyboardLock = () => {
+      const currentRequest = ++requestId;
+      if (!document.fullscreenElement || suspended) {
+        keyboard.unlock();
+        return;
+      }
+
+      void keyboard.lock().then(() => {
+        if (disposed || currentRequest !== requestId || !document.fullscreenElement || suspendedRef.current) {
+          keyboard.unlock();
+        }
+      }).catch(() => {
+        // Keyboard Lock is a progressive enhancement and may be denied or unsupported.
+      });
+    };
+
+    syncKeyboardLock();
+    document.addEventListener("fullscreenchange", syncKeyboardLock);
+    return () => {
+      disposed = true;
+      requestId += 1;
+      document.removeEventListener("fullscreenchange", syncKeyboardLock);
+      keyboard.unlock();
+    };
+  }, [suspended]);
+
+  useEffect(() => {
     let audio: AudioContext | null = null;
     let master: GainNode | null = null;
     let compressor: DynamicsCompressorNode | null = null;
@@ -83,6 +122,8 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     let animationFrame = 0;
     let lastReaction = 0;
     let pulseAnimation: Animation | null = null;
+    let dashboardShell: HTMLElement | null = null;
+    let dashboardWasInert = false;
     const particles: Particle[] = [];
     const scheduledEffects = new Set<number>();
 
@@ -515,12 +556,27 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
       canvas?.getContext("2d", { alpha: true })?.clearRect(0, 0, window.innerWidth, window.innerHeight);
     };
 
+    const isolateDashboard = () => {
+      if (dashboardShell) return;
+      dashboardShell = document.querySelector<HTMLElement>(".app-shell");
+      if (!dashboardShell) return;
+      dashboardWasInert = dashboardShell.inert;
+      dashboardShell.inert = true;
+    };
+
+    const restoreDashboard = () => {
+      if (!dashboardShell) return;
+      dashboardShell.inert = dashboardWasInert;
+      dashboardShell = null;
+    };
+
     const endParty = () => {
       if (idleTimer !== null) window.clearTimeout(idleTimer);
       idleTimer = null;
       activeRef.current = false;
       cornerClicks = 0;
       cleanupVisuals();
+      restoreDashboard();
       setActive(false);
     };
 
@@ -531,6 +587,7 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
 
     const startParty = (initialKey: string) => {
       initAudio();
+      isolateDashboard();
       activeRef.current = true;
       setActive(true);
       resetIdleTimer();
@@ -542,6 +599,7 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
           return;
         }
         resize();
+        rootRef.current.focus({ preventScroll: true });
         react(initialKey, undefined, undefined, true);
         for (let index = 0; index < 3; index += 1) {
           const timer = window.setTimeout(() => {
@@ -556,20 +614,26 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const fullscreenSpaceSmash = event.key === " " && Boolean(document.fullscreenElement);
+      const fullscreenKidGuard = Boolean(document.fullscreenElement) && !suspendedRef.current;
       if (!activeRef.current) {
-        const activatingControl = isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ") && !fullscreenSpaceSmash;
-        if (suspendedRef.current || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || activatingControl) return;
+        const activatingControl = isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ");
+        if (suspendedRef.current || (!fullscreenKidGuard && (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || activatingControl))) return;
         event.preventDefault();
-        event.stopPropagation();
+        event.stopImmediatePropagation();
         startParty(event.key);
         return;
       }
-      if (isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ") && !fullscreenSpaceSmash) return;
+      if (!fullscreenKidGuard && isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ")) return;
       event.preventDefault();
-      event.stopPropagation();
+      event.stopImmediatePropagation();
       resetIdleTimer();
       react(event.key);
+    };
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (!document.fullscreenElement || suspendedRef.current) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
     };
 
     runtimeRef.current = {
@@ -609,15 +673,18 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     }, 2_600);
 
     window.addEventListener("keydown", onKeyDown, { capture: true });
+    window.addEventListener("keyup", onKeyUp, { capture: true });
     window.addEventListener("resize", resize, { passive: true });
     return () => {
       window.removeEventListener("keydown", onKeyDown, { capture: true });
+      window.removeEventListener("keyup", onKeyUp, { capture: true });
       window.removeEventListener("resize", resize);
       if (ambientTimer !== null) window.clearInterval(ambientTimer);
       if (idleTimer !== null) window.clearTimeout(idleTimer);
       if (cornerTimer !== null) window.clearTimeout(cornerTimer);
       activeRef.current = false;
       cleanupVisuals();
+      restoreDashboard();
       runtimeRef.current = null;
       if (audio) void audio.close();
     };
@@ -632,6 +699,7 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard Party"
+      tabIndex={-1}
       onContextMenu={(event) => event.preventDefault()}
       onPointerDown={(event) => runtimeRef.current?.pointerDown(event.clientX, event.clientY)}
     >
