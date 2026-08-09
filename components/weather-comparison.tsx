@@ -319,10 +319,6 @@ function ComparisonRadar({
             <span><strong>{status}</strong><small>{normalizedStation ?? "Waiting for Place B weather"}</small></span>
           </div>
         )}
-        <div className={styles.radarCaption}>
-          <strong>{normalizedStation ? `${normalizedStation} local window` : label}</strong>
-          <span>Radar near {label} · base reflectivity</span>
-        </div>
       </div>
     </article>
   );

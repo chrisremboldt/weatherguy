@@ -648,9 +648,9 @@
 
 .situationalBand {
   min-width: 0;
-  min-height: 182px;
+  min-height: clamp(260px, 32dvh, 310px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(250px, 20vw, 300px) minmax(0, 1fr);
+  grid-template-columns: clamp(260px, 23vw, 330px) minmax(0, 1fr) clamp(260px, 23vw, 330px);
   gap: 7px;
 }
 
@@ -748,9 +748,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(var(--ink-rgb, 7, 23, 29), 0.06) 36%, rgba(var(--ink-rgb, 7, 23, 29), 0.82) 100%),
-    linear-gradient(90deg, rgba(var(--ink-rgb, 7, 23, 29), 0.15), transparent 22%, transparent 78%, rgba(var(--ink-rgb, 7, 23, 29), 0.15));
+  background: linear-gradient(90deg, rgba(var(--ink-rgb, 7, 23, 29), 0.15), transparent 22%, transparent 78%, rgba(var(--ink-rgb, 7, 23, 29), 0.15));
 }
 
 .radarStage > img {
@@ -758,42 +756,9 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 50% 49%;
+  object-fit: contain;
+  object-position: 50% 50%;
   filter: saturate(0.92) brightness(0.82) contrast(1.08);
-}
-
-.radarCaption {
-  position: absolute;
-  z-index: 1;
-  right: 8px;
-  bottom: 7px;
-  left: 8px;
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  font-family: var(--font-mono), ui-monospace, monospace;
-}
-
-.radarCaption strong,
-.radarCaption span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.radarCaption strong {
-  color: var(--cloud, #e7f0ef);
-  font-size: 8px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.radarCaption span {
-  color: var(--copy, #bcd0d1);
-  font-size: 7px;
 }
 
 .radarEmpty {
@@ -826,12 +791,22 @@
 }
 
 .metricPanel {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 .situationalBand .metricHeader,
 .situationalBand .metricRow {
   grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+}
+
+.situationalBand .metricHeader {
+  flex: 0 0 27px;
+}
+
+.situationalBand .metricRow {
+  flex: 1 1 0;
 }
 
 .situationalBand .metricHeader span,
@@ -1403,7 +1378,10 @@
   .alertRow,
   .metricHeader,
   .metricRow { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); }
-  .situationalBand { grid-template-columns: minmax(0, 1fr) clamp(220px, 24vw, 250px) minmax(0, 1fr); }
+  .situationalBand {
+    min-height: clamp(230px, 30vw, 280px);
+    grid-template-columns: clamp(220px, 28vw, 280px) minmax(0, 1fr) clamp(220px, 28vw, 280px);
+  }
   .conditionReadout { grid-template-columns: auto minmax(0, 1fr); }
   .freshness { display: none; }
   .outlookGrid { grid-template-columns: 1fr; }
@@ -1492,14 +1470,20 @@
   .situationalBand {
     flex: 0 0 auto;
     min-height: 0;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .comparisonRadar {
-    min-height: clamp(190px, 54vw, 250px);
+    width: 100%;
+    min-height: 0;
+    justify-self: center;
+    aspect-ratio: 1;
   }
   .radarA { order: 1; }
   .radarB { order: 2; }
-  .situationalBand .metricPanel { order: 3; }
+  .situationalBand .metricPanel {
+    grid-column: 1 / -1;
+    order: 3;
+  }
   .situationalBand .metricHeader,
   .situationalBand .metricRow {
     grid-template-columns: minmax(0, 1fr) 78px minmax(0, 1fr);
@@ -1571,9 +1555,25 @@
   .deltaRail > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .metricHeader { display: none; }
   .metricRow:first-child { border-top: 0; }
-  .comparisonRadar { min-height: clamp(176px, 56vw, 215px); }
-  .radarCaption span { max-width: 62%; }
+  .radarHeader {
+    gap: 5px;
+    padding: 0 5px;
+  }
+  .radarHeader b { display: none; }
   .picker > p { font-size: 10px; }
+}
+
+@media (min-width: 600px) and (max-width: 720px) {
+  .situationalBand {
+    min-height: clamp(195px, calc(28vw + 27px), 220px);
+    grid-template-columns: clamp(168px, 28vw, 210px) minmax(0, 1fr) clamp(168px, 28vw, 210px);
+  }
+  .comparisonRadar { aspect-ratio: auto; }
+  .radarHeader b { display: none; }
+  .radarA { grid-column: 1; order: 1; }
+  .situationalBand .metricPanel { grid-column: 2; order: 2; }
+  .situationalBand .metricRow { min-height: 29px; }
+  .radarB { grid-column: 3; order: 3; }
 }
 
 @media (max-width: 360px) {
@@ -1584,16 +1584,28 @@
   .actions button { width: 32px; }
 }
 
-@media (max-height: 760px) and (min-width: 721px) {
+@media (max-height: 800px) and (min-width: 721px) {
   .workspace {
-    grid-template-rows: minmax(145px, auto) auto auto minmax(195px, 1fr);
+    grid-template-rows: minmax(145px, auto) auto auto minmax(155px, 1fr);
   }
   .sideHeading { min-height: 42px; }
   .conditionReadout { padding-top: 8px; padding-bottom: 8px; }
   .temperature > strong { font-size: clamp(43px, 5vw, 62px); }
   .metricRow { min-height: 28px; }
-  .situationalBand { min-height: 167px; }
-  .outlookGrid { min-height: 195px; }
+  .situationalBand { min-height: 245px; }
+  .outlookGrid { min-height: 155px; }
+  .panelHeading {
+    min-height: 35px;
+    flex-basis: 35px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .hourlyGrid,
+  .dailyGrid { grid-template-rows: repeat(2, minmax(58px, 1fr)); }
+  .hourCell,
+  .dayCell { gap: 1px; padding-top: 2px; padding-bottom: 2px; }
+  .hourCell > svg,
+  .dayCell > svg { width: 16px; height: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
