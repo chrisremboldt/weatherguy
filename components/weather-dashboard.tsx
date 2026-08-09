@@ -50,6 +50,11 @@ import { FullscreenObservationStrip, ObservationContext } from "@/components/obs
 import { SensorDeck } from "@/components/sensor-deck";
 import { buildForecastDays } from "@/lib/forecast-days";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
+import {
+  apparentTemperatureF,
+  currentAndFutureHourlyPeriods,
+  nextHourlyPeriods,
+} from "@/lib/weather-display";
 
 const KidModeParty = dynamic(
   () => import("@/components/kid-mode-party").then((module) => module.KidModeParty),
@@ -189,29 +194,6 @@ function observationAge(timestamp: string) {
   if (minutes < 2) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
   return `${Math.round(minutes / 60)}h ago`;
-}
-
-function apparentTemperatureF(temperatureF: number | null, humidityPct: number | null, windSpeedMph: number | null) {
-  if (temperatureF === null) return null;
-  if (temperatureF >= 80 && humidityPct !== null && humidityPct >= 40) {
-    const humidity = humidityPct;
-    const heatIndex =
-      -42.379 +
-      2.04901523 * temperatureF +
-      10.14333127 * humidity -
-      0.22475541 * temperatureF * humidity -
-      0.00683783 * temperatureF ** 2 -
-      0.05481717 * humidity ** 2 +
-      0.00122874 * temperatureF ** 2 * humidity +
-      0.00085282 * temperatureF * humidity ** 2 -
-      0.00000199 * temperatureF ** 2 * humidity ** 2;
-    return Math.round(heatIndex);
-  }
-  if (temperatureF <= 50 && windSpeedMph !== null && windSpeedMph > 3) {
-    const windFactor = windSpeedMph ** 0.16;
-    return Math.round(35.74 + 0.6215 * temperatureF - 35.75 * windFactor + 0.4275 * temperatureF * windFactor);
-  }
-  return Math.round(temperatureF);
 }
 
 function uvRiskClass(category: string | undefined) {
@@ -495,10 +477,10 @@ export function WeatherDashboard() {
   }, [alertAudio, data?.alerts.length]);
 
   const timeZone = data?.location.timeZone ?? "UTC";
-  const hourly = data?.hourly.slice(0, 9) ?? [];
+  const hourly = currentAndFutureHourlyPeriods(data?.hourly ?? [], now.getTime());
   const forecastDays = useMemo(() => buildForecastDays(data?.daily ?? [], timeZone), [data, timeZone]);
-  const nearTermHours = hourly.slice(1, 5);
-  const nearTermTarget = hourly[Math.min(3, Math.max(0, hourly.length - 1))];
+  const nearTermHours = nextHourlyPeriods(data?.hourly ?? [], now.getTime());
+  const nearTermTarget = nearTermHours.at(-1);
   const currentFeelsLike = data
     ? apparentTemperatureF(data.current.temperatureF, data.current.humidityPct, data.current.windSpeedMph)
     : null;
@@ -510,7 +492,7 @@ export function WeatherDashboard() {
     : Math.abs(nearTermTrend) < 2
       ? "Steady"
       : `${nearTermTrend > 0 ? "↑" : "↓"} ${Math.abs(Math.round(nearTermTrend))}°`;
-  const nearTermRainPeak = hourly.slice(0, 4).reduce(
+  const nearTermRainPeak = nearTermHours.reduce(
     (peak, period) => Math.max(peak, period.precipitationPct ?? 0),
     0,
   );
@@ -969,7 +951,7 @@ export function WeatherDashboard() {
                     const label = formatHour(period.startTime, timeZone);
                     return (
                       <span key={period.startTime}>
-                        <b>{index === 0 ? "Now" : label.hour}</b>
+                        <b>{label.hour}</b>
                         <strong>{period.temperatureF}°</strong>
                         <small className={(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}>
                           <Droplets size={8} aria-hidden="true" /> {period.precipitationPct ?? 0}%
