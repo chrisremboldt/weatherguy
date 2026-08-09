@@ -8,6 +8,7 @@ import type {
   WeatherAlert,
   WeatherDashboardData,
 } from "@/lib/types";
+import { sortWeatherAlerts } from "@/lib/weather-alerts";
 import {
   metarObservationTimestamp,
   selectCurrentObservation,
@@ -85,7 +86,7 @@ function normalizeDaily(forecast: JsonRecord): DailyPeriod[] {
 }
 
 function normalizeAlerts(alerts: JsonRecord): WeatherAlert[] {
-  return (alerts.features ?? []).map((feature: JsonRecord) => {
+  return sortWeatherAlerts((alerts.features ?? []).map((feature: JsonRecord) => {
     const properties = feature.properties ?? {};
     return {
       id: feature.id,
@@ -100,7 +101,7 @@ function normalizeAlerts(alerts: JsonRecord): WeatherAlert[] {
       expires: properties.expires,
       geometry: feature.geometry ?? null,
     };
-  });
+  }));
 }
 
 function tidyProductText(text: string): string {
@@ -150,11 +151,12 @@ function normalizeAviation(metar: JsonRecord | undefined): AviationObservation |
   );
   return {
     raw: metar.rawOb,
-    flightCategory: metar.fltCat || "VFR",
-    observedAt: metarObservationTimestamp(metar) ?? new Date().toISOString(),
-    visibility: metar.visib ? String(metar.visib) : null,
+    flightCategory: typeof metar.fltCat === "string" && metar.fltCat.trim() ? metar.fltCat : "Unknown",
+    observedAt: metarObservationTimestamp(metar) ?? "",
+    visibility: metar.visib === null || metar.visib === undefined ? null : String(metar.visib),
     ceilingFeet: numberOrNull(ceiling?.base),
     windDirectionDeg: numberOrNull(metar.wdir),
+    windVariable: typeof metar.wdir === "string" ? metar.wdir.toUpperCase() === "VRB" : metar.wdir === null || metar.wdir === undefined ? null : false,
     windSpeedKt: numberOrNull(metar.wspd),
     windGustKt: numberOrNull(metar.wgst),
     altimeterInHg:
@@ -178,14 +180,20 @@ function normalizeTaf(taf: JsonRecord | undefined): AviationForecast | null {
     periods: (taf.fcsts ?? []).slice(0, 8).map((period: JsonRecord) => {
       const clouds = Array.isArray(period.clouds) ? period.clouds : [];
       const ceiling = clouds.find((cloud: JsonRecord) => ["BKN", "OVC", "VV"].includes(cloud.cover));
-      const windDirection = typeof period.wdir === "number" ? String(period.wdir).padStart(3, "0") : "VRB";
+      const windSpeed = numberOrNull(period.wspd);
+      const variableWind = typeof period.wdir === "string" && period.wdir.toUpperCase() === "VRB";
+      const windDirection = variableWind
+        ? "VRB"
+        : typeof period.wdir === "number"
+          ? `${String(period.wdir).padStart(3, "0")}°`
+          : "—";
       return {
         from: epochToIso(period.timeFrom),
         to: epochToIso(period.timeTo),
         change: period.fcstChange || (period.probability ? `PROB${period.probability}` : "Prevailing"),
         probability: numberOrNull(period.probability),
-        wind: `${windDirection}° ${period.wspd ?? 0} kt${period.wgst ? ` G${period.wgst}` : ""}`,
-        visibility: period.visib ? `${period.visib} sm` : "P6SM",
+        wind: windSpeed === null ? null : `${windDirection} ${windSpeed} kt${period.wgst ? ` G${period.wgst}` : ""}`,
+        visibility: period.visib === null || period.visib === undefined ? null : `${period.visib} sm`,
         ceilingFeet: numberOrNull(ceiling?.base),
         weather: period.wxString || null,
       };

@@ -5,6 +5,7 @@ import test from "node:test";
 const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
 const consoleComponent = await readFile(new URL("../components/aviation-console.tsx", import.meta.url), "utf8");
 const aviationApi = await readFile(new URL("../app/api/aviation/route.ts", import.meta.url), "utf8");
+const weatherApi = await readFile(new URL("../app/api/weather/route.ts", import.meta.url), "utf8");
 const styles = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("flight operations is a persistent settings-selectable desk profile", () => {
@@ -62,6 +63,19 @@ test("surface wind only uses VRB when the observation marks it variable", () => 
   assert.match(consoleComponent, /windSpeedKt\} kt/);
 });
 
+test("aviation APIs preserve unknown values and the exact METAR observation time", () => {
+  assert.match(aviationApi, /metarObservationTimestamp\(item\)/);
+  assert.match(weatherApi, /metarObservationTimestamp\(metar\)/);
+  assert.match(aviationApi, /item\.fltCat[\s\S]*?"Unknown"/);
+  assert.match(weatherApi, /metar\.fltCat[\s\S]*?"Unknown"/);
+  assert.doesNotMatch(aviationApi, /fltCat \|\| "VFR"/);
+  assert.doesNotMatch(weatherApi, /fltCat \|\| "VFR"/);
+  assert.doesNotMatch(weatherApi, /visibility: period\.visib \?[^\n]+"P6SM"/);
+  assert.doesNotMatch(weatherApi, /period\.wspd \?\? 0/);
+  assert.match(weatherApi, /windVariable:/);
+  assert.match(weatherApi, /period\.visib === null \|\| period\.visib === undefined \? null/);
+});
+
 test("missing TAF visibility and wind remain unknown instead of becoming VFR", () => {
   assert.match(consoleComponent, /function visibilityMiles\(value: string \| null\)/);
   assert.match(consoleComponent, /if \(value === null\) return null/);
@@ -80,6 +94,7 @@ test("TAF floor and report age use the live clock and only current overlapping p
   assert.match(consoleComponent, /twelveHourPeriods\.length \? lowestTafCategory\(twelveHourPeriods\) : "—"/);
   assert.doesNotMatch(consoleComponent, /twelveHourPeriods\.length \? twelveHourPeriods : tafPeriods/);
   assert.doesNotMatch(consoleComponent, /reportAge\([^\n]+data\.fetchedAt/);
+  assert.match(consoleComponent, /if \(!Number\.isFinite\(observedAt\)\) return "time unavailable"/);
 });
 
 test("the horizontally scrolling TAF timeline is keyboard reachable", () => {

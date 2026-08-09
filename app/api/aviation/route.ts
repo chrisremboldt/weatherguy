@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { AviationAdvisory, AviationData, NearbyAirport, PilotReport } from "@/lib/types";
+import { metarObservationTimestamp } from "@/lib/current-observation";
 
 export const runtime = "nodejs";
 const BASE = "https://aviationweather.gov/api/data";
@@ -34,18 +35,24 @@ function nearbyAirport(item: JsonRecord, latitude: number, longitude: number): N
     : null;
   const stationLat = Number(item.lat);
   const stationLon = Number(item.lon);
+  const windSpeed = typeof item.wspd === "number" && Number.isFinite(item.wspd) ? item.wspd : null;
+  const windDirection = typeof item.wdir === "string" && item.wdir.toUpperCase() === "VRB"
+    ? "VRB"
+    : typeof item.wdir === "number" && Number.isFinite(item.wdir)
+      ? `${String(item.wdir).padStart(3, "0")}°`
+      : "—";
   return {
     id: item.icaoId || "—",
     name: item.name || item.icaoId || "Airport",
-    flightCategory: item.fltCat || "VFR",
+    flightCategory: typeof item.fltCat === "string" && item.fltCat.trim() ? item.fltCat : "Unknown",
     temperatureF: typeof item.temp === "number" ? Math.round((item.temp * 9) / 5 + 32) : null,
-    wind: `${typeof item.wdir === "number" ? String(item.wdir).padStart(3, "0") : "VRB"}° ${item.wspd ?? 0}kt${item.wgst ? ` G${item.wgst}` : ""}`,
-    visibility: item.visib ? String(item.visib) : null,
+    wind: windSpeed === null ? "—" : `${windDirection} ${windSpeed}kt${item.wgst ? ` G${item.wgst}` : ""}`,
+    visibility: item.visib === null || item.visib === undefined ? null : String(item.visib),
     ceilingFeet: typeof ceiling?.base === "number" ? ceiling.base : null,
     distanceMiles: Number.isFinite(stationLat) && Number.isFinite(stationLon)
       ? Math.round(distanceMiles(latitude, longitude, stationLat, stationLon))
       : null,
-    observedAt: item.reportTime || epoch(item.obsTime),
+    observedAt: metarObservationTimestamp(item) ?? "",
   };
 }
 

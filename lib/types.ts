@@ -93,6 +93,7 @@ export type AviationObservation = {
   visibility: string | null;
   ceilingFeet: number | null;
   windDirectionDeg: number | null;
+  windVariable: boolean | null;
   windSpeedKt: number | null;
   windGustKt: number | null;
   altimeterInHg: number | null;
@@ -103,8 +104,8 @@ export type TafPeriod = {
   to: string;
   change: string;
   probability: number | null;
-  wind: string;
-  visibility: string;
+  wind: string | null;
+  visibility: string | null;
   ceilingFeet: number | null;
   weather: string | null;
 };

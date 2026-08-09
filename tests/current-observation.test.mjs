@@ -56,7 +56,7 @@ test("a newer same-station METAR replaces an older NWS observation", () => {
   });
 });
 
-test("a newer NWS report stays primary and fills unavailable fields from METAR", () => {
+test("a newer NWS report stays intact instead of silently borrowing older METAR fields", () => {
   const newerNws = {
     properties: {
       ...olderNwsObservation.properties,
@@ -76,9 +76,9 @@ test("a newer NWS report stays primary and fills unavailable fields from METAR",
   assert.equal(current.timestamp, "2026-07-22T02:05:00.000Z");
   assert.equal(current.temperatureF, 76);
   assert.equal(current.description, "Thunderstorm Heavy Rain and Mist");
-  assert.equal(current.windSpeedMph, 20);
-  assert.equal(current.visibilityMiles, 2);
-  assert.equal(current.pressureInHg, 29.91);
+  assert.equal(current.windSpeedMph, null);
+  assert.equal(current.visibilityMiles, null);
+  assert.equal(current.pressureInHg, null);
 });
 
 test("NWS remains the source when AviationWeather has no same-station report", () => {
@@ -90,7 +90,7 @@ test("NWS remains the source when AviationWeather has no same-station report", (
   assert.equal(current.description, "Mostly Cloudy");
 });
 
-test("station history prefers a usable NWS series and falls back to METAR history", () => {
+test("station history merges same-station feeds so it reaches the newest report", () => {
   const nwsCollection = {
     features: [0, 1, 2].map((index) => ({
       properties: {
@@ -106,13 +106,10 @@ test("station history prefers a usable NWS series and falls back to METAR histor
     temp: 15 + index,
   }));
 
-  const nwsHistory = selectObservationHistory(nwsCollection, metars);
-  const metarFallback = selectObservationHistory({ features: nwsCollection.features.slice(0, 2) }, metars);
+  const history = selectObservationHistory(nwsCollection, metars);
 
-  assert.equal(nwsHistory.length, 3);
-  assert.ok(nwsHistory.every((point) => point.source === "NWS"));
-  assert.deepEqual(nwsHistory.map((point) => point.temperatureF), [68, 70, 72]);
-  assert.equal(metarFallback.length, 4);
-  assert.ok(metarFallback.every((point) => point.source === "METAR"));
-  assert.deepEqual(metarFallback.map((point) => point.temperatureF), [59, 61, 63, 64]);
+  assert.equal(history.length, 4);
+  assert.equal(history.at(-1)?.source, "METAR");
+  assert.equal(history.at(-1)?.timestamp, "2026-07-22T03:00:00.000Z");
+  assert.deepEqual(history.map((point) => point.temperatureF), [59, 61, 63, 64]);
 });

@@ -9,7 +9,9 @@ function shortTime(iso: string, timeZone: string) {
 }
 
 function reportAge(iso: string, referenceTime: number) {
-  const minutes = Math.max(0, Math.round((referenceTime - new Date(iso).getTime()) / 60_000));
+  const observedAt = Date.parse(iso);
+  if (!Number.isFinite(observedAt)) return "time unavailable";
+  const minutes = Math.max(0, Math.round((referenceTime - observedAt) / 60_000));
   if (minutes < 60) return `${minutes}m old`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m old`;
 }

@@ -226,17 +226,6 @@ function timestampValue(candidate: ObservationCandidate) {
   return Number.isFinite(milliseconds) ? milliseconds : Number.NEGATIVE_INFINITY;
 }
 
-function firstValue<K extends keyof ObservationCandidate>(
-  candidates: ObservationCandidate[],
-  key: K,
-): ObservationCandidate[K] {
-  for (const candidate of candidates) {
-    const value = candidate[key];
-    if (value !== null && value !== undefined && value !== "") return value;
-  }
-  return null as ObservationCandidate[K];
-}
-
 export function selectObservationHistory(
   nwsCollection: JsonRecord | null,
   metars: JsonRecord[],
@@ -261,16 +250,17 @@ export function selectObservationHistory(
 
     return Array.from(buckets.values()).slice(-7);
   };
-  const nwsPoints = collapseHourly((nwsCollection?.features ?? [])
+  const nwsPoints = (nwsCollection?.features ?? [])
     .map((feature: JsonRecord) => historyPoint(normalizeNwsObservation(feature)))
-    .filter((point: ObservationHistoryPoint | null): point is ObservationHistoryPoint => point !== null));
-  const metarPoints = collapseHourly(metars
+    .filter((point: ObservationHistoryPoint | null): point is ObservationHistoryPoint => point !== null);
+  const metarPoints = metars
     .map((metar) => normalizeMetarObservation(metar))
     .map((candidate) => candidate ? historyPoint(candidate) : null)
-    .filter((point): point is ObservationHistoryPoint => point !== null));
-  const preferred = nwsPoints.length >= 3 ? nwsPoints : metarPoints;
+    .filter((point): point is ObservationHistoryPoint => point !== null);
 
-  return preferred;
+  // Merge both same-station feeds, then keep the newest report in each hour.
+  // This prevents a longer but stale series from ending before “Right now.”
+  return collapseHourly([...nwsPoints, ...metarPoints]);
 }
 
 export function selectCurrentObservation(
@@ -285,15 +275,14 @@ export function selectCurrentObservation(
   return {
     timestamp: primary.timestamp ?? new Date().toISOString(),
     source: primary.source,
-    description: firstValue(candidates, "description") ?? "Observation available",
-    temperatureF: firstValue(candidates, "temperatureF"),
-    dewpointF: firstValue(candidates, "dewpointF"),
-    humidityPct: firstValue(candidates, "humidityPct"),
-    windDirectionDeg: firstValue(candidates, "windDirectionDeg"),
-    windSpeedMph: firstValue(candidates, "windSpeedMph"),
-    // A METAR without a gust reports steady wind; do not revive an older gust value.
-    windGustMph: primary.source === "METAR" ? primary.windGustMph : firstValue(candidates, "windGustMph"),
-    visibilityMiles: firstValue(candidates, "visibilityMiles"),
-    pressureInHg: firstValue(candidates, "pressureInHg"),
+    description: primary.description ?? "Observation available",
+    temperatureF: primary.temperatureF,
+    dewpointF: primary.dewpointF,
+    humidityPct: primary.humidityPct,
+    windDirectionDeg: primary.windDirectionDeg,
+    windSpeedMph: primary.windSpeedMph,
+    windGustMph: primary.windGustMph,
+    visibilityMiles: primary.visibilityMiles,
+    pressureInHg: primary.pressureInHg,
   };
 }
