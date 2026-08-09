@@ -8,6 +8,7 @@ const styles = await readFile(new URL("../app/globals.css", import.meta.url), "u
 const component = await readFile(new URL("../components/intelligence-grid.tsx", import.meta.url), "utf8");
 const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
 const route = await readFile(new URL("../app/api/intelligence/route.ts", import.meta.url), "utf8");
+const weatherRoute = await readFile(new URL("../app/api/weather/route.ts", import.meta.url), "utf8");
 
 test("Storm Center contains complete Day 1 and Day 2 SPC images with their legends", () => {
   assert.match(component, /day1otlk\.png/);
@@ -106,6 +107,37 @@ test("the outdoor-window ranking skips a rainy opening period for a later dry st
 
   assert.equal(window?.start, hours[3].time);
   assert.match(window?.reason ?? "", /comfortable despite extensive cloud cover/);
+});
+
+test("forecast signals do not turn missing model inputs into clear skies or a dry outdoor window", () => {
+  const now = Date.parse("2026-07-24T12:00:00Z");
+  const times = Array.from({ length: 4 }, (_, index) => (now + index * 3_600_000) / 1_000);
+  const forecast = normalizeForecast({
+    timezone: "America/Chicago",
+    hourly: {
+      time: times,
+      apparent_temperature: [72, null, 74, 75],
+      precipitation: [0, null, 0, 0],
+      snowfall: times.map(() => null),
+      cloud_cover: times.map(() => null),
+      freezing_level_height: times.map(() => null),
+      uv_index: times.map(() => null),
+    },
+  }, null, now);
+
+  assert.equal(forecast.peakCloudCoverPct, null);
+  assert.equal(forecast.bestOutdoorWindow, null);
+});
+
+test("date-specific NWS point metadata refreshes every fifteen minutes", () => {
+  const pointFetch = weatherRoute.slice(
+    weatherRoute.indexOf("const point = await getJson<JsonRecord>"),
+    weatherRoute.indexOf("const pointProperties"),
+  );
+
+  assert.match(pointFetch, /\/points\//);
+  assert.match(pointFetch, /,\s*900,\s*\);/s);
+  assert.doesNotMatch(pointFetch, /21_600/);
 });
 
 test("UV guidance includes current conditions, a timed 24-hour peak, and three local-day peaks", () => {

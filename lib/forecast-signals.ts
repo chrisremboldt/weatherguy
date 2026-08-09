@@ -66,16 +66,20 @@ export function selectBestOutdoorWindow(
 
   const candidates = Array.from({ length: Math.min(hours.length - 2, 31) }, (_, index) => {
     const sample = hours.slice(index, index + 3);
-    const feelsLike = sample
-      .map((hour) => hour.feelsLikeF)
-      .filter((temperature): temperature is number => temperature !== null);
+    const hasRequiredCoverage = sample.every(
+      (hour): hour is ForecastSignalHour & { feelsLikeF: number; precipitationIn: number } =>
+        hour.feelsLikeF !== null && hour.precipitationIn !== null,
+    );
+    // Missing precipitation cannot safely be treated as dry, and missing apparent
+    // temperatures cannot support a comfort recommendation.
+    if (!hasRequiredCoverage) return null;
+
+    const feelsLike = sample.map((hour) => hour.feelsLikeF);
     const cloudCover = sample
       .map((hour) => hour.cloudCoverPct)
       .filter((cover): cover is number => cover !== null);
-    const totalRain = sample.reduce((sum, hour) => sum + (hour.precipitationIn ?? 0), 0);
-    const averageFeelsLike = feelsLike.length
-      ? feelsLike.reduce((sum, temperature) => sum + temperature, 0) / feelsLike.length
-      : null;
+    const totalRain = sample.reduce((sum, hour) => sum + hour.precipitationIn, 0);
+    const averageFeelsLike = feelsLike.reduce((sum, temperature) => sum + temperature, 0) / feelsLike.length;
     const averageCloudCover = cloudCover.length
       ? cloudCover.reduce((sum, cover) => sum + cover, 0) / cloudCover.length
       : null;
@@ -87,10 +91,10 @@ export function selectBestOutdoorWindow(
       if (temperature < 50) return penalty + (50 - temperature) * 1.8;
       if (temperature > 86) return penalty + (temperature - 86) * 2.2;
       return penalty + Math.abs(temperature - 70) * 0.05;
-    }, feelsLike.length ? 0 : 4);
+    }, 0);
     const rainPenalty =
       totalRain * 700 +
-      sample.filter((hour) => (hour.precipitationIn ?? 0) >= 0.03).length * 18;
+      sample.filter((hour) => hour.precipitationIn >= 0.03).length * 18;
     const daylightPenalty = (3 - daytimeHours) * 24;
     const cloudPenalty = (averageCloudCover ?? 50) * 0.025;
     const recencyPenalty = index * 0.2;
@@ -102,14 +106,16 @@ export function selectBestOutdoorWindow(
       averageCloudCover,
       score: temperaturePenalty + rainPenalty + daylightPenalty + cloudPenalty + recencyPenalty,
     };
-  });
+  }).filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null);
+
+  if (!candidates.length) return null;
 
   const best = candidates.reduce((winner, candidate) => candidate.score < winner.score ? candidate : winner);
   const reason = best.totalRain >= 0.08
     ? "Lowest-impact three-hour stretch; rain remains possible"
-    : best.averageFeelsLike !== null && best.averageFeelsLike > 86
+    : best.averageFeelsLike > 86
       ? "Lowest rain risk available, but it will feel hot"
-      : best.averageFeelsLike !== null && best.averageFeelsLike < 50
+      : best.averageFeelsLike < 50
         ? "Lowest rain risk available, but it will feel cool"
         : best.averageCloudCover !== null && best.averageCloudCover >= 80
           ? "Dry and comfortable despite extensive cloud cover"
@@ -194,12 +200,15 @@ export function normalizeForecast(payload: JsonRecord, nwsGrid: JsonRecord | nul
       });
     }
   }
+  const cloudCoverValues = hours
+    .map((hour) => hour.cloudCoverPct)
+    .filter((cover): cover is number => cover !== null);
 
   return {
     next24PrecipitationIn: nws24 ?? roundedSum(hours.slice(0, 24).map((hour) => hour.precipitationIn)),
     next72PrecipitationIn: nws72 ?? roundedSum(hours.map((hour) => hour.precipitationIn)),
     next72SnowfallIn: roundedSum(hours.map((hour) => hour.snowfallIn)),
-    peakCloudCoverPct: hours.length ? Math.round(Math.max(...hours.map((hour) => hour.cloudCoverPct ?? 0))) : null,
+    peakCloudCoverPct: cloudCoverValues.length ? Math.round(Math.max(...cloudCoverValues)) : null,
     freezingLevelFt: hours[0]?.freezingLevelFt ?? null,
     bestOutdoorWindow,
     currentUvIndex,

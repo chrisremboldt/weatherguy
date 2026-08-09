@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
   try {
     const point = await getJson<JsonRecord>(
       `${NWS_BASE}/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`,
-      21_600,
+      900,
     );
     const pointProperties = point.properties;
     const wfo = pointProperties.cwa as string;
