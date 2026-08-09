@@ -13,6 +13,7 @@ import {
   Play,
   RefreshCw,
   Search,
+  Sparkles,
   X,
 } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
@@ -23,6 +24,7 @@ import {
   COMPARISON_STORAGE_KEY,
   comparisonDeltaLabel,
   comparisonLocationFromParams,
+  comparisonUvValue,
   isValidLocationConfig,
   normalizeRadarStation,
   ridgeRadarUrl,
@@ -40,6 +42,7 @@ import {
 import type {
   CurrentObservation,
   HourlyPeriod,
+  IntelligenceData,
   LocationConfig,
   LocationSearchResult,
   WeatherAlert,
@@ -53,6 +56,10 @@ export type WeatherComparisonProps = {
   primaryConfig: LocationConfig;
   primaryData: WeatherDashboardData;
   primaryAlertsAvailable: boolean;
+  primaryIntelligence: IntelligenceData | null;
+  primaryIntelligenceUnavailable: boolean;
+  kidModeEnabled: boolean;
+  onKidModeChange: (enabled: boolean) => void;
   onRefreshPrimary: () => void;
   onClose: () => void;
 };
@@ -71,6 +78,7 @@ type MetricComparison = {
   primary: string;
   secondary: string;
   delta: string;
+  tone?: "uv";
 };
 
 type ComparisonRadarProps = {
@@ -324,9 +332,21 @@ function ComparisonRadar({
   );
 }
 
-export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAvailable, onRefreshPrimary, onClose }: WeatherComparisonProps) {
+export function WeatherComparison({
+  primaryConfig,
+  primaryData,
+  primaryAlertsAvailable,
+  primaryIntelligence,
+  primaryIntelligenceUnavailable,
+  kidModeEnabled,
+  onKidModeChange,
+  onRefreshPrimary,
+  onClose,
+}: WeatherComparisonProps) {
   const [secondaryConfig, setSecondaryConfig] = useState<LocationConfig | null>(null);
   const [secondaryData, setSecondaryData] = useState<WeatherDashboardData | null>(null);
+  const [secondaryIntelligence, setSecondaryIntelligence] = useState<IntelligenceData | null>(null);
+  const [secondaryIntelligenceUnavailable, setSecondaryIntelligenceUnavailable] = useState(false);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [secondaryError, setSecondaryError] = useState<string | null>(null);
   const [secondaryRefresh, setSecondaryRefresh] = useState(0);
@@ -406,6 +426,8 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
         setSearchError("Choose a second place with different coordinates.");
       }
       setSecondaryData(null);
+      setSecondaryIntelligence(null);
+      setSecondaryIntelligenceUnavailable(false);
       setSecondaryConfig(next);
       setPickerOpen(!next);
     }, 0);
@@ -488,6 +510,33 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
     return () => controller.abort();
   }, [secondaryConfig, secondaryRefresh]);
 
+  useEffect(() => {
+    if (!secondaryConfig) return;
+    const controller = new AbortController();
+    const latitude = secondaryConfig.latitude.toFixed(4);
+    const longitude = secondaryConfig.longitude.toFixed(4);
+
+    async function loadSecondaryIntelligence() {
+      setSecondaryIntelligenceUnavailable(false);
+      try {
+        const response = await fetch(
+          `/api/intelligence?lat=${latitude}&lon=${longitude}`,
+          { signal: controller.signal },
+        );
+        const payload = (await response.json()) as IntelligenceData & { error?: string };
+        if (!response.ok) throw new Error(payload.error || "UV model data could not be loaded.");
+        setSecondaryIntelligence(payload);
+      } catch (requestError) {
+        if (requestError instanceof DOMException && requestError.name === "AbortError") return;
+        setSecondaryIntelligence(null);
+        setSecondaryIntelligenceUnavailable(true);
+      }
+    }
+
+    void loadSecondaryIntelligence();
+    return () => controller.abort();
+  }, [secondaryConfig, secondaryRefresh]);
+
   const updateBrowserUrl = useCallback((next: LocationConfig) => {
     const params = withComparisonLocation(window.location.search, next);
     const queryString = params.toString();
@@ -501,6 +550,8 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
     }
     setSecondaryData(null);
     setSecondaryError(null);
+    setSecondaryIntelligence(null);
+    setSecondaryIntelligenceUnavailable(false);
     setSecondaryConfig(next);
     setPickerOpen(false);
     setQuery("");
@@ -611,6 +662,13 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
       secondaryCurrent.windSpeedMph,
     )
     : null;
+  const primaryUv = primaryIntelligence?.forecast?.currentUvIndex ?? null;
+  const secondaryUv = secondaryIntelligence?.forecast?.currentUvIndex ?? null;
+  const primaryUvLoading = primaryIntelligence === null && !primaryIntelligenceUnavailable;
+  const secondaryUvLoading = Boolean(
+    secondaryConfig && secondaryIntelligence === null && !secondaryIntelligenceUnavailable,
+  );
+  const comparisonLoading = secondaryLoading || primaryUvLoading || secondaryUvLoading;
   const alignedHours = alignHourlyPeriods(
     currentAndFutureHourlyPeriods(primaryData.hourly, now.getTime(), 12),
     currentAndFutureHourlyPeriods(secondaryData?.hourly ?? [], now.getTime(), 12),
@@ -658,10 +716,27 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
       secondary: numericValue(secondaryCurrent?.visibilityMiles ?? null, " mi", 1),
       delta: comparisonDeltaLabel(primaryCurrent.visibilityMiles, secondaryCurrent?.visibilityMiles ?? null, " mi", 1),
     },
+    {
+      label: "UV · model",
+      primary: primaryUvLoading
+        ? "Loading…"
+        : comparisonUvValue(primaryUv, primaryIntelligence?.forecast?.currentUvCategory),
+      secondary: secondaryUvLoading
+        ? "Loading…"
+        : comparisonUvValue(secondaryUv, secondaryIntelligence?.forecast?.currentUvCategory),
+      delta: comparisonDeltaLabel(primaryUv, secondaryUv, "", 1),
+      tone: "uv",
+    },
   ];
   const hourlyStyle = { "--comparison-hours": Math.max(1, alignedHours.length) } as CSSProperties;
   const dailyStyle = { "--comparison-days": Math.max(1, daySlots.length) } as CSSProperties;
   const comparisonHasDegradedProducts = !primaryAlertsAvailable
+    || primaryIntelligenceUnavailable
+    || Boolean(primaryIntelligence && !primaryIntelligence.forecast)
+    || Boolean(primaryIntelligence?.forecast && primaryUv === null)
+    || secondaryIntelligenceUnavailable
+    || Boolean(secondaryIntelligence && !secondaryIntelligence.forecast)
+    || Boolean(secondaryIntelligence?.forecast && secondaryUv === null)
     || primaryData.notices.length > 0
     || Boolean(secondaryData && (
       secondaryData.alertFeedAvailable !== true
@@ -669,7 +744,7 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
     ));
 
   return (
-    <section ref={shellRoot} className={styles.shell} aria-label="Two-location weather comparison" tabIndex={-1}>
+    <section ref={shellRoot} className={styles.shell} data-kid-mode-surface aria-label="Two-location weather comparison" tabIndex={-1}>
       <header className={styles.topbar} inert={pickerOpen} aria-hidden={pickerOpen}>
         <div className={styles.brand}>
           <span className={styles.radarMark} aria-hidden="true"><i /></span>
@@ -684,13 +759,24 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
 
         <div className={styles.actions}>
           <button type="button" onClick={refreshComparison} aria-label="Refresh comparison weather and radar" title="Refresh comparison weather and radar">
-            <RefreshCw size={17} className={secondaryLoading ? styles.spin : ""} />
+            <RefreshCw size={17} className={comparisonLoading ? styles.spin : ""} />
           </button>
           <button type="button" onClick={() => setRadarPlaying((current) => !current)} aria-label={radarPlaying ? "Pause both radar loops" : "Play both radar loops"} title={radarPlaying ? "Pause both radar loops" : "Play both radar loops"} aria-pressed={radarPlaying}>
             {radarPlaying ? <Pause size={17} /> : <Play size={17} />}
           </button>
           <button type="button" onClick={() => void copyShareUrl()} disabled={!secondaryConfig} aria-label="Copy comparison URL" title="Copy comparison URL">
             {copied ? <Check size={17} /> : <Copy size={17} />}
+          </button>
+          <button
+            type="button"
+            data-kid-mode-toggle
+            className={kidModeEnabled ? styles.kidModeActive : undefined}
+            onClick={() => onKidModeChange(!kidModeEnabled)}
+            aria-label={kidModeEnabled ? "Turn Kid mode off" : "Turn Kid mode on"}
+            title={kidModeEnabled ? "Kid mode on" : "Turn on Kid mode"}
+            aria-pressed={kidModeEnabled}
+          >
+            <Sparkles size={17} />
           </button>
           <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen"} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}>
             {isFullscreen ? <Minimize size={17} /> : <Expand size={17} />}
@@ -732,7 +818,7 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
           />
         </section>
 
-        <section className={styles.situationalBand} aria-label="Paired radar and current observation comparison">
+        <section className={styles.situationalBand} aria-label="Paired radar and current condition comparison">
           <ComparisonRadar
             side="A"
             label={primaryLabel}
@@ -740,12 +826,12 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
             playing={radarPlaying}
             refreshKey={radarRefresh}
           />
-          <section className={styles.metricPanel} aria-label="Current observation metrics comparison">
+          <section className={styles.metricPanel} aria-label="Current condition metrics comparison" aria-busy={primaryUvLoading || secondaryUvLoading}>
             <div className={styles.metricHeader} aria-hidden="true">
-              <span>A · {primaryData.location.stationId}</span><strong>Current observations</strong><span>B · {secondaryData?.location.stationId ?? "pending"}</span>
+              <span>A · {primaryData.location.stationId}</span><strong>Current conditions</strong><span>B · {secondaryData?.location.stationId ?? "pending"}</span>
             </div>
             {metricRows.map((metric) => (
-              <div className={styles.metricRow} key={metric.label}>
+              <div className={`${styles.metricRow} ${metric.tone === "uv" ? styles.uvMetric : ""}`} key={metric.label}>
                 <strong>{metric.primary}</strong>
                 <span><b>{metric.label}</b><small>{metric.delta}</small></span>
                 <strong>{metric.secondary}</strong>
@@ -803,12 +889,12 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
       </main>
 
       <footer className={styles.footer} inert={pickerOpen} aria-hidden={pickerOpen}>
-        <span><i className={secondaryError || comparisonHasDegradedProducts ? styles.degraded : ""} /> {!secondaryConfig ? "Choose Place B" : secondaryError ? "Place B feed degraded" : secondaryLoading ? "Updating Place B" : secondaryData ? comparisonHasDegradedProducts ? "Comparison loaded · some feeds unavailable" : "Both station feeds loaded" : "Waiting for Place B"}</span>
-        <span>Observed: NWS / AviationWeather · Forecast: National Weather Service</span>
+        <span><i className={secondaryError || comparisonHasDegradedProducts ? styles.degraded : ""} /> {!secondaryConfig ? "Choose Place B" : secondaryError ? "Place B feed degraded" : comparisonLoading ? "Updating comparison feeds" : secondaryData ? comparisonHasDegradedProducts ? "Comparison loaded · some feeds unavailable" : "Both station feeds loaded" : "Waiting for Place B"}</span>
+        <span>Observed: NWS / AviationWeather · Forecast: National Weather Service · UV: Open-Meteo</span>
       </footer>
 
       {pickerOpen && (
-        <div className={styles.pickerBackdrop} role="presentation">
+        <div className={styles.pickerBackdrop} data-kid-mode-blocker role="presentation">
           <section ref={pickerDialog} className={styles.picker} role="dialog" aria-modal="true" aria-labelledby="comparison-picker-title" tabIndex={-1}>
             <div className={styles.pickerHeading}>
               <div><span className={styles.eyebrow}>Crosscheck station B</span><h2 id="comparison-picker-title">Choose a second place</h2></div>

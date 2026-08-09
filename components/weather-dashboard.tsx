@@ -527,6 +527,11 @@ export function WeatherDashboard() {
   useEffect(() => {
     if (!autoRotate || comparisonOpen || favorites.length < 2) return;
     const timer = window.setInterval(() => {
+      setData(null);
+      setIntelligence(null);
+      setIntelligenceUnavailable(false);
+      setRegionalAviation(null);
+      setAviationUnavailable(false);
       setConfig((current) => {
         const currentIndex = favorites.findIndex((favorite) => favorite.latitude === current?.latitude && favorite.longitude === current?.longitude);
         const next = favorites[(currentIndex + 1 + favorites.length) % favorites.length];
@@ -617,7 +622,9 @@ export function WeatherDashboard() {
     window.history.replaceState(null, "", `?${params.toString()}`);
     setData(null);
     setIntelligence(null);
+    setIntelligenceUnavailable(false);
     setRegionalAviation(null);
+    setAviationUnavailable(false);
     setConfig(next);
     setSettingsOpen(false);
     setGeoError(null);
@@ -742,6 +749,11 @@ export function WeatherDashboard() {
 
   const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
 
+  const updateKidMode = (enabled: boolean) => {
+    setKidModeEnabled(enabled);
+    persistSetting("weatherguy-kid-mode", String(enabled));
+  };
+
   const selectTheme = (nextTheme: ThemeId) => {
     setTheme(nextTheme);
     persistSetting("weatherguy-theme", nextTheme);
@@ -806,7 +818,7 @@ export function WeatherDashboard() {
   };
 
   return (
-    <main ref={appShellRef} aria-hidden={comparisonVisible || undefined} className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
+    <main ref={appShellRef} data-kid-mode-surface aria-hidden={comparisonVisible || undefined} className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -1184,6 +1196,10 @@ export function WeatherDashboard() {
           primaryConfig={config}
           primaryData={data}
           primaryAlertsAvailable={alertStatus === "active" || alertStatus === "clear"}
+          primaryIntelligence={intelligence}
+          primaryIntelligenceUnavailable={intelligenceUnavailable}
+          kidModeEnabled={kidModeEnabled}
+          onKidModeChange={updateKidMode}
           onRefreshPrimary={() => setRefreshKey((value) => value + 1)}
           onClose={() => setComparisonOpen(false)}
         />,
@@ -1299,7 +1315,7 @@ export function WeatherDashboard() {
                       <label><span><Moon size={16} /><b>Auto-dim</b><small>10 PM–6 AM local time</small></span><input type="checkbox" checked={autoDim} onChange={(event) => { setAutoDim(event.target.checked); persistSetting("weatherguy-auto-dim", String(event.target.checked)); }} /></label>
                       <label><span>{alertAudio ? <Bell size={16} /> : <BellOff size={16} />}<b>Alert tone</b><small>One chime when alerts appear</small></span><input type="checkbox" checked={alertAudio} onChange={(event) => { setAlertAudio(event.target.checked); persistSetting("weatherguy-alert-audio", String(event.target.checked)); }} /></label>
                       <label><span><RefreshCw size={16} /><b>Rotate favorites</b><small>Change area every 15 minutes</small></span><input type="checkbox" checked={autoRotate} onChange={(event) => { setAutoRotate(event.target.checked); persistSetting("weatherguy-auto-rotate", String(event.target.checked)); }} /></label>
-                      <label><span><Sparkles size={16} /><b>Kid mode</b><small>Any key starts a 10-second keyboard party</small></span><input type="checkbox" aria-label="Kid mode" checked={kidModeEnabled} onChange={(event) => { setKidModeEnabled(event.target.checked); persistSetting("weatherguy-kid-mode", String(event.target.checked)); }} /></label>
+                      <label><span><Sparkles size={16} /><b>Kid mode</b><small>Any key starts a 10-second keyboard party</small></span><input type="checkbox" aria-label="Kid mode" checked={kidModeEnabled} onChange={(event) => updateKidMode(event.target.checked)} /></label>
                     </div>
                     {favorites.length > 0 && (
                       <div className="favorite-list">
@@ -1381,7 +1397,7 @@ export function WeatherDashboard() {
         </div>,
         document.body,
       )}
-      {mounted && kidModeEnabled ? <KidModeParty suspended={locationModalOpen || comparisonOpen} /> : null}
+      {mounted && kidModeEnabled ? <KidModeParty suspended={locationModalOpen} /> : null}
     </main>
   );
 }

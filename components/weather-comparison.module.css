@@ -191,6 +191,13 @@
   cursor: not-allowed;
 }
 
+.actions button.kidModeActive {
+  color: var(--amber, #ffb85c);
+  border-color: rgba(var(--amber-rgb, 255, 184, 92), 0.42);
+  background: rgba(var(--amber-rgb, 255, 184, 92), 0.1);
+  box-shadow: inset 0 -2px rgba(var(--amber-rgb, 255, 184, 92), 0.42);
+}
+
 .workspace {
   min-height: 0;
   flex: 1 1 auto;
@@ -890,6 +897,19 @@
   margin-top: 1px;
   color: var(--amber, #ffb85c);
   font-size: 7px;
+}
+
+.uvMetric {
+  background: linear-gradient(90deg, rgba(var(--amber-rgb, 255, 184, 92), 0.035), transparent 22%, transparent 78%, rgba(var(--amber-rgb, 255, 184, 92), 0.035));
+}
+
+.uvMetric > span {
+  background: rgba(var(--amber-rgb, 255, 184, 92), 0.045);
+  box-shadow: inset 0 2px rgba(var(--amber-rgb, 255, 184, 92), 0.42);
+}
+
+.uvMetric b {
+  color: var(--amber, #ffb85c);
 }
 
 .outlookGrid {
@@ -1606,6 +1626,165 @@
   .dayCell { gap: 1px; padding-top: 2px; padding-bottom: 2px; }
   .hourCell > svg,
   .dayCell > svg { width: 16px; height: 16px; }
+}
+
+@media (min-width: 1440px) and (min-height: 850px) {
+  .topbar {
+    min-height: clamp(58px, 5dvh, 76px);
+    flex-basis: clamp(58px, 5dvh, 76px);
+    padding-inline: clamp(12px, 0.85vw, 22px);
+  }
+
+  .workspace {
+    grid-template-rows:
+      clamp(168px, 18dvh, 280px)
+      auto
+      clamp(288px, 29dvh, 480px)
+      minmax(215px, 1fr);
+    gap: clamp(7px, 0.45vw, 11px);
+    padding: clamp(8px, 0.65vw, 16px);
+  }
+
+  .situationalBand {
+    min-height: clamp(288px, 29dvh, 480px);
+    grid-template-columns:
+      clamp(330px, 20vw, 460px)
+      minmax(0, 1fr)
+      clamp(330px, 20vw, 460px);
+  }
+
+  .situationalBand .metricHeader,
+  .situationalBand .metricRow {
+    grid-template-columns:
+      minmax(0, 1fr)
+      clamp(106px, 7.5vw, 150px)
+      minmax(0, 1fr);
+  }
+
+  .eyebrow,
+  .sideClock span,
+  .freshness small,
+  .deltaRail > span,
+  .deltaRail > small,
+  .alertCell > span,
+  .alertList article > span,
+  .rowAxis,
+  .radarSide,
+  .radarHeader b,
+  .radarHeader small,
+  .radarEmpty small,
+  .metricHeader,
+  .metricRow b,
+  .metricRow small,
+  .panelHeading > small,
+  .hourCell > span,
+  .hourCell > small,
+  .dayCell > span,
+  .dayCell > span small,
+  .dayCell > small,
+  .footer {
+    font-size: clamp(9px, 0.5vw, 12px);
+  }
+
+  .brand span:last-child,
+  .sideClock strong,
+  .freshness span,
+  .alertSummary > small,
+  .alertDisclosure summary small,
+  .alertList article > p,
+  .alertList article > small,
+  .radarHeader strong,
+  .radarEmpty strong,
+  .railLabel span {
+    font-size: clamp(10px, 0.58vw, 14px);
+  }
+
+  .route strong,
+  .temperature > small,
+  .deltaRail > b,
+  .alertSummary > strong,
+  .alertDisclosure summary strong {
+    font-size: clamp(12px, 0.7vw, 17px);
+  }
+
+  .temperature > span,
+  .metricRow > strong {
+    font-size: clamp(13px, 0.78vw, 19px);
+  }
+
+  .brand strong {
+    font-size: clamp(20px, 1.2vw, 30px);
+  }
+
+  .sideHeading h2,
+  .panelHeading h2 {
+    font-size: clamp(18px, 1.05vw, 26px);
+  }
+
+  .temperature > strong {
+    font-size: clamp(78px, 5.4vw, 112px);
+  }
+
+  .deltaRail > strong {
+    font-size: clamp(31px, 2.2vw, 46px);
+  }
+
+  .hourCell > strong {
+    font-size: clamp(21px, 1.25vw, 30px);
+  }
+
+  .dayCell > strong {
+    font-size: clamp(19px, 1.15vw, 28px);
+  }
+
+  .conditionReadout > svg {
+    width: clamp(72px, 5vw, 104px);
+    height: clamp(72px, 5vw, 104px);
+  }
+
+  .hourCell > svg,
+  .dayCell > svg {
+    width: clamp(24px, 1.5vw, 36px);
+    height: clamp(24px, 1.5vw, 36px);
+  }
+
+  .radarHeader,
+  .situationalBand .metricHeader {
+    min-height: clamp(31px, 3dvh, 42px);
+    flex-basis: clamp(31px, 3dvh, 42px);
+  }
+
+  .panelHeading {
+    min-height: clamp(46px, 4.5dvh, 62px);
+    flex-basis: clamp(46px, 4.5dvh, 62px);
+  }
+
+  .alertCell {
+    min-height: clamp(52px, 6dvh, 72px);
+  }
+
+  .hourlyGrid {
+    grid-template-columns:
+      clamp(96px, 6vw, 132px)
+      repeat(var(--comparison-hours), minmax(82px, 1fr));
+  }
+
+  .dailyGrid {
+    grid-template-columns:
+      clamp(96px, 6vw, 132px)
+      repeat(var(--comparison-days), minmax(94px, 1fr));
+  }
+
+  .railLabel b {
+    width: clamp(24px, 1.5vw, 32px);
+    height: clamp(24px, 1.5vw, 32px);
+    font-size: clamp(10px, 0.58vw, 14px);
+  }
+
+  .footer {
+    min-height: clamp(26px, 2.4dvh, 34px);
+    flex-basis: clamp(26px, 2.4dvh, 34px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

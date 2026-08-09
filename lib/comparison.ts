@@ -138,3 +138,8 @@ export function comparisonDeltaLabel(
   const warmerSide = rounded > 0 ? "B" : "A";
   return `${warmerSide} +${Math.abs(rounded).toFixed(precision)}${unit}`;
 }
+
+export function comparisonUvValue(index: number | null, category: string | null | undefined) {
+  if (index === null) return "—";
+  return category ? `${index} · ${category}` : String(index);
+}

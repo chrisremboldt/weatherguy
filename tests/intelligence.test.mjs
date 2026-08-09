@@ -127,6 +127,8 @@ test("forecast signals do not turn missing model inputs into clear skies or a dr
 
   assert.equal(forecast.peakCloudCoverPct, null);
   assert.equal(forecast.bestOutdoorWindow, null);
+  assert.equal(forecast.currentUvIndex, null);
+  assert.equal(forecast.currentUvCategory, "Unavailable");
 });
 
 test("date-specific NWS point metadata refreshes every fifteen minutes", () => {

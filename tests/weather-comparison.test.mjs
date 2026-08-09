@@ -6,6 +6,7 @@ import {
   alignHourlyPeriods,
   comparisonDeltaLabel,
   comparisonLocationFromParams,
+  comparisonUvValue,
   normalizeRadarStation,
   ridgeRadarUrl,
   sameComparisonLocation,
@@ -109,6 +110,13 @@ test("comparison deltas keep missing values unknown instead of inventing zeroes"
   assert.equal(comparisonDeltaLabel(29.92, 29.87, " inHg", 2), "A +0.05 inHg");
 });
 
+test("UV comparison preserves a real nighttime zero and distinguishes missing model data", () => {
+  assert.equal(comparisonUvValue(0, "Low"), "0 · Low");
+  assert.equal(comparisonUvValue(null, "Unavailable"), "—");
+  assert.equal(comparisonDeltaLabel(0, 1.2, "", 1), "B +1.2");
+  assert.equal(comparisonDeltaLabel(0, 0, "", 1), "Even");
+});
+
 test("paired radar URLs share safe loop and pause semantics", () => {
   assert.equal(normalizeRadarStation(" klot "), "KLOT");
   assert.equal(normalizeRadarStation("CONUS"), "CONUS");
@@ -126,6 +134,7 @@ test("paired radar URLs share safe loop and pause semantics", () => {
 test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(component, /export async function requestComparisonFullscreen/);
   assert.match(component, /\/api\/weather\?lat=\$\{latitude\}&lon=\$\{longitude\}&schema=3/);
+  assert.match(component, /\/api\/intelligence\?lat=\$\{latitude\}&lon=\$\{longitude\}/);
   assert.match(component, /\/api\/locations\?q=/);
   assert.match(component, /COMPARISON_STORAGE_KEY/);
   assert.match(component, /Next six hours/);
@@ -156,7 +165,19 @@ test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(component, /refreshComparison/);
   assert.match(component, /!secondaryConfig \? "Choose Place B"/);
   assert.equal(component.match(/Feels like/g)?.length, 1);
-  assert.doesNotMatch(component, /api\/intelligence|RadarMap|SatelliteView/);
+  assert.match(component, /label: "UV · model"/);
+  assert.match(component, /comparisonUvValue\(primaryUv/);
+  assert.match(component, /comparisonDeltaLabel\(primaryUv, secondaryUv, "", 1\)/);
+  assert.match(component, /primaryIntelligenceUnavailable/);
+  assert.match(component, /secondaryIntelligenceUnavailable/);
+  assert.match(component, /primaryUvLoading/);
+  assert.match(component, /secondaryUvLoading/);
+  assert.match(component, /Updating comparison feeds/);
+  assert.match(component, /data-kid-mode-surface/);
+  assert.match(component, /data-kid-mode-blocker/);
+  assert.match(component, /data-kid-mode-toggle/);
+  assert.match(component, /aria-pressed=\{kidModeEnabled\}/);
+  assert.doesNotMatch(component, /RadarMap|SatelliteView/);
 
   assert.match(styles, /\.shell\s*{[^}]*position:\s*fixed;[^}]*height:\s*100dvh;/s);
   assert.match(styles, /@media \(max-width: 720px\)/);
@@ -170,6 +191,9 @@ test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(styles, /@media \(max-height: 800px\) and \(min-width: 721px\)[\s\S]*?\.situationalBand\s*{[^}]*min-height:\s*245px;/s);
   assert.match(styles, /\.situationalBand \.metricRow\s*{[^}]*flex:\s*1 1 0;/s);
   assert.match(styles, /\.radarStage > img\s*{[^}]*object-fit:\s*contain;/s);
+  assert.match(styles, /\.uvMetric\s*{[^}]*amber-rgb/s);
+  assert.match(styles, /@media \(min-width: 1440px\) and \(min-height: 850px\)/);
+  assert.match(styles, /@media \(min-width: 1440px\) and \(min-height: 850px\)[\s\S]*?\.situationalBand\s*{[^}]*min-height:\s*clamp\(288px, 29dvh, 480px\);[^}]*clamp\(330px, 20vw, 460px\)/s);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
@@ -201,6 +225,14 @@ test("Crosscheck breakpoint budgets preserve observation values and laptop-heigh
   assert.ok(Number(maxHeightText) >= 768);
   assert.equal(Number(forecastTrackText), Number(outlookText));
   assert.ok(minimumWorkspaceHeight <= 768 - 58);
+
+  const highResolutionTypeRule = styles.match(
+    /@media \(min-width: (\d+)px\) and \(min-height: (\d+)px\)[\s\S]*?\.metricRow > strong\s*{[^}]*font-size:\s*clamp\((\d+)px,/s,
+  );
+  assert.ok(highResolutionTypeRule);
+  assert.equal(Number(highResolutionTypeRule[1]), 1440);
+  assert.ok(Number(highResolutionTypeRule[2]) >= 850);
+  assert.ok(Number(highResolutionTypeRule[3]) >= 13);
 });
 
 test("the weather desk launches Crosscheck from a user gesture and restores the desk on close", () => {
@@ -211,7 +243,12 @@ test("the weather desk launches Crosscheck from a user gesture and restores the 
   assert.match(dashboard, /primaryConfig=\{config\}/);
   assert.match(dashboard, /primaryData=\{data\}/);
   assert.match(dashboard, /primaryAlertsAvailable=\{alertStatus === "active" \|\| alertStatus === "clear"\}/);
+  assert.match(dashboard, /primaryIntelligence=\{intelligence\}/);
+  assert.match(dashboard, /primaryIntelligenceUnavailable=\{intelligenceUnavailable\}/);
+  assert.match(dashboard, /kidModeEnabled=\{kidModeEnabled\}/);
+  assert.match(dashboard, /onKidModeChange=\{updateKidMode\}/);
   assert.match(dashboard, /onRefreshPrimary=\{\(\) => setRefreshKey/);
   assert.match(dashboard, /appShell\.inert = true/);
   assert.match(dashboard, /comparisonOpen \|\| favorites\.length < 2/);
+  assert.match(dashboard, /window\.setInterval\(\(\) => \{[\s\S]*?setIntelligence\(null\);[\s\S]*?setConfig/s);
 });

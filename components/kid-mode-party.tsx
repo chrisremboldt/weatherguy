@@ -61,6 +61,13 @@ function isInteractiveTarget(target: EventTarget | null) {
   return target.isContentEditable || Boolean(target.closest("input, textarea, select, button, [role='dialog']"));
 }
 
+function isProtectedKidModeKey(event: KeyboardEvent) {
+  if (document.querySelector("[data-kid-mode-blocker]")) return true;
+  if (!(event.target instanceof HTMLElement)) return false;
+  return Boolean(event.target.closest("[data-kid-mode-toggle]"))
+    && (event.key === "Enter" || event.key === " ");
+}
+
 export function KidModeParty({ suspended }: { suspended: boolean }) {
   const [active, setActive] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -120,10 +127,11 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     let idleTimer: number | null = null;
     let ambientTimer: number | null = null;
     let animationFrame = 0;
+    let focusRestoreFrame = 0;
     let lastReaction = 0;
     let pulseAnimation: Animation | null = null;
-    let dashboardShell: HTMLElement | null = null;
-    let dashboardWasInert = false;
+    let partyReturnFocus: HTMLElement | null = null;
+    let isolatedSurfaces: Array<{ element: HTMLElement; wasInert: boolean }> = [];
     const particles: Particle[] = [];
     const scheduledEffects = new Set<number>();
 
@@ -556,18 +564,29 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
       canvas?.getContext("2d", { alpha: true })?.clearRect(0, 0, window.innerWidth, window.innerHeight);
     };
 
-    const isolateDashboard = () => {
-      if (dashboardShell) return;
-      dashboardShell = document.querySelector<HTMLElement>(".app-shell");
-      if (!dashboardShell) return;
-      dashboardWasInert = dashboardShell.inert;
-      dashboardShell.inert = true;
+    const isolateWeatherSurfaces = () => {
+      if (isolatedSurfaces.length) return;
+      isolatedSurfaces = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-kid-mode-surface]"),
+        (element) => ({ element, wasInert: element.inert }),
+      );
+      for (const { element } of isolatedSurfaces) element.inert = true;
     };
 
-    const restoreDashboard = () => {
-      if (!dashboardShell) return;
-      dashboardShell.inert = dashboardWasInert;
-      dashboardShell = null;
+    const restoreWeatherSurfaces = () => {
+      for (const { element, wasInert } of isolatedSurfaces) element.inert = wasInert;
+      isolatedSurfaces = [];
+    };
+
+    const restorePartyFocus = () => {
+      const target = partyReturnFocus;
+      partyReturnFocus = null;
+      if (!target) return;
+      if (focusRestoreFrame) window.cancelAnimationFrame(focusRestoreFrame);
+      focusRestoreFrame = window.requestAnimationFrame(() => {
+        focusRestoreFrame = 0;
+        if (target.isConnected && !target.closest("[inert]")) target.focus({ preventScroll: true });
+      });
     };
 
     const endParty = () => {
@@ -576,8 +595,9 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
       activeRef.current = false;
       cornerClicks = 0;
       cleanupVisuals();
-      restoreDashboard();
+      restoreWeatherSurfaces();
       setActive(false);
+      restorePartyFocus();
     };
 
     const resetIdleTimer = () => {
@@ -587,7 +607,10 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
 
     const startParty = (initialKey: string) => {
       initAudio();
-      isolateDashboard();
+      partyReturnFocus = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+      isolateWeatherSurfaces();
       activeRef.current = true;
       setActive(true);
       resetIdleTimer();
@@ -614,6 +637,7 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (isProtectedKidModeKey(event)) return;
       const fullscreenKidGuard = Boolean(document.fullscreenElement) && !suspendedRef.current;
       if (!activeRef.current) {
         const activatingControl = isInteractiveTarget(event.target) && (event.key === "Enter" || event.key === " ");
@@ -631,6 +655,7 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
+      if (isProtectedKidModeKey(event)) return;
       if (!document.fullscreenElement || suspendedRef.current) return;
       event.preventDefault();
       event.stopImmediatePropagation();
@@ -684,7 +709,8 @@ export function KidModeParty({ suspended }: { suspended: boolean }) {
       if (cornerTimer !== null) window.clearTimeout(cornerTimer);
       activeRef.current = false;
       cleanupVisuals();
-      restoreDashboard();
+      restoreWeatherSurfaces();
+      restorePartyFocus();
       runtimeRef.current = null;
       if (audio) void audio.close();
     };
