@@ -30,3 +30,15 @@ test("location search becomes a focused one-click selection flow", () => {
   assert.doesNotMatch(component, /result\.latitude\.toFixed\(2\)/);
   assert.match(styles, /\.search-results-region\s*{[^}]*var\(--signal\)/s);
 });
+
+test("settings behaves as a focus-contained modal and reports asynchronous errors", () => {
+  assert.match(component, /settingsDialogRef/);
+  assert.match(component, /appShell\.inert = true/);
+  assert.match(component, /event\.key === "Escape"/);
+  assert.match(component, /event\.key !== "Tab"/);
+  assert.match(component, /settingsReturnFocusRef\.current\?\.focus\(\)/);
+  assert.match(component, /data-modal-initial-focus/);
+  assert.match(component, /className="form-error" role="alert"/);
+  assert.match(styles, /\.location-search-form > div:focus-within/);
+  assert.match(styles, /select:focus-visible/);
+});

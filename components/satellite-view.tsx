@@ -61,9 +61,9 @@ export function SatelliteView({ latitude, longitude, refreshKey }: { latitude: n
   return (
     <div className="satellite-console">
       <div className="sensor-toolbar satellite-toolbar">
-        <div className="product-tabs" aria-label="Satellite product">
+        <div className="product-tabs" role="group" aria-label="Satellite product">
           {PRODUCTS.map((item) => (
-            <button key={item.id} className={product === item.id ? "active" : ""} onClick={() => { if (item.id !== product) { setLoading(true); setProduct(item.id); } }} title={item.title}>
+            <button key={item.id} className={product === item.id ? "active" : ""} aria-pressed={product === item.id} onClick={() => { if (item.id !== product) { setLoading(true); setProduct(item.id); } }} title={item.title}>
               {item.short}
             </button>
           ))}
@@ -87,7 +87,7 @@ export function SatelliteView({ latitude, longitude, refreshKey }: { latitude: n
       </div>
       <div className="loop-controls">
         <button onClick={() => setFrameIndex(0)} aria-label="First satellite frame"><SkipBack size={14} /></button>
-        <button onClick={() => setPlaying((current) => !current)} aria-label={playing ? "Pause satellite loop" : "Play satellite loop"}>
+        <button onClick={() => setPlaying((current) => !current)} aria-label={playing ? "Pause satellite loop" : "Play satellite loop"} aria-pressed={playing}>
           {playing ? <Pause size={14} /> : <Play size={14} />}
         </button>
         <input

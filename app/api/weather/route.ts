@@ -319,6 +319,7 @@ export async function GET(request: NextRequest) {
       hourly: hourlyResult.status === "fulfilled" ? normalizeHourly(hourlyResult.value) : [],
       daily: dailyResult.status === "fulfilled" ? normalizeDaily(dailyResult.value) : [],
       alerts: alertsResult.status === "fulfilled" ? normalizeAlerts(alertsResult.value) : [],
+      alertFeedAvailable: alertsResult.status === "fulfilled",
       discussion:
         discussionResult.status === "fulfilled" && discussionResult.value && latestProduct
           ? normalizeDiscussion(discussionResult.value, latestProduct.id)

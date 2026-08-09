@@ -5,6 +5,7 @@ import {
   BellOff,
   ChevronLeft,
   ChevronRight,
+  Columns2,
   Copy,
   Droplets,
   Expand,
@@ -31,7 +32,7 @@ import {
   X,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
   AviationData,
@@ -48,12 +49,16 @@ import { AviationConsole } from "@/components/aviation-console";
 import { IntelligenceGrid } from "@/components/intelligence-grid";
 import { FullscreenObservationStrip, ObservationContext } from "@/components/observation-context";
 import { SensorDeck } from "@/components/sensor-deck";
+import { requestComparisonFullscreen, WeatherComparison } from "@/components/weather-comparison";
 import { buildForecastDays } from "@/lib/forecast-days";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
+import { alertFeedPresentationState } from "@/lib/weather-alerts";
 import {
   apparentTemperatureF,
   currentAndFutureHourlyPeriods,
+  maximumPrecipitationPct,
   nextHourlyPeriods,
+  precipitationChanceLabel,
 } from "@/lib/weather-display";
 
 const KidModeParty = dynamic(
@@ -243,14 +248,22 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
 }
 
 export function WeatherDashboard() {
+  const appShellRef = useRef<HTMLElement>(null);
+  const settingsDialogRef = useRef<HTMLElement>(null);
+  const settingsReturnFocusRef = useRef<HTMLElement | null>(null);
+  const wallboardTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const comparisonReturnFocusRef = useRef<HTMLElement | null>(null);
   const [config, setConfig] = useState<LocationConfig | null>(initialLocation);
   const [formConfig, setFormConfig] = useState<LocationFormConfig>(() => formFromLocation(initialLocation()));
   const [data, setData] = useState<WeatherDashboardData | null>(null);
   const [intelligence, setIntelligence] = useState<IntelligenceData | null>(null);
   const [regionalAviation, setRegionalAviation] = useState<AviationData | null>(null);
+  const [intelligenceUnavailable, setIntelligenceUnavailable] = useState(false);
+  const [aviationUnavailable, setAviationUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [comparisonOpen, setComparisonOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [now, setNow] = useState(new Date());
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -275,9 +288,11 @@ export function WeatherDashboard() {
   const [wallboardIntervalSeconds, setWallboardIntervalSeconds] = useState(20);
   const [wallboardSceneIndex, setWallboardSceneIndex] = useState(0);
   const [wallboardPaused, setWallboardPaused] = useState(false);
+  const [wallboardFocusWithin, setWallboardFocusWithin] = useState(false);
   const [largeDisplayWallboard, setLargeDisplayWallboard] = useState(false);
   const [deskOverviewDisplay, setDeskOverviewDisplay] = useState(false);
   const locationModalOpen = mounted && (settingsOpen || !config);
+  const comparisonVisible = mounted && comparisonOpen && Boolean(config && data);
   const searchMode = searchQuery.trim().length > 0;
   const intelligenceCoordinates = data
     ? `lat=${data.location.latitude.toFixed(4)}&lon=${data.location.longitude.toFixed(4)}`
@@ -297,6 +312,7 @@ export function WeatherDashboard() {
         setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") === "true");
         setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
         setKidModeEnabled(window.localStorage.getItem("weatherguy-kid-mode") === "true");
+        setComparisonOpen(new URLSearchParams(window.location.search).get("view") === "compare");
         setWallboardScenes(savedWallboardScenes(window.localStorage.getItem("weatherguy-wallboard-scenes")));
         setWallboardRotate(window.localStorage.getItem("weatherguy-wallboard-rotate") !== "false");
         const savedInterval = Number(window.localStorage.getItem("weatherguy-wallboard-interval"));
@@ -351,11 +367,73 @@ export function WeatherDashboard() {
   useEffect(() => {
     if (!locationModalOpen) return;
     const previousOverflow = document.body.style.overflow;
+    const appShell = appShellRef.current;
+    const dialog = settingsDialogRef.current;
+    settingsReturnFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
+    if (appShell) appShell.inert = true;
+
+    const focusableSelector = [
+      "button:not([disabled])",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      "a[href]",
+      "summary",
+      "[tabindex]:not([tabindex='-1'])",
+    ].join(",");
+    const focusInitialControl = window.requestAnimationFrame(() => {
+      const initial = dialog?.querySelector<HTMLElement>("[data-modal-initial-focus], #location-search")
+        ?? dialog?.querySelector<HTMLElement>(focusableSelector);
+      (initial ?? dialog)?.focus();
+    });
+    const containFocus = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && config) {
+        event.preventDefault();
+        setSettingsOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector))
+        .filter((control) => control.getClientRects().length > 0);
+      if (!controls.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = controls[0];
+      const last = controls.at(-1) ?? first;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-  }, [locationModalOpen]);
+    dialog?.addEventListener("keydown", containFocus);
+    return () => {
+      window.cancelAnimationFrame(focusInitialControl);
+      dialog?.removeEventListener("keydown", containFocus);
+      if (appShell) appShell.inert = false;
+      document.body.style.overflow = previousOverflow;
+      settingsReturnFocusRef.current?.focus();
+      settingsReturnFocusRef.current = null;
+    };
+  }, [config, locationModalOpen]);
+
+  useEffect(() => {
+    if (!comparisonVisible) return;
+    const appShell = appShellRef.current;
+    if (appShell) appShell.inert = true;
+    return () => {
+      if (appShell) appShell.inert = false;
+      comparisonReturnFocusRef.current?.focus();
+      comparisonReturnFocusRef.current = null;
+    };
+  }, [comparisonVisible]);
 
   useEffect(() => {
     const clock = window.setInterval(() => setNow(new Date()), 1_000);
@@ -415,10 +493,12 @@ export function WeatherDashboard() {
         const payload = (await response.json()) as IntelligenceData;
         if (!response.ok) throw new Error("Intelligence feeds are unavailable.");
         setIntelligence(payload);
+        setIntelligenceUnavailable(false);
       })
       .catch((requestError) => {
         if (requestError instanceof DOMException && requestError.name === "AbortError") return;
         setIntelligence(null);
+        setIntelligenceUnavailable(true);
       });
 
     return () => controller.abort();
@@ -433,17 +513,19 @@ export function WeatherDashboard() {
         const payload = (await response.json()) as AviationData;
         if (!response.ok) throw new Error("Regional aviation feeds are unavailable.");
         setRegionalAviation(payload);
+        setAviationUnavailable(false);
       })
       .catch((requestError) => {
         if (requestError instanceof DOMException && requestError.name === "AbortError") return;
         setRegionalAviation(null);
+        setAviationUnavailable(true);
       });
 
     return () => controller.abort();
   }, [intelligenceCoordinates, refreshKey]);
 
   useEffect(() => {
-    if (!autoRotate || favorites.length < 2) return;
+    if (!autoRotate || comparisonOpen || favorites.length < 2) return;
     const timer = window.setInterval(() => {
       setConfig((current) => {
         const currentIndex = favorites.findIndex((favorite) => favorite.latitude === current?.latitude && favorite.longitude === current?.longitude);
@@ -455,7 +537,7 @@ export function WeatherDashboard() {
       });
     }, 15 * 60_000);
     return () => window.clearInterval(timer);
-  }, [autoRotate, favorites]);
+  }, [autoRotate, comparisonOpen, favorites]);
 
   useEffect(() => {
     if (!alertAudio || !data?.alerts.length) return;
@@ -488,9 +570,10 @@ export function WeatherDashboard() {
     : Math.abs(nearTermTrend) < 2
       ? "Steady"
       : `${nearTermTrend > 0 ? "↑" : "↓"} ${Math.abs(Math.round(nearTermTrend))}°`;
-  const nearTermRainPeak = nearTermHours.reduce(
-    (peak, period) => Math.max(peak, period.precipitationPct ?? 0),
-    0,
+  const nearTermPrecipitationPeak = maximumPrecipitationPct(nearTermHours);
+  const alertStatus = alertFeedPresentationState(
+    data?.alerts ?? null,
+    Boolean(data && data.alertFeedAvailable === true && !offlineSnapshot),
   );
   const localHour = Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", hourCycle: "h23" }).format(now));
   const nightDimmed = mounted && autoDim && (localHour >= 22 || localHour < 6);
@@ -516,15 +599,16 @@ export function WeatherDashboard() {
     !largeDisplayWallboard &&
     wallboardScenes.forecast &&
     wallboardScenes.intelligence;
+  const showRotatingWallboard = isFullscreen && !showAllWallboardScenes && !showDeskOverview;
 
   useEffect(() => {
-    if (!isFullscreen || showAllWallboardScenes || showDeskOverview || !wallboardRotate || wallboardPaused || wallboardCycleScenes.length < 2) return;
+    if (!isFullscreen || comparisonOpen || showAllWallboardScenes || showDeskOverview || !wallboardRotate || wallboardPaused || wallboardFocusWithin || wallboardCycleScenes.length < 2) return;
     const timer = window.setTimeout(
       () => setWallboardSceneIndex((current) => (current + 1) % wallboardCycleScenes.length),
       activeWallboardDurationSeconds * 1_000,
     );
     return () => window.clearTimeout(timer);
-  }, [activeWallboardDurationSeconds, activeWallboardScene, isFullscreen, showAllWallboardScenes, showDeskOverview, wallboardCycleScenes.length, wallboardPaused, wallboardRotate]);
+  }, [activeWallboardDurationSeconds, activeWallboardScene, comparisonOpen, isFullscreen, showAllWallboardScenes, showDeskOverview, wallboardCycleScenes.length, wallboardFocusWithin, wallboardPaused, wallboardRotate]);
 
   const commitLocation = useCallback((next: LocationConfig) => {
     window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
@@ -645,6 +729,17 @@ export function WeatherDashboard() {
     else await document.exitFullscreen?.();
   };
 
+  const openComparison = (opener: HTMLElement) => {
+    if (!config || !data) return;
+    comparisonReturnFocusRef.current = opener;
+    const params = new URLSearchParams(window.location.search);
+    params.set("view", "compare");
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+    setSettingsOpen(false);
+    void requestComparisonFullscreen();
+    setComparisonOpen(true);
+  };
+
   const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
 
   const selectTheme = (nextTheme: ThemeId) => {
@@ -711,7 +806,7 @@ export function WeatherDashboard() {
   };
 
   return (
-    <main className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
+    <main ref={appShellRef} aria-hidden={comparisonVisible || undefined} className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -746,7 +841,10 @@ export function WeatherDashboard() {
           <button className="icon-button" onClick={() => setRefreshKey((value) => value + 1)} title="Refresh data" aria-label="Refresh weather data">
             <RefreshCw size={18} className={loading ? "spin" : ""} />
           </button>
-          <button className="icon-button" onClick={(event) => { event.currentTarget.blur(); void requestFullscreen(); }} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"}>
+          <button className="icon-button comparison-toggle" onClick={(event) => openComparison(event.currentTarget)} disabled={!config || !data} title="Compare two places" aria-label="Open two-place weather comparison">
+            <Columns2 size={18} />
+          </button>
+          <button className="icon-button wallboard-toggle" onClick={(event) => { event.currentTarget.blur(); void requestFullscreen(); }} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"}>
             {isFullscreen ? <Minimize size={18} /> : <Expand size={18} />}
           </button>
           <button className="icon-button" onClick={openLocationSettings} title="Open settings" aria-label="Open settings">
@@ -755,25 +853,39 @@ export function WeatherDashboard() {
         </div>
       </header>
 
-      <section className={`alert-rail ${data?.alerts.length ? "has-alerts" : "all-clear"}`} aria-live="polite">
-        <span className="alert-state">{data?.alerts.length ? `${data.alerts.length} ACTIVE` : "ALL CLEAR"}</span>
+      <section className={`alert-rail ${alertStatus === "active" || alertStatus === "saved" ? "has-alerts" : alertStatus === "clear" ? "all-clear" : "alert-unavailable"}`} aria-live="polite">
+        <span className="alert-state">{
+          alertStatus === "active" ? `${data?.alerts.length ?? 0} ACTIVE`
+            : alertStatus === "saved" ? `${data?.alerts.length ?? 0} SAVED`
+              : alertStatus === "clear" ? "ALL CLEAR"
+                : alertStatus === "loading" ? "ACQUIRING"
+                  : "UNAVAILABLE"
+        }</span>
         <span className="alert-divider" />
         <div className="alert-message">
           {data?.alerts.length ? (
-            <><strong>{data.alerts[0].event}</strong><span>{data.alerts[0].headline}</span></>
-          ) : (
+            <><strong>{data.alerts[0].event}</strong><span>{alertStatus === "saved" ? `Saved alert snapshot · ${data.alerts[0].headline}` : data.alerts[0].headline}</span></>
+          ) : alertStatus === "clear" ? (
             <><strong>No active NWS alerts</strong><span>Monitoring watches, warnings, and advisories for this point.</span></>
+          ) : alertStatus === "loading" ? (
+            <><strong>Loading NWS alert status</strong><span>Waiting for the active alerts feed.</span></>
+          ) : (
+            <><strong>NWS alert status unavailable</strong><span>Do not interpret this as an all-clear.</span></>
           )}
         </div>
         <span className="alert-source">NWS CAP</span>
       </section>
 
-      {data?.alerts[0] && (
-        <details className="alert-detail">
-          <summary>Read {data.alerts[0].event} details</summary>
-          <div><p>{data.alerts[0].description}</p>{data.alerts[0].instruction && <p><strong>What to do:</strong> {data.alerts[0].instruction}</p>}</div>
+      {data?.alerts.map((alert, index) => (
+        <details className="alert-detail" key={alert.id}>
+          <summary>{index === 0 ? "Highest priority · " : ""}{alert.event} · {alert.severity} / {alert.urgency}</summary>
+          <div>
+            <p><strong>{alert.headline}</strong></p>
+            <p>{alert.description}</p>
+            {alert.instruction && <p><strong>What to do:</strong> {alert.instruction}</p>}
+          </div>
         </details>
-      )}
+      ))}
 
       {error && (
         <div className="error-banner" role="alert">
@@ -803,7 +915,7 @@ export function WeatherDashboard() {
             <div className="current-nowcast" aria-label="Short-term weather outlook">
               <div className="current-nowcast-summary">
                 <span><b>Next 3 hours</b><strong>{nearTermTrendLabel}</strong><small>{nearTermTarget ? `by ${formatHour(nearTermTarget.startTime, timeZone).hour}` : "trend pending"}</small></span>
-                <span><b>Rain peak</b><strong>{nearTermRainPeak}%</strong><small>next 3 hours</small></span>
+                <span><b>Precip peak</b><strong>{precipitationChanceLabel(nearTermPrecipitationPeak)}</strong><small>next 3 hours</small></span>
               </div>
               <div className="current-nowcast-hours">
                 {nearTermHours.map((period) => {
@@ -815,10 +927,10 @@ export function WeatherDashboard() {
                       <strong>{period.temperatureF}°</strong>
                       <em>{period.shortForecast}</em>
                       <small
-                        className={(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}
-                        aria-label={`${period.precipitationPct ?? 0}% chance of rain`}
+                        className={period.precipitationPct !== null && period.precipitationPct >= 40 ? "likely" : ""}
+                        aria-label={period.precipitationPct === null ? "Precipitation chance unavailable" : `${period.precipitationPct}% chance of precipitation`}
                       >
-                        <Droplets size={8} aria-hidden="true" /> {period.precipitationPct ?? 0}% rain
+                        <Droplets size={8} aria-hidden="true" /> {precipitationChanceLabel(period.precipitationPct)} precip
                       </small>
                       <i>{period.windDirection} {period.windSpeed}</i>
                     </span>
@@ -829,9 +941,9 @@ export function WeatherDashboard() {
             {data && <FullscreenObservationStrip data={data} />}
             <div className="metrics-grid">
               <Metric icon={<Wind size={18} />} label="Wind" value={data ? `${cardinalDirection(data.current.windDirectionDeg)} ${data.current.windSpeedMph ?? "—"} mph${data.current.windGustMph ? ` · G${data.current.windGustMph}` : ""}` : "—"} />
-              <Metric icon={<Droplets size={18} />} label="Humidity" value={data?.current.humidityPct === null || !data ? "—" : `${Math.round(data.current.humidityPct)}% · dew ${data.current.dewpointF}°`} />
-              <Metric icon={<Gauge size={18} />} label="Pressure" value={data?.current.pressureInHg ? `${data.current.pressureInHg.toFixed(2)} inHg` : "—"} />
-              <Metric icon={<Navigation size={18} />} label="Visibility" value={data?.current.visibilityMiles ? `${data.current.visibilityMiles} mi` : "—"} />
+              <Metric icon={<Droplets size={18} />} label="Humidity" value={!data || data.current.humidityPct === null ? "—" : `${Math.round(data.current.humidityPct)}%${data.current.dewpointF === null ? "" : ` · dew ${data.current.dewpointF}°`}`} />
+              <Metric icon={<Gauge size={18} />} label="Pressure" value={data?.current.pressureInHg === null || !data ? "—" : `${data.current.pressureInHg.toFixed(2)} inHg`} />
+              <Metric icon={<Navigation size={18} />} label="Visibility" value={data?.current.visibilityMiles === null || !data ? "—" : `${data.current.visibilityMiles} mi`} />
             </div>
             <div className="solar-track">
               <div><Sunrise size={17} /><span>Sunrise</span><strong>{formatTime(data?.astronomy.sunrise ?? null, timeZone)}</strong></div>
@@ -847,15 +959,22 @@ export function WeatherDashboard() {
             </div>
             <p className="metar-raw">{data?.aviation?.raw ?? "Waiting for the latest aviation observation."}</p>
             <div className="aviation-facts">
-              <span><b>Ceiling</b>{data?.aviation?.ceilingFeet ? `${data.aviation.ceilingFeet.toLocaleString()} ft` : "CLR"}</span>
-              <span><b>Visibility</b>{data?.aviation?.visibility ? `${data.aviation.visibility} sm` : "—"}</span>
-              <span><b>Altimeter</b>{data?.aviation?.altimeterInHg ? data.aviation.altimeterInHg.toFixed(2) : "—"}</span>
+              <span><b>Ceiling</b>{!data?.aviation ? "—" : data.aviation.ceilingFeet === null ? "No ceiling" : `${data.aviation.ceilingFeet.toLocaleString()} ft`}</span>
+              <span><b>Visibility</b>{data?.aviation?.visibility === null || !data?.aviation ? "—" : `${data.aviation.visibility} sm`}</span>
+              <span><b>Altimeter</b>{data?.aviation?.altimeterInHg === null || !data?.aviation ? "—" : `${data.aviation.altimeterInHg.toFixed(2)} inHg`}</span>
             </div>
           </section>
           {data && <ObservationContext data={data} regional={regionalAviation} mode={displayMode} />}
         </aside>
 
-        <section className="wallboard-bay" aria-label="Fullscreen wallboard scenes">
+        <section
+          className="wallboard-bay"
+          aria-label="Fullscreen wallboard scenes"
+          onFocusCapture={() => setWallboardFocusWithin(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setWallboardFocusWithin(false);
+          }}
+        >
           <div className="wallboard-cycle">
             <div className="wallboard-cycle-status">
               <span>{showAllWallboardScenes ? "Large display" : showDeskOverview ? "Weather overview" : "Wallboard cycle"}</span>
@@ -869,16 +988,33 @@ export function WeatherDashboard() {
                 <ChevronRight size={12} aria-hidden="true" />
               </a>
             )}
-            {!showAllWallboardScenes && !showDeskOverview && (
+            {showRotatingWallboard && (
               <>
-                <div className="wallboard-scene-tabs" aria-label="Choose wallboard scene">
+                <div className="wallboard-scene-tabs" role="tablist" aria-label="Choose wallboard scene">
                   {wallboardCycleScenes.map((scene, index) => (
                     <button
                       className={activeWallboardScene === scene.id ? "active" : ""}
                       type="button"
                       key={scene.id}
                       onClick={() => setWallboardSceneIndex(index)}
+                      onKeyDown={(event) => {
+                        let nextIndex: number | null = null;
+                        if (event.key === "ArrowRight") nextIndex = (index + 1) % wallboardCycleScenes.length;
+                        if (event.key === "ArrowLeft") nextIndex = (index - 1 + wallboardCycleScenes.length) % wallboardCycleScenes.length;
+                        if (event.key === "Home") nextIndex = 0;
+                        if (event.key === "End") nextIndex = wallboardCycleScenes.length - 1;
+                        if (nextIndex === null) return;
+                        event.preventDefault();
+                        setWallboardSceneIndex(nextIndex);
+                        wallboardTabRefs.current[nextIndex]?.focus();
+                      }}
+                      ref={(node) => { wallboardTabRefs.current[index] = node; }}
                       title={scene.detail}
+                      role="tab"
+                      id={`wallboard-tab-${scene.id}`}
+                      aria-controls={`wallboard-scene-${scene.id}`}
+                      aria-selected={activeWallboardScene === scene.id}
+                      tabIndex={activeWallboardScene === scene.id ? 0 : -1}
                     >
                       {scene.label}
                     </button>
@@ -893,7 +1029,7 @@ export function WeatherDashboard() {
                   )}
                   <button type="button" onClick={() => showAdjacentWallboardScene(1)} aria-label="Next wallboard scene"><ChevronRight size={14} /></button>
                 </div>
-                {wallboardRotate && !wallboardPaused && wallboardCycleScenes.length > 1 && (
+                {wallboardRotate && !wallboardPaused && !wallboardFocusWithin && wallboardCycleScenes.length > 1 && (
                   <span className="wallboard-progress" aria-hidden="true">
                     <i key={`${activeWallboardScene}-${wallboardSceneIndex}`} style={{ animationDuration: `${activeWallboardDurationSeconds}s` }} />
                   </span>
@@ -902,16 +1038,21 @@ export function WeatherDashboard() {
             )}
           </div>
 
-          <div className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : showDeskOverview ? false : activeWallboardScene !== "forecast") : undefined}>
+          <div id="wallboard-scene-forecast" role={showRotatingWallboard ? "tabpanel" : showAllWallboardScenes || showDeskOverview ? "region" : undefined} aria-labelledby={showRotatingWallboard ? "wallboard-tab-forecast" : undefined} aria-label={showAllWallboardScenes || showDeskOverview ? "Forecast wallboard scene" : undefined} className={`wallboard-scene wallboard-scene-forecast ${wallboardScenes.forecast ? "enabled" : ""} ${activeWallboardScene === "forecast" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.forecast : showDeskOverview ? false : activeWallboardScene !== "forecast") : undefined}>
             <section className="panel hourly-panel forecast-panel">
           <div className="panel-heading compact">
             <div><span className="eyebrow">Planning horizon / point forecast</span><h2>Seven-day forecast</h2></div>
             <span className="panel-note">NWS days + nights</span>
           </div>
           <div className="forecast-panel-body">
-            <div className="seven-day-grid" aria-label="Seven-day weather forecast">
+            <div className="seven-day-grid" aria-label="Seven-day weather forecast" tabIndex={0} role="region">
               {forecastDays.map((day) => (
-                <article className="forecast-day-card" key={day.key} title={day.detailedForecast}>
+                <article
+                  className="forecast-day-card"
+                  key={day.key}
+                  title={day.detailedForecast}
+                  aria-label={`${day.label}: high ${day.highF ?? "unavailable"} degrees, low ${day.lowF ?? "unavailable"} degrees, ${day.shortForecast}; precipitation ${precipitationChanceLabel(day.precipitationPct)} maximum. ${day.detailedForecast}`}
+                >
                   <span className="forecast-day-heading"><b>{day.label}</b><small>{day.dateLabel}</small></span>
                   <span className="forecast-day-core">
                     <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} />
@@ -921,9 +1062,9 @@ export function WeatherDashboard() {
                     </span>
                     <span className="forecast-day-condition">{day.shortForecast}</span>
                   </span>
-                  <span className={`forecast-day-rain ${(day.precipitationPct ?? 0) >= 40 ? "likely" : ""}`}>
-                    <span><Droplets size={11} aria-hidden="true" /> Rain</span>
-                    <strong>{day.precipitationPct ?? 0}% max</strong>
+                  <span className={`forecast-day-rain ${day.precipitationPct !== null && day.precipitationPct >= 40 ? "likely" : ""}`}>
+                    <span><Droplets size={11} aria-hidden="true" /> Precip</span>
+                    <strong>{precipitationChanceLabel(day.precipitationPct)} max</strong>
                     <i aria-hidden="true"><span style={{ width: `${day.precipitationPct ?? 0}%` }} /></i>
                   </span>
                 </article>
@@ -933,19 +1074,19 @@ export function WeatherDashboard() {
               <div className="compact-hourly-label">
                 <span>Near term</span>
                 <strong>Next nine hours</strong>
-                <small>Temperature / rain</small>
+                <small>Temperature / precip</small>
               </div>
-              <div className="compact-hourly-chart">
+              <div className="compact-hourly-chart" tabIndex={0} role="region" aria-label="Scrollable nine-hour temperature and precipitation forecast">
                 <TemperatureTrace periods={hourly} />
                 <div className="compact-hourly-cells">
-                  {hourly.map((period, index) => {
+                  {hourly.map((period) => {
                     const label = formatHour(period.startTime, timeZone);
                     return (
                       <span key={period.startTime}>
                         <b>{label.hour}</b>
                         <strong>{period.temperatureF}°</strong>
-                        <small className={(period.precipitationPct ?? 0) >= 40 ? "likely" : ""}>
-                          <Droplets size={8} aria-hidden="true" /> {period.precipitationPct ?? 0}%
+                        <small className={period.precipitationPct !== null && period.precipitationPct >= 40 ? "likely" : ""}>
+                          <Droplets size={8} aria-hidden="true" /> {precipitationChanceLabel(period.precipitationPct)}
                         </small>
                       </span>
                     );
@@ -973,15 +1114,15 @@ export function WeatherDashboard() {
 
           {data && (
             <>
-              <div className={`wallboard-scene wallboard-scene-intelligence ${wallboardScenes.intelligence ? "enabled" : ""} ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.intelligence : showDeskOverview ? false : activeWallboardScene !== "intelligence") : undefined}>
+              <div id="wallboard-scene-intelligence" role={showRotatingWallboard ? "tabpanel" : showAllWallboardScenes || showDeskOverview ? "region" : undefined} aria-labelledby={showRotatingWallboard ? "wallboard-tab-intelligence" : undefined} aria-label={showAllWallboardScenes || showDeskOverview ? "Weather intelligence wallboard scene" : undefined} className={`wallboard-scene wallboard-scene-intelligence ${wallboardScenes.intelligence ? "enabled" : ""} ${activeWallboardScene === "intelligence" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.intelligence : showDeskOverview ? false : activeWallboardScene !== "intelligence") : undefined}>
                 <IntelligenceGrid data={intelligence} timeZone={data.location.timeZone} />
               </div>
-              <div className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : showDeskOverview ? true : activeWallboardScene !== "aviation") : undefined}>
+              <div id="wallboard-scene-aviation" role={showRotatingWallboard ? "tabpanel" : showAllWallboardScenes || showDeskOverview ? "region" : undefined} aria-labelledby={showRotatingWallboard ? "wallboard-tab-aviation" : undefined} aria-label={showAllWallboardScenes || showDeskOverview ? "Aviation wallboard scene" : undefined} className={`wallboard-scene wallboard-scene-aviation ${wallboardScenes.aviation ? "enabled" : ""} ${activeWallboardScene === "aviation" ? "active" : ""}`} aria-hidden={isFullscreen ? (showAllWallboardScenes ? !wallboardScenes.aviation : showDeskOverview ? true : activeWallboardScene !== "aviation") : undefined}>
                 <AviationConsole data={data} intelligence={intelligence} regional={regionalAviation} />
               </div>
             </>
           )}
-          <div className={`wallboard-scene wallboard-scene-sponsor ${activeWallboardScene === "sponsor" ? "active" : ""}`} aria-hidden={!isFullscreen || showAllWallboardScenes || showDeskOverview || activeWallboardScene !== "sponsor"}>
+          <div id="wallboard-scene-sponsor" role={showRotatingWallboard ? "tabpanel" : showAllWallboardScenes || showDeskOverview ? "region" : undefined} aria-labelledby={showRotatingWallboard ? "wallboard-tab-sponsor" : undefined} aria-label={showAllWallboardScenes || showDeskOverview ? "Sponsor wallboard scene" : undefined} className={`wallboard-scene wallboard-scene-sponsor ${activeWallboardScene === "sponsor" ? "active" : ""}`} aria-hidden={!isFullscreen || showAllWallboardScenes || showDeskOverview || activeWallboardScene !== "sponsor"}>
             <div className="sponsor-intermission">
               <div className="sponsor-intermission-mark" aria-hidden="true">
                 <Plane size={34} />
@@ -1025,20 +1166,35 @@ export function WeatherDashboard() {
       </aside>
 
       <footer className="source-strip">
-        <span><i className={!online || error ? "status-dot degraded" : "status-dot"} /> {!online ? "Offline · cached desk remains available" : offlineSnapshot ? "Serving the last saved snapshot" : error ? "Live feed degraded" : "All live feeds connected"}</span>
+        <span><i className={!online || error || Boolean(data?.notices.length) || intelligenceUnavailable || aviationUnavailable ? "status-dot degraded" : "status-dot"} /> {!online ? "Offline · cached desk remains available" : offlineSnapshot ? "Serving the last saved snapshot" : error ? "Core weather feed degraded" : data?.notices.length || intelligenceUnavailable || aviationUnavailable ? "Core live · some products degraded" : "Core weather feed connected"}</span>
         <span>Weather: NOAA / National Weather Service</span>
         <span>Radar: NEXRAD RIDGE + NWS OpenGeo</span>
         <span>Satellite: NOAA GOES</span>
         <span>Aviation: AviationWeather.gov</span>
+        <span>Models / environment: Open-Meteo · CAMS · USGS · NOAA SWPC / SPC</span>
         {data?.notices.map((notice) => <span className="source-notice" key={notice}>{notice}</span>)}
+        {intelligence?.notices.map((notice) => <span className="source-notice" key={`intelligence-${notice}`}>{notice}</span>)}
+        {regionalAviation?.notices.map((notice) => <span className="source-notice" key={`aviation-${notice}`}>{notice}</span>)}
+        {intelligenceUnavailable && <span className="source-notice">Weather intelligence feed unavailable.</span>}
+        {aviationUnavailable && <span className="source-notice">Regional aviation feed unavailable.</span>}
       </footer>
+
+      {comparisonVisible && config && data && createPortal(
+        <WeatherComparison
+          primaryConfig={config}
+          primaryData={data}
+          primaryAlertsAvailable={alertStatus === "active" || alertStatus === "clear"}
+          onClose={() => setComparisonOpen(false)}
+        />,
+        document.body,
+      )}
 
       {locationModalOpen && createPortal(
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeLocationSettings()}>
-          <section className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <section ref={settingsDialogRef} className="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" tabIndex={-1}>
             <div className="settings-heading">
               <div><span className="eyebrow">wxDynamics controls</span><h2 id="settings-title">{config ? "Desk settings" : "Choose an area"}</h2></div>
-              {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings"><X size={18} /></button>}
+              {config && <button className="icon-button" onClick={closeLocationSettings} aria-label="Close settings" data-modal-initial-focus><X size={18} /></button>}
             </div>
             <div className="settings-modal-body">
               <p className="settings-intro">{config ? "Choose the desk’s visual channel, configure the fullscreen wallboard, or switch to another NWS-covered area." : "Search for a city or ZIP code, then choose a result. wxDynamics resolves the forecast office, radar site, and nearest reporting airport automatically."}</p>
@@ -1193,7 +1349,7 @@ export function WeatherDashboard() {
                     </div>
                   </div>
                 )}
-                {searchError && <p className="form-error">{searchError}</p>}
+                {searchError && <p className="form-error" role="alert">{searchError}</p>}
 
                 {!searchMode && (
                   <div className="direct-location-controls">
@@ -1204,7 +1360,7 @@ export function WeatherDashboard() {
                         <label>Latitude<input type="number" min="-90" max="90" step="0.0001" required value={formConfig.latitude} onChange={(event) => setFormConfig((current) => ({ ...current, latitude: event.target.value, customLabel: undefined }))} /></label>
                         <label>Longitude<input type="number" min="-180" max="180" step="0.0001" required value={formConfig.longitude} onChange={(event) => setFormConfig((current) => ({ ...current, longitude: event.target.value, customLabel: undefined }))} /></label>
                       </div>
-                      {geoError && <p className="form-error">{geoError}</p>}
+                      {geoError && <p className="form-error" role="alert">{geoError}</p>}
                       <div className="coordinate-action-row">
                         <p className="coverage-note">United States and supported territories</p>
                         <button className="coordinate-submit-button" type="submit">Use coordinates</button>
@@ -1224,7 +1380,7 @@ export function WeatherDashboard() {
         </div>,
         document.body,
       )}
-      {mounted && kidModeEnabled ? <KidModeParty suspended={locationModalOpen} /> : null}
+      {mounted && kidModeEnabled ? <KidModeParty suspended={locationModalOpen || comparisonOpen} /> : null}
     </main>
   );
 }

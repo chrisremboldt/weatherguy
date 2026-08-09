@@ -131,6 +131,7 @@ export type WeatherDashboardData = {
   hourly: HourlyPeriod[];
   daily: DailyPeriod[];
   alerts: WeatherAlert[];
+  alertFeedAvailable: boolean;
   discussion: ForecastDiscussion | null;
   aviation: AviationObservation | null;
   aviationForecast: AviationForecast | null;

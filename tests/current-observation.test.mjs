@@ -113,3 +113,20 @@ test("station history merges same-station feeds so it reaches the newest report"
   assert.equal(history.at(-1)?.timestamp, "2026-07-22T03:00:00.000Z");
   assert.deepEqual(history.map((point) => point.temperatureF), [59, 61, 63, 64]);
 });
+
+test("station history preserves a reported calm wind instead of treating zero as missing", () => {
+  const calmObservation = {
+    features: [{
+      properties: {
+        ...olderNwsObservation.properties,
+        windSpeed: { value: 0 },
+        windGust: { value: null },
+      },
+    }],
+  };
+
+  const history = selectObservationHistory(calmObservation, []);
+
+  assert.equal(history[0]?.windSpeedMph, 0);
+  assert.equal(history[0]?.windGustMph, null);
+});

@@ -73,7 +73,8 @@ test("the dashboard promotes seven-day planning while retaining a compact hourly
   assert.match(dashboard, /NWS days \+ nights/);
   assert.match(dashboard, /compact-hourly-strip/);
   assert.match(dashboard, /Next nine hours/);
-  assert.match(dashboard, /% chance of rain/);
+  assert.match(dashboard, /% chance of precipitation/);
+  assert.doesNotMatch(dashboard, /% chance of rain/);
   assert.doesNotMatch(dashboard, /Five day signal/);
   assert.match(styles, /\.seven-day-grid\s*{[^}]*grid-template-columns:\s*repeat\(7,/s);
   assert.match(styles, /\.compact-hourly-strip\s*{/);

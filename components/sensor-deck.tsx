@@ -25,6 +25,7 @@ export function SensorDeck({ data, refreshKey }: { data: WeatherDashboardData; r
             latitude={data.location.latitude}
             longitude={data.location.longitude}
             station={data.location.radarStation}
+            timeZone={data.location.timeZone}
             alerts={data.alerts}
             refreshKey={refreshKey}
           />

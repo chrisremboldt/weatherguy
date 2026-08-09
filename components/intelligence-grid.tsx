@@ -38,11 +38,11 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
           <CloudSun size={20} aria-hidden="true" />
         </div>
         <div className="signal-matrix">
-          <span><b>Rain / 24h</b><strong>{value(forecast?.next24PrecipitationIn, '"')}</strong></span>
-          <span><b>Rain / 72h</b><strong>{value(forecast?.next72PrecipitationIn, '"')}</strong></span>
+          <span><b>Precip / 24h</b><strong>{value(forecast?.next24PrecipitationIn, '"')}</strong></span>
+          <span><b>Precip / 72h</b><strong>{value(forecast?.next72PrecipitationIn, '"')}</strong></span>
           <span><b>Snow / 72h</b><strong>{value(forecast?.next72SnowfallIn, '"')}</strong></span>
           <span><b>Cloud peak</b><strong>{value(forecast?.peakCloudCoverPct, "%")}</strong></span>
-          <span><b>Freezing level</b><strong>{forecast?.freezingLevelFt ? `${Math.round(forecast.freezingLevelFt).toLocaleString()} ft` : "—"}</strong></span>
+          <span><b>Freezing level</b><strong>{forecast?.freezingLevelFt === null || forecast?.freezingLevelFt === undefined ? "—" : `${Math.round(forecast.freezingLevelFt).toLocaleString()} ft`}</strong></span>
           <span className={`uv-signal ${riskClass(forecast?.currentUvCategory)}`} title="Cloud-adjusted model estimate for the current hour">
             <b><Sun size={12} aria-hidden="true" /> UV index</b>
             <strong>{value(forecast?.currentUvIndex)}</strong>
@@ -111,7 +111,7 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
           <Activity size={20} />
         </div>
         <div className="environment-list">
-          <div><Leaf size={17} /><span><b>Air quality</b>{aqi ? `${aqi.category} · PM2.5 ${value(aqi.pm25)}` : "Acquiring"}</span><strong className={`aqi-${aqi?.category.toLowerCase().replaceAll(" ", "-")}`}>{value(aqi?.aqi)}</strong></div>
+          <div><Leaf size={17} /><span><b>Air quality</b>{aqi ? `${aqi.category} · PM2.5 ${value(aqi.pm25, " µg/m³")}` : "Acquiring"}</span><strong className={`aqi-${aqi?.category.toLowerCase().replaceAll(" ", "-")}`}>{value(aqi?.aqi)}</strong></div>
           <div><Radio size={17} /><span><b>Space weather</b>{space?.category ?? "Acquiring"}</span><strong>Kp {value(space?.kp)}</strong></div>
           <div><Waves size={17} /><span><b>Nearest quake / 24h</b>{quake ? `${quake.place} · ${quake.distanceMiles} mi` : "No nearby report loaded"}</span><strong>{quake?.magnitude === null || quake?.magnitude === undefined ? "—" : `M${quake.magnitude}`}</strong></div>
         </div>

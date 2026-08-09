@@ -5,7 +5,9 @@ import test from "node:test";
 import {
   apparentTemperatureF,
   currentAndFutureHourlyPeriods,
+  maximumPrecipitationPct,
   nextHourlyPeriods,
+  precipitationChanceLabel,
 } from "../lib/weather-display.ts";
 
 const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
@@ -63,4 +65,27 @@ test("apparent temperature is derived from observed heat and wind inputs", () =>
   assert.equal(apparentTemperatureF(81, 72, 13), 85);
   assert.equal(apparentTemperatureF(35, 60, 15), 25);
   assert.equal(apparentTemperatureF(65, 50, 5), 65);
+});
+
+test("missing precipitation probability stays unknown instead of becoming zero", () => {
+  assert.equal(maximumPrecipitationPct([{ precipitationPct: null }, { precipitationPct: null }]), null);
+  assert.equal(maximumPrecipitationPct([{ precipitationPct: null }, { precipitationPct: 0 }]), 0);
+  assert.equal(maximumPrecipitationPct([{ precipitationPct: 20 }, { precipitationPct: 60 }]), 60);
+  assert.equal(precipitationChanceLabel(null), "—");
+  assert.equal(precipitationChanceLabel(0), "0%");
+  assert.match(dashboard, /Precip peak/);
+  assert.match(dashboard, /Precipitation chance unavailable/);
+  assert.doesNotMatch(dashboard, /precipitationPct \?\? 0\}% rain/);
+});
+
+test("dashboard status and active alert copy describe only what is actually available", () => {
+  assert.match(dashboard, /data\?\.alerts\.map\(\(alert, index\) =>/);
+  assert.match(dashboard, /Highest priority ·/);
+  assert.match(dashboard, /Core weather feed connected/);
+  assert.match(dashboard, /Core live · some products degraded/);
+  assert.match(dashboard, /NWS alert status unavailable/);
+  assert.match(dashboard, /Do not interpret this as an all-clear/);
+  assert.match(dashboard, /data && data\.alertFeedAvailable === true && !offlineSnapshot/);
+  assert.doesNotMatch(dashboard, /All live feeds connected/);
+  assert.match(dashboard, /Models \/ environment: Open-Meteo · CAMS · USGS · NOAA SWPC \/ SPC/);
 });

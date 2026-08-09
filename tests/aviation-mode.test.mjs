@@ -54,6 +54,8 @@ test("aviation values preserve missing and zero observations without inventing s
   assert.doesNotMatch(consoleComponent, /`BKN \$\{period\.ceilingFeet/);
   assert.match(consoleComponent, /freezingLevelFt !== null && intelligence\?\.forecast\?\.freezingLevelFt !== undefined/);
   assert.match(consoleComponent, /item\.altitudeFt !== null/);
+  assert.match(dashboard, /!data\?\.aviation \? "—" : data\.aviation\.ceilingFeet === null \? "No ceiling"/);
+  assert.doesNotMatch(dashboard, /data\?\.aviation\?\.ceilingFeet === null \|\| !data\?\.aviation \? "No ceiling"/);
 });
 
 test("surface wind only uses VRB when the observation marks it variable", () => {

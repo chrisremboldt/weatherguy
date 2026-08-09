@@ -27,4 +27,18 @@ test("Weather Desk fullscreen opens forecast and intelligence together when they
   assert.match(styles, /\.wallboard-desk-overview \.wallboard-scene-intelligence > \.intelligence-grid\s*{[^}]*grid-template-columns:\s*minmax\(0, 1\.15fr\) minmax\(230px, 0\.85fr\);/s);
   assert.match(styles, /\.wallboard-desk-overview \.signal-panel\s*{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/s);
   assert.match(styles, /\.wallboard-desk-overview \.environment-panel\s*{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
+  assert.match(styles, /\.wallboard-desk-overview \.current-nowcast\s*{[^}]*display:\s*none;/s);
+});
+
+test("wallboard entry and scene controls match the supported viewport and keyboard model", () => {
+  assert.match(component, /className="icon-button wallboard-toggle"/);
+  assert.match(styles, /@media \(max-width: 899px\), \(max-height: 619px\)/);
+  assert.match(styles, /\.wallboard-toggle\s*{[^}]*display:\s*none;/s);
+  assert.match(component, /role="tablist" aria-label="Choose wallboard scene"/);
+  assert.match(component, /showRotatingWallboard = isFullscreen && !showAllWallboardScenes && !showDeskOverview/);
+  assert.match(component, /role=\{showRotatingWallboard \? "tabpanel"/);
+  assert.match(component, /aria-controls=\{`wallboard-scene-\$\{scene\.id\}`\}/);
+  assert.match(component, /event\.key === "ArrowRight"/);
+  assert.match(component, /wallboardFocusWithin/);
+  assert.match(styles, /\.wallboard-cycle-actions button\s*{[^}]*width:\s*32px;[^}]*height:\s*30px;/s);
 });

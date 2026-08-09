@@ -48,3 +48,16 @@ export function nextHourlyPeriods(
     .filter((period) => Date.parse(period.startTime) >= referenceMs)
     .slice(0, limit);
 }
+
+export function maximumPrecipitationPct(
+  periods: Array<{ precipitationPct: number | null }>,
+) {
+  const values = periods
+    .map((period) => period.precipitationPct)
+    .filter((value): value is number => value !== null);
+  return values.length ? Math.max(...values) : null;
+}
+
+export function precipitationChanceLabel(value: number | null) {
+  return value === null ? "—" : `${value}%`;
+}

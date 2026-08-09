@@ -226,6 +226,11 @@ function timestampValue(candidate: ObservationCandidate) {
   return Number.isFinite(milliseconds) ? milliseconds : Number.NEGATIVE_INFINITY;
 }
 
+function maximumKnown(...values: Array<number | null | undefined>) {
+  const known = values.filter((value): value is number => value !== null && value !== undefined);
+  return known.length ? Math.max(...known) : null;
+}
+
 export function selectObservationHistory(
   nwsCollection: JsonRecord | null,
   metars: JsonRecord[],
@@ -243,8 +248,8 @@ export function selectObservationHistory(
       const existing = buckets.get(bucket);
       buckets.set(bucket, {
         ...point,
-        windSpeedMph: Math.max(existing?.windSpeedMph ?? 0, point.windSpeedMph ?? 0) || null,
-        windGustMph: Math.max(existing?.windGustMph ?? 0, point.windGustMph ?? 0) || null,
+        windSpeedMph: maximumKnown(existing?.windSpeedMph, point.windSpeedMph),
+        windGustMph: maximumKnown(existing?.windGustMph, point.windGustMph),
       });
     }
 

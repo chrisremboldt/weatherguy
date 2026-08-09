@@ -22,12 +22,14 @@ export function RadarMap({
   latitude,
   longitude,
   station,
+  timeZone,
   alerts,
   refreshKey,
 }: {
   latitude: number;
   longitude: number;
   station: string;
+  timeZone: string;
   alerts: WeatherAlert[];
   refreshKey: number;
 }) {
@@ -351,9 +353,9 @@ export function RadarMap({
   return (
     <div className="radar-console">
       <div className="sensor-toolbar radar-toolbar">
-        <div className="mode-switch" aria-label="Radar mode">
-          <button className={!labMode ? "active" : ""} onClick={closeRadarLab}><RadioTower size={13} /> Wall loop</button>
-          <button className={labMode ? "active" : ""} onClick={() => setLabMode(true)}><Layers3 size={13} /> Radar lab</button>
+        <div className="mode-switch" role="group" aria-label="Radar mode">
+          <button className={!labMode ? "active" : ""} aria-pressed={!labMode} onClick={closeRadarLab}><RadioTower size={13} /> Wall loop</button>
+          <button className={labMode ? "active" : ""} aria-pressed={labMode} onClick={() => setLabMode(true)}><Layers3 size={13} /> Radar lab</button>
         </div>
         {labMode && (
           <select value={productId} onChange={(event) => setProductId(event.target.value as RadarProductId)} aria-label="Radar product">
@@ -376,7 +378,7 @@ export function RadarMap({
         <>
           <div className="radar-map" ref={mapNode} aria-label={`Interactive ${selectedProduct?.label ?? "radar"} map`} />
           <div className="radar-lab-strip">
-            <button onClick={() => setPlaying((current) => !current)} aria-label={playing ? "Pause radar loop" : "Play radar loop"}>
+            <button onClick={() => setPlaying((current) => !current)} aria-label={playing ? "Pause radar loop" : "Play radar loop"} aria-pressed={playing}>
               {playing ? <Pause size={14} /> : <Play size={14} />}
             </button>
             <button
@@ -386,13 +388,14 @@ export function RadarMap({
               disabled={deviceLocationState === "locating" || deviceLocationState === "denied" || deviceLocationState === "unavailable"}
               title={locationControl.title}
               aria-label={locationControl.title}
+              aria-pressed={deviceLocationState === "visible"}
             >
               <LocateFixed size={14} aria-hidden="true" />
               <span aria-live="polite">{locationControl.label}</span>
             </button>
             <input type="range" min="0" max={Math.max(0, (radar?.times.length ?? 1) - 1)} value={frameIndex} onChange={(event) => { setPlaying(false); setFrameIndex(Number(event.target.value)); }} aria-label="Radar time" />
             <span className={frameLoading ? "radar-frame-status is-loading" : "radar-frame-status"}>{frameLoading ? "BUFFERING" : playing ? "LOOP READY" : "PAUSED"}</span>
-            <span>{radar?.times[renderedFrameIndex] ? new Date(radar.times[renderedFrameIndex]).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "LATEST"}</span>
+            <span>{radar?.times[renderedFrameIndex] ? new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit" }).format(new Date(radar.times[renderedFrameIndex])) : "LATEST"}</span>
             <label>Opacity <input type="range" min="0.25" max="1" step="0.05" value={opacity} onChange={(event) => setOpacity(Number(event.target.value))} /></label>
             {selectedProduct && <span title={selectedProduct.detail}>{selectedProduct.detail}</span>}
           </div>

@@ -1,5 +1,21 @@
 import type { WeatherAlert } from "./types";
 
+export type AlertFeedPresentationState =
+  | "loading"
+  | "active"
+  | "saved"
+  | "clear"
+  | "unavailable";
+
+export function alertFeedPresentationState(
+  alerts: WeatherAlert[] | null,
+  feedAvailable: boolean,
+): AlertFeedPresentationState {
+  if (alerts === null) return "loading";
+  if (alerts.length) return feedAvailable ? "active" : "saved";
+  return feedAvailable ? "clear" : "unavailable";
+}
+
 const SEVERITY_PRIORITY = ["Extreme", "Severe", "Moderate", "Minor", "Unknown"];
 const URGENCY_PRIORITY = ["Immediate", "Expected", "Future", "Past", "Unknown"];
 
