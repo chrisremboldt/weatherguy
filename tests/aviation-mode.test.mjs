@@ -43,3 +43,47 @@ test("nearby airport reports include alternate-oriented ceiling, visibility, win
   assert.match(consoleComponent, /airport\.distanceMiles/);
 });
 
+test("aviation values preserve missing and zero observations without inventing sky cover", () => {
+  assert.match(consoleComponent, /function ceilingLabel\(feet: number \| null/);
+  assert.match(consoleComponent, /feet === null \? unavailableLabel/);
+  assert.match(consoleComponent, /No ceiling reported/);
+  assert.match(consoleComponent, /No ceiling forecast/);
+  assert.match(consoleComponent, /No ceiling rpt/);
+  assert.doesNotMatch(consoleComponent, /: "CLR(?: \/ no ceiling)?"/);
+  assert.doesNotMatch(consoleComponent, /`BKN \$\{period\.ceilingFeet/);
+  assert.match(consoleComponent, /freezingLevelFt !== null && intelligence\?\.forecast\?\.freezingLevelFt !== undefined/);
+  assert.match(consoleComponent, /item\.altitudeFt !== null/);
+});
+
+test("surface wind only uses VRB when the observation marks it variable", () => {
+  assert.match(consoleComponent, /windDirectionDeg !== null/);
+  assert.match(consoleComponent, /windVariable === true \? "VRB" : "—"/);
+  assert.doesNotMatch(consoleComponent, /\? "VRB"[^:]+\}°/);
+  assert.match(consoleComponent, /windSpeedKt\} kt/);
+});
+
+test("missing TAF visibility and wind remain unknown instead of becoming VFR", () => {
+  assert.match(consoleComponent, /function visibilityMiles\(value: string \| null\)/);
+  assert.match(consoleComponent, /if \(value === null\) return null/);
+  assert.match(consoleComponent, /if \(period\.ceilingFeet === null && visibility === null\) return "—"/);
+  assert.match(consoleComponent, /if \(!categories\.length\) return "—"/);
+  assert.match(consoleComponent, /period\.visibility \?\? "—"/);
+  assert.match(consoleComponent, /period\.wind \?\? "—"/);
+  assert.match(consoleComponent, /category === "—" \? "na"/);
+});
+
+test("TAF floor and report age use the live clock and only current overlapping periods", () => {
+  assert.match(consoleComponent, /const \[currentTime, setCurrentTime\] = useState\(Date\.now\)/);
+  assert.match(consoleComponent, /setInterval\(\(\) => setCurrentTime\(Date\.now\(\)\), 60_000\)/);
+  assert.match(consoleComponent, /new Date\(period\.to\)\.getTime\(\) > briefingTime/);
+  assert.match(consoleComponent, /new Date\(period\.from\)\.getTime\(\) < twelveHoursFromNow/);
+  assert.match(consoleComponent, /twelveHourPeriods\.length \? lowestTafCategory\(twelveHourPeriods\) : "—"/);
+  assert.doesNotMatch(consoleComponent, /twelveHourPeriods\.length \? twelveHourPeriods : tafPeriods/);
+  assert.doesNotMatch(consoleComponent, /reportAge\([^\n]+data\.fetchedAt/);
+});
+
+test("the horizontally scrolling TAF timeline is keyboard reachable", () => {
+  assert.match(consoleComponent, /className="taf-timeline"[\s\S]*?role="region"[\s\S]*?tabIndex=\{0\}/);
+  assert.match(consoleComponent, /terminal forecast timeline; scroll horizontally for later periods/);
+  assert.match(consoleComponent, /!displayedTafPeriods\.length && <p>No current terminal forecast periods/);
+});

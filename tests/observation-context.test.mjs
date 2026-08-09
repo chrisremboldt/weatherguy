@@ -17,6 +17,30 @@ test("the status column adds a mode-aware station recorder with trend, nearby, a
   assert.match(styles, /\.context-panel\s*{[^}]*flex:\s*1 1 260px;/s);
 });
 
+test("station context tabs expose a complete keyboard-operable tab pattern", () => {
+  assert.match(context, /role="tablist" aria-label="Station context view"/);
+  assert.match(context, /role="tab"[\s\S]*?aria-controls=\{panelId\}[\s\S]*?aria-selected=\{activeTab === tab\.id\}[\s\S]*?tabIndex=\{activeTab === tab\.id \? 0 : -1\}/);
+  assert.match(context, /event\.key === "ArrowRight"/);
+  assert.match(context, /event\.key === "ArrowLeft"/);
+  assert.match(context, /event\.key === "Home"/);
+  assert.match(context, /event\.key === "End"/);
+  assert.match(context, /role="tabpanel"[\s\S]*?aria-labelledby=\{activeTabId\}/);
+});
+
+test("local briefing exposes every active alert instead of only the first", () => {
+  assert.match(context, /data\.alerts\.map\(\(alert\) =>/);
+  assert.match(context, /role="list"/);
+  assert.match(context, /role="listitem"/);
+  assert.match(context, /All active NWS alerts for this point/);
+  assert.doesNotMatch(context, /const alert = data\.alerts\[0\]/);
+});
+
+test("station context uses explicit pressure and no-ceiling semantics", () => {
+  assert.match(context, /deltaLabel\(pressureChange, " inHg"\)/);
+  assert.match(context, /feet === null \? "No ceiling rpt"/);
+  assert.doesNotMatch(context, /: "CLR"/);
+});
+
 test("compact desktop stacks airport weather and the recorder instead of stretching a blank card", () => {
   assert.match(styles, /@media \(min-width: 821px\) and \(max-width: 1150px\)/);
   assert.match(styles, /\.status-column \.current-panel\s*{[^}]*grid-row:\s*1 \/ 3;/s);

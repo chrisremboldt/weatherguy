@@ -1,38 +1,53 @@
 "use client";
 
 import { ChevronDown, ChevronRight, Cloud, Compass, FileText, Gauge, Map, Plane, RadioTower, Snowflake, Wind, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AviationData, IntelligenceData, TafPeriod, WeatherDashboardData } from "@/lib/types";
 
 function shortTime(iso: string, timeZone: string) {
   return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", hour: "numeric" }).format(new Date(iso));
 }
 
-function reportAge(iso: string, referenceIso: string) {
-  const minutes = Math.max(0, Math.round((new Date(referenceIso).getTime() - new Date(iso).getTime()) / 60_000));
+function reportAge(iso: string, referenceTime: number) {
+  const minutes = Math.max(0, Math.round((referenceTime - new Date(iso).getTime()) / 60_000));
   if (minutes < 60) return `${minutes}m old`;
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m old`;
 }
 
-function visibilityMiles(value: string) {
+function ceilingLabel(feet: number | null, unavailableLabel: string) {
+  return feet === null ? unavailableLabel : `${feet.toLocaleString()} ft`;
+}
+
+type FlightCategory = "VFR" | "MVFR" | "IFR" | "LIFR" | "—";
+
+function visibilityMiles(value: string | null) {
+  if (value === null) return null;
   const match = value.match(/(?:P|M)?(\d+(?:\.\d+)?)(?:\s*sm)?/i);
   return match ? Number(match[1]) : null;
 }
 
-function flightCategory(period: TafPeriod) {
+function flightCategory(period: TafPeriod): FlightCategory {
   const visibility = visibilityMiles(period.visibility);
+  if (period.ceilingFeet === null && visibility === null) return "—";
   if ((period.ceilingFeet !== null && period.ceilingFeet < 500) || (visibility !== null && visibility < 1)) return "LIFR";
   if ((period.ceilingFeet !== null && period.ceilingFeet < 1_000) || (visibility !== null && visibility < 3)) return "IFR";
   if ((period.ceilingFeet !== null && period.ceilingFeet <= 3_000) || (visibility !== null && visibility <= 5)) return "MVFR";
   return "VFR";
 }
 
-function lowestTafCategory(periods: TafPeriod[]) {
+function lowestTafCategory(periods: TafPeriod[]): FlightCategory {
   const rank = { VFR: 0, MVFR: 1, IFR: 2, LIFR: 3 };
-  return periods.reduce((lowest, period) => {
-    const category = flightCategory(period);
-    return rank[category] > rank[lowest] ? category : lowest;
-  }, "VFR" as keyof typeof rank);
+  const categories = periods
+    .map(flightCategory)
+    .filter((category): category is keyof typeof rank => category !== "—");
+  if (!categories.length) return "—";
+  return categories.reduce((lowest, category) => (
+    rank[category] > rank[lowest] ? category : lowest
+  ), "VFR");
+}
+
+function categoryClass(category: string) {
+  return `cat-${category === "—" ? "na" : category.toLowerCase()}`;
 }
 
 const PILOT_PRODUCTS = [
@@ -46,18 +61,34 @@ const PILOT_PRODUCTS = [
 
 export function AviationConsole({ data, intelligence, regional }: { data: WeatherDashboardData; intelligence: IntelligenceData | null; regional: AviationData | null }) {
   const [hazardView, setHazardView] = useState<"advisories" | "pireps" | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const tafPeriods = data.aviationForecast?.periods ?? [];
   const currentCategory = data.aviation?.flightCategory ?? "—";
-  const briefingTime = new Date(data.fetchedAt).getTime();
+  const briefingTime = currentTime;
   const twelveHoursFromNow = briefingTime + 12 * 60 * 60 * 1_000;
-  const twelveHourPeriods = tafPeriods.filter((period) => new Date(period.to).getTime() >= briefingTime && new Date(period.from).getTime() <= twelveHoursFromNow);
-  const tafFloor = tafPeriods.length ? lowestTafCategory((twelveHourPeriods.length ? twelveHourPeriods : tafPeriods).slice(0, 6)) : "—";
+  const twelveHourPeriods = tafPeriods.filter((period) => (
+    new Date(period.to).getTime() > briefingTime && new Date(period.from).getTime() < twelveHoursFromNow
+  ));
+  const displayedTafPeriods = tafPeriods
+    .filter((period) => new Date(period.to).getTime() > briefingTime)
+    .slice(0, 6);
+  const tafFloor = twelveHourPeriods.length ? lowestTafCategory(twelveHourPeriods) : "—";
   const dewpointSpread = data.current.temperatureF !== null && data.current.dewpointF !== null
     ? Math.max(0, data.current.temperatureF - data.current.dewpointF)
     : null;
+  const currentCeiling = data.aviation
+    ? ceilingLabel(data.aviation.ceilingFeet, "No ceiling reported")
+    : "—";
   const surfaceWind = data.aviation?.windSpeedKt !== null && data.aviation?.windSpeedKt !== undefined
-    ? `${data.aviation.windDirectionDeg === null ? "VRB" : String(data.aviation.windDirectionDeg).padStart(3, "0")}° ${data.aviation.windSpeedKt}kt${data.aviation.windGustKt ? ` G${data.aviation.windGustKt}` : ""}`
+    ? `${data.aviation.windDirectionDeg !== null
+      ? `${String(data.aviation.windDirectionDeg).padStart(3, "0")}°`
+      : data.aviation.windVariable === true ? "VRB" : "—"} ${data.aviation.windSpeedKt} kt${data.aviation.windGustKt ? ` G${data.aviation.windGustKt}` : ""}`
     : "—";
 
   return (
@@ -66,32 +97,41 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
         <div><span className="eyebrow">Flight operations / terminal + en route</span><h2>Pilot weather brief</h2></div>
         <a href="https://aviationweather.gov/" target="_blank" rel="noreferrer">Open AviationWeather <ChevronRight size={14} /></a>
       </div>
-      <div className="pilot-briefing-strip" aria-label="Current pilot briefing signals">
+      <div className="pilot-briefing-strip" role="region" aria-label="Current pilot briefing signals">
         <span className="pilot-primary-signal">
           <b>{data.location.stationId} observed</b>
-          <strong className={`cat-${currentCategory.toLowerCase()}`}>{currentCategory}</strong>
-          <small>{data.aviation ? reportAge(data.aviation.observedAt, data.fetchedAt) : "Awaiting METAR"}</small>
+          <strong className={categoryClass(currentCategory)}>{currentCategory}</strong>
+          <small>{data.aviation ? reportAge(data.aviation.observedAt, currentTime) : "Awaiting METAR"}</small>
         </span>
-        <span><b>Ceiling</b><strong>{data.aviation?.ceilingFeet ? `${data.aviation.ceilingFeet.toLocaleString()} ft` : "CLR / no ceiling"}</strong><small>lowest BKN / OVC / VV</small></span>
+        <span><b>Ceiling</b><strong>{currentCeiling}</strong><small>lowest BKN / OVC / VV</small></span>
         <span><b>Visibility</b><strong>{data.aviation?.visibility ? `${data.aviation.visibility} sm` : "—"}</strong><small>prevailing METAR</small></span>
         <span><b>Surface wind</b><strong>{surfaceWind}</strong><small>{data.aviation?.windGustKt ? "gusts reported" : "latest observation"}</small></span>
-        <span><b>TAF floor / 12h</b><strong className={`cat-${tafFloor.toLowerCase()}`}>{tafFloor}</strong><small>lowest decoded period</small></span>
+        <span><b>TAF floor / 12h</b><strong className={categoryClass(tafFloor)}>{tafFloor}</strong><small>{twelveHourPeriods.length ? "lowest overlapping period" : "no current 12h overlap"}</small></span>
         <span><b>Temp / dew spread</b><strong>{dewpointSpread === null ? "—" : `${dewpointSpread}°F`}</strong><small>{dewpointSpread !== null && dewpointSpread <= 4 ? "narrow spread" : "current spread"}</small></span>
-        <span><b>Freezing level</b><strong>{intelligence?.forecast?.freezingLevelFt ? `${Math.round(intelligence.forecast.freezingLevelFt).toLocaleString()} ft` : "—"}</strong><small>model guidance near point</small></span>
+        <span><b>Freezing level</b><strong>{intelligence?.forecast?.freezingLevelFt !== null && intelligence?.forecast?.freezingLevelFt !== undefined ? `${Math.round(intelligence.forecast.freezingLevelFt).toLocaleString()} ft` : "—"}</strong><small>model guidance near point</small></span>
         <span><b>Regional reports</b><strong>{regional ? `${regional.advisories.length} adv · ${regional.pireps.length} PIREP` : "Acquiring"}</strong><small>active / previous 3 hours</small></span>
       </div>
       <div className="aviation-console-grid">
         <div className="taf-block">
           <div className="subhead"><Plane size={15} /><strong>{data.location.stationId} TAF</strong><span>{data.aviationForecast ? shortTime(data.aviationForecast.issuedAt, data.location.timeZone) : "No TAF issued"}</span></div>
-          <div className="taf-timeline">
-            {data.aviationForecast?.periods.slice(0, 6).map((period) => (
-              <div key={`${period.from}-${period.change}`}>
-                <span>{shortTime(period.from, data.location.timeZone)}</span>
-                <strong><i className={`taf-category cat-${flightCategory(period).toLowerCase()}`}>{flightCategory(period)}</i>{period.change}</strong>
-                <small>{period.visibility} · {period.ceilingFeet ? `BKN ${period.ceilingFeet.toLocaleString()}` : "VFR ceiling"}</small>
-                <small>{period.wind}{period.weather ? ` · ${period.weather}` : ""}</small>
-              </div>
-            )) ?? <p>No terminal forecast is published for the nearest station.</p>}
+          <div
+            className="taf-timeline"
+            role="region"
+            aria-label={`${data.location.stationId} terminal forecast timeline; scroll horizontally for later periods`}
+            tabIndex={0}
+          >
+            {displayedTafPeriods.map((period) => {
+              const category = flightCategory(period);
+              return (
+                <div key={`${period.from}-${period.change}`}>
+                  <span>{shortTime(period.from, data.location.timeZone)}</span>
+                  <strong><i className={`taf-category ${categoryClass(category)}`}>{category}</i>{period.change}</strong>
+                  <small>{period.visibility ?? "—"} · {ceilingLabel(period.ceilingFeet, "No ceiling forecast")}</small>
+                  <small>{period.wind ?? "—"}{period.weather ? ` · ${period.weather}` : ""}</small>
+                </div>
+              );
+            })}
+            {!displayedTafPeriods.length && <p>No current terminal forecast periods are published for the nearest station.</p>}
           </div>
         </div>
         <div className="airport-board">
@@ -100,9 +140,9 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
             {regional?.airports.slice(0, 6).map((airport) => (
               <div key={airport.id} title={airport.name}>
                 <strong>{airport.id}</strong>
-                <span className={`cat-${airport.flightCategory.toLowerCase()}`}>{airport.flightCategory}</span>
-                <small>{airport.ceilingFeet ? `${airport.ceilingFeet.toLocaleString()}′` : "CLR"} / {airport.visibility ? `${airport.visibility}sm` : "—"}</small>
-                <small>{airport.wind}</small>
+                <span className={categoryClass(airport.flightCategory)}>{airport.flightCategory}</span>
+                <small>{ceilingLabel(airport.ceilingFeet, "No ceiling rpt")} / {airport.visibility ? `${airport.visibility}sm` : "—"}</small>
+                <small>{airport.wind || "—"}</small>
                 <small>{airport.distanceMiles === null ? "—" : `${airport.distanceMiles}mi`}</small>
               </div>
             )) ?? <p>Acquiring nearby airport observations.</p>}
@@ -142,7 +182,7 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
             {!regional?.advisories.length && !regional?.pireps.length && <span>No regional reports in the current feed</span>}
           </div>
           {hazardView && (
-            <div className="hazard-details" id="aviation-hazard-details">
+            <div className="hazard-details" id="aviation-hazard-details" role="region" aria-label={hazardView === "advisories" ? "Active aviation advisories" : "Recent pilot reports"}>
               <div className="hazard-details-heading">
                 <div><span className="eyebrow">Raw AviationWeather.gov text</span><strong>{hazardView === "advisories" ? "Active advisories" : "Recent PIREPs"}</strong></div>
                 <button type="button" onClick={() => setHazardView(null)} aria-label="Close airspace hazard details"><X size={15} /></button>
@@ -159,7 +199,7 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
                 )) : regional?.pireps.map((item, index) => (
                   <details key={`${item.observedAt}-${index}`} open={index === 0}>
                     <summary>
-                      <span><b>PIREP</b>{item.aircraft}{item.altitudeFt ? ` · ${item.altitudeFt.toLocaleString()} ft` : ""}{item.icing ? ` · ${item.icing} icing` : ""}{item.turbulence ? ` · ${item.turbulence} turbulence` : ""}</span>
+                      <span><b>PIREP</b>{item.aircraft}{item.altitudeFt !== null ? ` · ${item.altitudeFt.toLocaleString()} ft` : ""}{item.icing ? ` · ${item.icing} icing` : ""}{item.turbulence ? ` · ${item.turbulence} turbulence` : ""}</span>
                       <time>{shortTime(item.observedAt, data.location.timeZone)}</time>
                     </summary>
                     <pre>{item.raw || "No raw PIREP text was included in this report."}</pre>
@@ -174,7 +214,7 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
         <div className="terminal-products">
           <div className="subhead"><Gauge size={15} /><strong>Terminal products</strong><span>Raw text in app</span></div>
           <details>
-            <summary><span>METAR · {data.location.stationId}</span><small>{data.aviation ? reportAge(data.aviation.observedAt, data.fetchedAt) : "Unavailable"}</small></summary>
+            <summary><span>METAR · {data.location.stationId}</span><small>{data.aviation ? reportAge(data.aviation.observedAt, currentTime) : "Unavailable"}</small></summary>
             <pre>{data.aviation?.raw ?? "No METAR is available for the nearest reporting station."}</pre>
           </details>
           <details>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Activity, FileText, Gauge, RadioTower, Wind } from "lucide-react";
-import { useState } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import type {
   AviationData,
   DisplayMode,
@@ -46,6 +46,10 @@ function peakWind(points: ObservationHistoryPoint[]) {
     [point.windGustMph, point.windSpeedMph].filter((value): value is number => value !== null),
   );
   return values.length ? Math.max(...values) : null;
+}
+
+function reportedCeiling(feet: number | null) {
+  return feet === null ? "No ceiling rpt" : `${feet.toLocaleString()}′`;
 }
 
 function linePath(
@@ -126,7 +130,7 @@ function TrendView({ data }: { data: WeatherDashboardData }) {
       <TrendPlot points={points} timeZone={data.location.timeZone} />
       <div className="station-trend-readout">
         <span><b>Temperature</b><strong>{deltaLabel(temperatureChange, "°")}</strong></span>
-        <span><b>Pressure</b><strong>{deltaLabel(pressureChange, " in")}</strong></span>
+        <span><b>Pressure</b><strong>{deltaLabel(pressureChange, " inHg")}</strong></span>
         <span><b>Peak wind</b><strong>{gust === null ? "—" : `${gust} mph`}</strong></span>
       </div>
     </div>
@@ -145,8 +149,8 @@ function NearbyView({ regional }: { regional: AviationData | null }) {
             <i className={`cat-${airport.flightCategory.toLowerCase()}`}>{airport.flightCategory}</i>
           </span>
           <b>{airport.temperatureF === null ? "—" : `${airport.temperatureF}°`}</b>
-          <small>{airport.ceilingFeet ? `${airport.ceilingFeet.toLocaleString()}′` : "CLR"} · {airport.visibility ? `${airport.visibility}sm` : "—"}</small>
-          <small>{airport.wind}</small>
+          <small>{reportedCeiling(airport.ceilingFeet)} · {airport.visibility ? `${airport.visibility}sm` : "—"}</small>
+          <small>{airport.wind || "—"}</small>
           <em>{airport.distanceMiles === null ? "—" : `${airport.distanceMiles} mi`}</em>
         </div>
       ))}
@@ -156,18 +160,43 @@ function NearbyView({ regional }: { regional: AviationData | null }) {
 }
 
 function BriefingView({ data, mode }: { data: WeatherDashboardData; mode: DisplayMode }) {
-  const alert = data.alerts[0];
   const aviationBrief = mode === "aviation" ? data.discussion?.aviation : null;
-  const copy = alert?.description || aviationBrief || data.discussion?.summary;
+
+  if (data.alerts.length) {
+    return (
+      <div className="context-briefing has-alert">
+        <span className="context-briefing-state">{data.alerts.length} active NWS {data.alerts.length === 1 ? "alert" : "alerts"}</span>
+        <div
+          className="context-alert-list"
+          role="list"
+          aria-label="All active NWS alerts for this point"
+          tabIndex={0}
+          style={{ minHeight: 0, overflowY: "auto" }}
+        >
+          {data.alerts.map((alert) => (
+            <div role="listitem" key={alert.id}>
+              <details>
+                <summary><strong>{alert.event}</strong> · {alert.severity} · {alert.urgency}</summary>
+                <p>{alert.description}</p>
+                {alert.instruction && <p><strong>What to do:</strong> {alert.instruction}</p>}
+                <small>{alert.headline}</small>
+              </details>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const copy = aviationBrief || data.discussion?.summary;
 
   return (
-    <div className={`context-briefing ${alert ? "has-alert" : ""}`}>
+    <div className="context-briefing">
       <span className="context-briefing-state">
-        {alert ? `${data.alerts.length} active · ${alert.severity}` : aviationBrief ? "Aviation discussion" : "Area discussion"}
+        {aviationBrief ? "Aviation discussion" : "Area discussion"}
       </span>
-      <strong>{alert?.event ?? (aviationBrief ? `${data.location.stationId} flight weather` : `NWS ${data.location.wfo} forecast reasoning`)}</strong>
+      <strong>{aviationBrief ? `${data.location.stationId} flight weather` : `NWS ${data.location.wfo} forecast reasoning`}</strong>
       <p>{copy ?? "The local forecast discussion has not loaded yet."}</p>
-      {alert && <small>{alert.headline}</small>}
     </div>
   );
 }
@@ -185,7 +214,31 @@ export function ObservationContext({
     mode,
     tab: defaultTab(mode),
   }));
+  const tabSetId = useId();
+  const tabRefs = useRef<Record<ContextTab, HTMLButtonElement | null>>({
+    trend: null,
+    nearby: null,
+    briefing: null,
+  });
   const activeTab = selection.mode === mode ? selection.tab : defaultTab(mode);
+  const activeTabId = `${tabSetId}-${activeTab}-tab`;
+  const panelId = `${tabSetId}-panel`;
+
+  const selectTab = (tab: ContextTab) => setSelection({ mode, tab });
+
+  const moveTabFocus = (event: KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % TAB_LABELS.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + TAB_LABELS.length) % TAB_LABELS.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = TAB_LABELS.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = TAB_LABELS[nextIndex].id;
+    selectTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  };
 
   return (
     <section className="panel context-panel">
@@ -195,22 +248,33 @@ export function ObservationContext({
           <h2>{activeTab === "trend" ? "Six-hour trace" : activeTab === "nearby" ? "Nearby stations" : "Local briefing"}</h2>
         </div>
         <div className="context-tabs" role="tablist" aria-label="Station context view">
-          {TAB_LABELS.map((tab) => (
+          {TAB_LABELS.map((tab, index) => (
             <button
               className={activeTab === tab.id ? "active" : ""}
               type="button"
               role="tab"
+              id={`${tabSetId}-${tab.id}-tab`}
+              aria-controls={panelId}
               aria-selected={activeTab === tab.id}
-              onClick={() => setSelection({ mode, tab: tab.id })}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              ref={(node) => { tabRefs.current[tab.id] = node; }}
+              onClick={() => selectTab(tab.id)}
+              onKeyDown={(event) => moveTabFocus(event, index)}
               key={tab.id}
             >
-              {tab.id === "trend" ? <Activity size={13} /> : tab.id === "nearby" ? <RadioTower size={13} /> : <FileText size={13} />}
+              {tab.id === "trend" ? <Activity size={13} aria-hidden="true" /> : tab.id === "nearby" ? <RadioTower size={13} aria-hidden="true" /> : <FileText size={13} aria-hidden="true" />}
               {tab.label}
             </button>
           ))}
         </div>
       </div>
-      <div className="context-panel-body">
+      <div
+        className="context-panel-body"
+        id={panelId}
+        role="tabpanel"
+        aria-labelledby={activeTabId}
+        tabIndex={0}
+      >
         {activeTab === "trend" && <TrendView data={data} />}
         {activeTab === "nearby" && <NearbyView regional={regional} />}
         {activeTab === "briefing" && <BriefingView data={data} mode={mode} />}
@@ -231,7 +295,7 @@ export function FullscreenObservationStrip({ data }: { data: WeatherDashboardDat
     <div className="current-context-strip" aria-label="Six-hour observation trend">
       <span className="current-context-label"><Activity size={13} /><b>6h recorder</b></span>
       <TrendPlot points={points} timeZone={data.location.timeZone} compact />
-      <span><Gauge size={12} /><b>{deltaLabel(pressureChange, " in")}</b></span>
+      <span><Gauge size={12} /><b>{deltaLabel(pressureChange, " inHg")}</b></span>
       <span><Wind size={12} /><b>{gust === null ? "—" : `${gust} mph max`}</b></span>
       <span><b>{deltaLabel(temperatureChange, "°")}</b></span>
     </div>
