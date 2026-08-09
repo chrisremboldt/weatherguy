@@ -38,7 +38,6 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
           <CloudSun size={20} aria-hidden="true" />
         </div>
         <div className="signal-matrix">
-          <span><b>Feels like now</b><strong>{value(forecast?.hours[0]?.feelsLikeF, "°")}</strong></span>
           <span><b>Rain / 24h</b><strong>{value(forecast?.next24PrecipitationIn, '"')}</strong></span>
           <span><b>Rain / 72h</b><strong>{value(forecast?.next72PrecipitationIn, '"')}</strong></span>
           <span><b>Snow / 72h</b><strong>{value(forecast?.next72SnowfallIn, '"')}</strong></span>

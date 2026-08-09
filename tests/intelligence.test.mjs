@@ -154,3 +154,9 @@ test("the intelligence request and interface expose cloud-adjusted UV forecast g
   assert.match(dashboard, /currentUvCategory.*model/);
   assert.match(styles, /\.uv-outlook\s*{/);
 });
+
+test("current conditions expose the only feels-like temperature", () => {
+  assert.match(dashboard, /className="feels-like"> · Feels like \{currentFeelsLike \?\? "—"\}°/);
+  assert.doesNotMatch(dashboard, /<b>Feels like<\/b>/);
+  assert.doesNotMatch(component, /<b>Feels like now<\/b>/);
+});

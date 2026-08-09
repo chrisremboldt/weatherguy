@@ -819,12 +819,11 @@ export function WeatherDashboard() {
               <div className="condition-icon"><WeatherIcon condition={data?.current.description ?? "cloudy"} size={72} strokeWidth={1.25} /></div>
               <div className="temperature-block">
                 <strong>{data?.current.temperatureF ?? "—"}<sup>°</sup></strong>
-                <span>{data?.current.description ?? "Loading observation"}</span>
+                <span>{data?.current.description ?? "Loading observation"}<small className="feels-like"> · Feels like {currentFeelsLike ?? "—"}°</small></span>
               </div>
             </div>
             <div className="current-nowcast" aria-label="Short-term weather outlook">
               <div className="current-nowcast-summary">
-                <span><b>Feels like</b><strong>{currentFeelsLike ?? "—"}°</strong><small>humidity + wind</small></span>
                 <span><b>Next 3 hours</b><strong>{nearTermTrendLabel}</strong><small>{nearTermTarget ? `by ${formatHour(nearTermTarget.startTime, timeZone).hour}` : "trend pending"}</small></span>
                 <span><b>Rain peak</b><strong>{nearTermRainPeak}%</strong><small>next 3 hours</small></span>
                 <span className={`current-uv ${uvRiskClass(intelligence?.forecast?.currentUvCategory)}`} title={intelligence?.forecast?.uvGuidance}>
