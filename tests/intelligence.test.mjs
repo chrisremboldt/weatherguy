@@ -146,12 +146,12 @@ test("UV risk bands follow the standard Low through Extreme index thresholds", (
 test("the intelligence request and interface expose cloud-adjusted UV forecast guidance", () => {
   assert.match(route, /current=uv_index/);
   assert.match(route, /freezing_level_height,uv_index/);
-  assert.match(component, /UV now/);
+  assert.match(component, /UV index/);
+  assert.match(component, /currentUvCategory \? `\$\{forecast\.currentUvCategory\} · model`/);
   assert.match(component, /UV peak \/ 24h/);
   assert.match(component, /Three-day UV peaks/);
-  assert.match(dashboard, /UV estimate/);
-  assert.match(dashboard, /currentUvIndex/);
-  assert.match(dashboard, /currentUvCategory.*model/);
+  assert.doesNotMatch(dashboard, /UV estimate/);
+  assert.doesNotMatch(dashboard, /currentUvIndex/);
   assert.match(styles, /\.uv-outlook\s*{/);
 });
 

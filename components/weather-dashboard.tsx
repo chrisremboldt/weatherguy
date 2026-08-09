@@ -196,10 +196,6 @@ function observationAge(timestamp: string) {
   return `${Math.round(minutes / 60)}h ago`;
 }
 
-function uvRiskClass(category: string | undefined) {
-  return `uv-risk-${(category ?? "unavailable").toLowerCase().replaceAll(" ", "-")}`;
-}
-
 function TemperatureTrace({ periods }: { periods: HourlyPeriod[] }) {
   if (periods.length < 2) return null;
   const temperatures = periods.map((period) => period.temperatureF);
@@ -808,11 +804,6 @@ export function WeatherDashboard() {
               <div className="current-nowcast-summary">
                 <span><b>Next 3 hours</b><strong>{nearTermTrendLabel}</strong><small>{nearTermTarget ? `by ${formatHour(nearTermTarget.startTime, timeZone).hour}` : "trend pending"}</small></span>
                 <span><b>Rain peak</b><strong>{nearTermRainPeak}%</strong><small>next 3 hours</small></span>
-                <span className={`current-uv ${uvRiskClass(intelligence?.forecast?.currentUvCategory)}`} title={intelligence?.forecast?.uvGuidance}>
-                  <b>UV estimate</b>
-                  <strong>{intelligence?.forecast?.currentUvIndex ?? "—"}</strong>
-                  <small>{intelligence?.forecast?.currentUvCategory ? `${intelligence.forecast.currentUvCategory} · model` : "acquiring model"}</small>
-                </span>
               </div>
               <div className="current-nowcast-hours">
                 {nearTermHours.map((period) => {

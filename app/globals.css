@@ -4118,7 +4118,7 @@ h2 {
 
   .app-shell.is-fullscreen .current-nowcast-summary {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     border-bottom: 1px solid var(--line);
   }
 
@@ -4163,18 +4163,6 @@ h2 {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv {
-    --uv-risk-rgb: var(--line-rgb);
-    background: linear-gradient(180deg, rgba(var(--uv-risk-rgb), 0.065), transparent);
-    box-shadow: inset 0 2px rgba(var(--uv-risk-rgb), 0.62);
-  }
-
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv.uv-risk-low { --uv-risk-rgb: var(--signal-rgb); }
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv.uv-risk-moderate,
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv.uv-risk-high { --uv-risk-rgb: var(--amber-rgb); }
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv.uv-risk-very-high,
-  .app-shell.is-fullscreen .current-nowcast-summary .current-uv.uv-risk-extreme { --uv-risk-rgb: var(--danger-rgb); }
 
   .app-shell.is-fullscreen .current-nowcast-hours {
     min-height: 0;

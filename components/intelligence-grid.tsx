@@ -43,10 +43,10 @@ export function IntelligenceGrid({ data, timeZone }: { data: IntelligenceData | 
           <span><b>Snow / 72h</b><strong>{value(forecast?.next72SnowfallIn, '"')}</strong></span>
           <span><b>Cloud peak</b><strong>{value(forecast?.peakCloudCoverPct, "%")}</strong></span>
           <span><b>Freezing level</b><strong>{forecast?.freezingLevelFt ? `${Math.round(forecast.freezingLevelFt).toLocaleString()} ft` : "—"}</strong></span>
-          <span className={`uv-signal ${riskClass(forecast?.currentUvCategory)}`} title={forecast?.uvGuidance}>
-            <b><Sun size={12} aria-hidden="true" /> UV now</b>
+          <span className={`uv-signal ${riskClass(forecast?.currentUvCategory)}`} title="Cloud-adjusted model estimate for the current hour">
+            <b><Sun size={12} aria-hidden="true" /> UV index</b>
             <strong>{value(forecast?.currentUvIndex)}</strong>
-            <small>{forecast?.currentUvCategory ?? "Acquiring"}</small>
+            <small>{forecast?.currentUvCategory ? `${forecast.currentUvCategory} · model` : "Acquiring model"}</small>
           </span>
           <span className={`uv-signal ${riskClass(forecast?.next24UvCategory)}`} title={forecast?.uvGuidance}>
             <b>UV peak / 24h</b>
