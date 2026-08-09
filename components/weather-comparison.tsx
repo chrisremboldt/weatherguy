@@ -9,6 +9,8 @@ import {
   Expand,
   MapPin,
   Minimize,
+  Pause,
+  Play,
   RefreshCw,
   Search,
   X,
@@ -22,6 +24,8 @@ import {
   comparisonDeltaLabel,
   comparisonLocationFromParams,
   isValidLocationConfig,
+  normalizeRadarStation,
+  ridgeRadarUrl,
   sameComparisonLocation,
   withComparisonLocation,
   withoutComparisonLocation,
@@ -49,6 +53,7 @@ export type WeatherComparisonProps = {
   primaryConfig: LocationConfig;
   primaryData: WeatherDashboardData;
   primaryAlertsAvailable: boolean;
+  onRefreshPrimary: () => void;
   onClose: () => void;
 };
 
@@ -66,6 +71,16 @@ type MetricComparison = {
   primary: string;
   secondary: string;
   delta: string;
+};
+
+type ComparisonRadarProps = {
+  side: "A" | "B";
+  label: string;
+  station: string | null;
+  playing: boolean;
+  refreshKey: number;
+  loading?: boolean;
+  error?: string | null;
 };
 
 export async function requestComparisonFullscreen() {
@@ -259,7 +274,61 @@ function DayCell({ day, secondary = false }: { day: ForecastDaySummary | null; s
   );
 }
 
-export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAvailable, onClose }: WeatherComparisonProps) {
+function ComparisonRadar({
+  side,
+  label,
+  station,
+  playing,
+  refreshKey,
+  loading = false,
+  error,
+}: ComparisonRadarProps) {
+  const normalizedStation = normalizeRadarStation(station);
+  const source = ridgeRadarUrl(normalizedStation, playing, refreshKey);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const unavailable = Boolean(source && failedSource === source);
+  const status = error
+    ? "Radar site unavailable"
+    : loading
+      ? "Resolving radar site"
+      : "Radar loop unavailable";
+
+  return (
+    <article
+      className={`${styles.comparisonRadar} ${side === "A" ? styles.radarA : styles.radarB}`}
+      aria-label={`${label} ground radar`}
+      aria-busy={loading && !normalizedStation}
+    >
+      <div className={styles.radarHeader}>
+        <span className={styles.radarSide}>{side}</span>
+        <span><b>Ground radar</b><strong>{normalizedStation ?? "Station pending"}</strong></span>
+        <small>{playing ? "10-frame loop" : "Latest frame"}</small>
+      </div>
+      <div className={styles.radarStage}>
+        {source && !unavailable ? (
+          // The authoritative animated NWS RIDGE product intentionally bypasses image optimization.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={source}
+            alt={`${playing ? "Animated" : "Latest"} NWS radar near ${label} from ${normalizedStation}`}
+            onError={() => setFailedSource(source)}
+          />
+        ) : (
+          <div className={styles.radarEmpty} role={error || unavailable ? "alert" : "status"}>
+            <RefreshCw size={17} className={loading ? styles.spin : ""} />
+            <span><strong>{status}</strong><small>{normalizedStation ?? "Waiting for Place B weather"}</small></span>
+          </div>
+        )}
+        <div className={styles.radarCaption}>
+          <strong>{normalizedStation ? `${normalizedStation} local window` : label}</strong>
+          <span>Radar near {label} · base reflectivity</span>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAvailable, onRefreshPrimary, onClose }: WeatherComparisonProps) {
   const [secondaryConfig, setSecondaryConfig] = useState<LocationConfig | null>(null);
   const [secondaryData, setSecondaryData] = useState<WeatherDashboardData | null>(null);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
@@ -273,6 +342,8 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
   const [now, setNow] = useState(() => new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [radarPlaying, setRadarPlaying] = useState(false);
+  const [radarRefresh, setRadarRefresh] = useState(0);
   const shellRoot = useRef<HTMLElement>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const pickerDialog = useRef<HTMLElement>(null);
@@ -284,13 +355,25 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1_000);
     const refresh = window.setInterval(() => setSecondaryRefresh((value) => value + 1), 60_000);
+    const radarRefreshTimer = window.setInterval(() => setRadarRefresh((value) => value + 1), 300_000);
     return () => {
       window.clearInterval(timer);
       window.clearInterval(refresh);
+      window.clearInterval(radarRefreshTimer);
     };
   }, []);
 
   useEffect(() => () => searchController.current?.abort(), []);
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncMotionPreference = () => {
+      setRadarPlaying(!reducedMotion.matches);
+    };
+    syncMotionPreference();
+    reducedMotion.addEventListener("change", syncMotionPreference);
+    return () => reducedMotion.removeEventListener("change", syncMotionPreference);
+  }, []);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -496,6 +579,12 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
     else await requestComparisonFullscreen();
   };
 
+  const refreshComparison = () => {
+    onRefreshPrimary();
+    setSecondaryRefresh((value) => value + 1);
+    setRadarRefresh((value) => value + 1);
+  };
+
   const copyShareUrl = async () => {
     if (!secondaryConfig) return;
     updateBrowserUrl(secondaryConfig);
@@ -598,8 +687,11 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
         </div>
 
         <div className={styles.actions}>
-          <button type="button" onClick={() => setSecondaryRefresh((value) => value + 1)} aria-label="Refresh comparison weather" title="Refresh comparison weather">
+          <button type="button" onClick={refreshComparison} aria-label="Refresh comparison weather and radar" title="Refresh comparison weather and radar">
             <RefreshCw size={17} className={secondaryLoading ? styles.spin : ""} />
+          </button>
+          <button type="button" onClick={() => setRadarPlaying((current) => !current)} aria-label={radarPlaying ? "Pause both radar loops" : "Play both radar loops"} title={radarPlaying ? "Pause both radar loops" : "Play both radar loops"} aria-pressed={radarPlaying}>
+            {radarPlaying ? <Pause size={17} /> : <Play size={17} />}
           </button>
           <button type="button" onClick={() => void copyShareUrl()} disabled={!secondaryConfig} aria-label="Copy comparison URL" title="Copy comparison URL">
             {copied ? <Check size={17} /> : <Copy size={17} />}
@@ -644,17 +736,35 @@ export function WeatherComparison({ primaryConfig, primaryData, primaryAlertsAva
           />
         </section>
 
-        <section className={styles.metricPanel} aria-label="Current observation metrics comparison">
-          <div className={styles.metricHeader} aria-hidden="true">
-            <span>A · {primaryData.location.stationId}</span><strong>Current observations</strong><span>B · {secondaryData?.location.stationId ?? "pending"}</span>
-          </div>
-          {metricRows.map((metric) => (
-            <div className={styles.metricRow} key={metric.label}>
-              <strong>{metric.primary}</strong>
-              <span><b>{metric.label}</b><small>{metric.delta}</small></span>
-              <strong>{metric.secondary}</strong>
+        <section className={styles.situationalBand} aria-label="Paired radar and current observation comparison">
+          <ComparisonRadar
+            side="A"
+            label={primaryLabel}
+            station={primaryData.location.radarStation}
+            playing={radarPlaying}
+            refreshKey={radarRefresh}
+          />
+          <section className={styles.metricPanel} aria-label="Current observation metrics comparison">
+            <div className={styles.metricHeader} aria-hidden="true">
+              <span>A · {primaryData.location.stationId}</span><strong>Current observations</strong><span>B · {secondaryData?.location.stationId ?? "pending"}</span>
             </div>
-          ))}
+            {metricRows.map((metric) => (
+              <div className={styles.metricRow} key={metric.label}>
+                <strong>{metric.primary}</strong>
+                <span><b>{metric.label}</b><small>{metric.delta}</small></span>
+                <strong>{metric.secondary}</strong>
+              </div>
+            ))}
+          </section>
+          <ComparisonRadar
+            side="B"
+            label={secondaryLabel}
+            station={secondaryData?.location.radarStation ?? null}
+            playing={radarPlaying}
+            refreshKey={radarRefresh}
+            loading={secondaryLoading}
+            error={secondaryError}
+          />
         </section>
 
         <div className={styles.outlookGrid}>

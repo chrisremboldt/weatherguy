@@ -1184,6 +1184,7 @@ export function WeatherDashboard() {
           primaryConfig={config}
           primaryData={data}
           primaryAlertsAvailable={alertStatus === "active" || alertStatus === "clear"}
+          onRefreshPrimary={() => setRefreshKey((value) => value + 1)}
           onClose={() => setComparisonOpen(false)}
         />,
         document.body,

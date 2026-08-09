@@ -3,6 +3,7 @@
 import { Layers3, LocateFixed, Pause, Play, RadioTower } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
+import { ridgeRadarUrl } from "@/lib/comparison";
 import type { RadarData, RadarProductId, WeatherAlert } from "@/lib/types";
 
 type DevicePosition = {
@@ -348,7 +349,8 @@ export function RadarMap({
     error: { label: "Try location again", title: "The location request timed out" },
   }[deviceLocationState];
 
-  const ridgeUrl = `https://radar.weather.gov/ridge/standard/${station}_loop.gif?v=${refreshKey}`;
+  const ridgeUrl = ridgeRadarUrl(station, true, refreshKey)
+    ?? ridgeRadarUrl("CONUS", true, refreshKey)!;
 
   return (
     <div className="radar-console">

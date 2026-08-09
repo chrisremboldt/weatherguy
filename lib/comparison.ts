@@ -2,6 +2,25 @@ import type { HourlyPeriod, LocationConfig } from "./types";
 
 export const COMPARISON_STORAGE_KEY = "weatherguy-compare-location";
 
+const RIDGE_STANDARD_BASE = "https://radar.weather.gov/ridge/standard";
+
+export function normalizeRadarStation(value: unknown) {
+  if (typeof value !== "string") return null;
+  const station = value.trim().toUpperCase();
+  return /^(?:[A-Z0-9]{4}|CONUS)$/.test(station) ? station : null;
+}
+
+export function ridgeRadarUrl(
+  station: unknown,
+  playing: boolean,
+  refreshKey = 0,
+) {
+  const normalized = normalizeRadarStation(station);
+  if (!normalized) return null;
+  const version = Math.max(0, Math.trunc(refreshKey));
+  return `${RIDGE_STANDARD_BASE}/${normalized}_${playing ? "loop" : "0"}.gif?v=${version}`;
+}
+
 export type AlignedComparisonHour = {
   startTime: string;
   primary: HourlyPeriod | null;

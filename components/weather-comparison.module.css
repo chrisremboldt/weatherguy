@@ -211,6 +211,7 @@
 
 .sideHero,
 .metricPanel,
+.comparisonRadar,
 .outlookPanel {
   min-width: 0;
   overflow: hidden;
@@ -645,8 +646,198 @@
   text-transform: uppercase;
 }
 
+.situationalBand {
+  min-width: 0;
+  min-height: 182px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(250px, 20vw, 300px) minmax(0, 1fr);
+  gap: 7px;
+}
+
+.comparisonRadar {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.radarA {
+  box-shadow: inset 3px 0 rgba(var(--signal-rgb, 99, 226, 183), 0.65), 0 10px 30px rgba(0, 8, 12, 0.16);
+}
+
+.radarB {
+  box-shadow: inset -3px 0 rgba(var(--sky-rgb, 159, 229, 255), 0.65), 0 10px 30px rgba(0, 8, 12, 0.16);
+}
+
+.radarHeader {
+  min-height: 27px;
+  flex: 0 0 27px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line, rgba(171, 213, 218, 0.16));
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.radarSide {
+  width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  color: var(--ink, #07171d);
+  border-radius: 50%;
+  background: var(--signal, #63e2b7);
+  font-size: 7px;
+  font-weight: 800;
+}
+
+.radarB .radarSide {
+  background: var(--sky, #9fe5ff);
+}
+
+.radarHeader > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.radarHeader b,
+.radarHeader strong,
+.radarHeader small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radarHeader b {
+  color: var(--faint, #78999d);
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.radarHeader strong {
+  color: var(--copy-strong, #cbd9d9);
+  font-size: 8px;
+}
+
+.radarHeader small {
+  color: var(--muted, #8eafb2);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.radarStage {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(var(--sky-rgb, 159, 229, 255), 0.07), transparent 42%),
+    var(--ink, #07171d);
+}
+
+.radarStage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(var(--ink-rgb, 7, 23, 29), 0.06) 36%, rgba(var(--ink-rgb, 7, 23, 29), 0.82) 100%),
+    linear-gradient(90deg, rgba(var(--ink-rgb, 7, 23, 29), 0.15), transparent 22%, transparent 78%, rgba(var(--ink-rgb, 7, 23, 29), 0.15));
+}
+
+.radarStage > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 49%;
+  filter: saturate(0.92) brightness(0.82) contrast(1.08);
+}
+
+.radarCaption {
+  position: absolute;
+  z-index: 1;
+  right: 8px;
+  bottom: 7px;
+  left: 8px;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+.radarCaption strong,
+.radarCaption span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.radarCaption strong {
+  color: var(--cloud, #e7f0ef);
+  font-size: 8px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.radarCaption span {
+  color: var(--copy, #bcd0d1);
+  font-size: 7px;
+}
+
+.radarEmpty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 18px;
+  color: var(--amber, #ffb85c);
+}
+
+.radarEmpty > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.radarEmpty strong {
+  color: var(--copy-strong, #cbd9d9);
+  font-size: 9px;
+}
+
+.radarEmpty small {
+  color: var(--muted, #8eafb2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7px;
+}
+
 .metricPanel {
-  overflow: visible;
+  overflow: hidden;
+}
+
+.situationalBand .metricHeader,
+.situationalBand .metricRow {
+  grid-template-columns: minmax(0, 1fr) 88px minmax(0, 1fr);
+}
+
+.situationalBand .metricHeader span,
+.situationalBand .metricRow > strong {
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 .metricHeader,
@@ -1212,6 +1403,7 @@
   .alertRow,
   .metricHeader,
   .metricRow { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); }
+  .situationalBand { grid-template-columns: minmax(0, 1fr) clamp(220px, 24vw, 250px) minmax(0, 1fr); }
   .conditionReadout { grid-template-columns: auto minmax(0, 1fr); }
   .freshness { display: none; }
   .outlookGrid { grid-template-columns: 1fr; }
@@ -1297,6 +1489,21 @@
   .metricRow {
     grid-template-columns: minmax(0, 1fr) 78px minmax(0, 1fr);
   }
+  .situationalBand {
+    flex: 0 0 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .comparisonRadar {
+    min-height: clamp(190px, 54vw, 250px);
+  }
+  .radarA { order: 1; }
+  .radarB { order: 2; }
+  .situationalBand .metricPanel { order: 3; }
+  .situationalBand .metricHeader,
+  .situationalBand .metricRow {
+    grid-template-columns: minmax(0, 1fr) 78px minmax(0, 1fr);
+  }
   .alertCell {
     min-height: 58px;
     display: flex;
@@ -1364,7 +1571,17 @@
   .deltaRail > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .metricHeader { display: none; }
   .metricRow:first-child { border-top: 0; }
+  .comparisonRadar { min-height: clamp(176px, 56vw, 215px); }
+  .radarCaption span { max-width: 62%; }
   .picker > p { font-size: 10px; }
+}
+
+@media (max-width: 360px) {
+  .radarMark { display: none; }
+  .brand { gap: 0; }
+  .brand strong { font-size: 11px; }
+  .actions { gap: 2px; }
+  .actions button { width: 32px; }
 }
 
 @media (max-height: 760px) and (min-width: 721px) {
@@ -1375,6 +1592,7 @@
   .conditionReadout { padding-top: 8px; padding-bottom: 8px; }
   .temperature > strong { font-size: clamp(43px, 5vw, 62px); }
   .metricRow { min-height: 28px; }
+  .situationalBand { min-height: 167px; }
   .outlookGrid { min-height: 195px; }
 }
 

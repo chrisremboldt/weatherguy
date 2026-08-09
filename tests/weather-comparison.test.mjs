@@ -6,6 +6,8 @@ import {
   alignHourlyPeriods,
   comparisonDeltaLabel,
   comparisonLocationFromParams,
+  normalizeRadarStation,
+  ridgeRadarUrl,
   sameComparisonLocation,
   withComparisonLocation,
   withoutComparisonLocation,
@@ -107,6 +109,20 @@ test("comparison deltas keep missing values unknown instead of inventing zeroes"
   assert.equal(comparisonDeltaLabel(29.92, 29.87, " inHg", 2), "A +0.05 inHg");
 });
 
+test("paired radar URLs share safe loop and pause semantics", () => {
+  assert.equal(normalizeRadarStation(" klot "), "KLOT");
+  assert.equal(normalizeRadarStation("CONUS"), "CONUS");
+  assert.equal(normalizeRadarStation("../../bad"), null);
+  assert.equal(
+    ridgeRadarUrl("KLOT", true, 7),
+    "https://radar.weather.gov/ridge/standard/KLOT_loop.gif?v=7",
+  );
+  assert.equal(
+    ridgeRadarUrl("KOKX", false, 7),
+    "https://radar.weather.gov/ridge/standard/KOKX_0.gif?v=7",
+  );
+});
+
 test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(component, /export async function requestComparisonFullscreen/);
   assert.match(component, /\/api\/weather\?lat=\$\{latitude\}&lon=\$\{longitude\}&schema=3/);
@@ -128,6 +144,14 @@ test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(component, /requestError\.name === "AbortError"/);
   assert.match(component, /comparisonHasDegradedProducts/);
   assert.match(component, /Comparison loaded · some feeds unavailable/);
+  assert.match(component, /function ComparisonRadar/);
+  assert.equal(component.match(/<ComparisonRadar/g)?.length, 2);
+  assert.match(component, /Pause both radar loops/);
+  assert.match(component, /prefers-reduced-motion: reduce/);
+  assert.match(component, /useState\(false\);[\s\S]*?setRadarPlaying\(!reducedMotion\.matches\)/);
+  assert.match(component, /setRadarRefresh\(\(value\) => value \+ 1\), 300_000/);
+  assert.match(component, /local window/);
+  assert.match(component, /refreshComparison/);
   assert.match(component, /!secondaryConfig \? "Choose Place B"/);
   assert.equal(component.match(/Feels like/g)?.length, 1);
   assert.doesNotMatch(component, /api\/intelligence|RadarMap|SatelliteView/);
@@ -135,6 +159,9 @@ test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(styles, /\.shell\s*{[^}]*position:\s*fixed;[^}]*height:\s*100dvh;/s);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /\.metricRow\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 78px minmax\(0, 1fr\);/s);
+  assert.match(styles, /\.situationalBand\s*{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) clamp\(250px, 20vw, 300px\) minmax\(0, 1fr\);/s);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.situationalBand\s*{[^}]*flex:\s*0 0 auto;/s);
+  assert.match(styles, /\.radarStage > img\s*{[^}]*object-fit:\s*cover;/s);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
@@ -146,6 +173,7 @@ test("the weather desk launches Crosscheck from a user gesture and restores the 
   assert.match(dashboard, /primaryConfig=\{config\}/);
   assert.match(dashboard, /primaryData=\{data\}/);
   assert.match(dashboard, /primaryAlertsAvailable=\{alertStatus === "active" \|\| alertStatus === "clear"\}/);
+  assert.match(dashboard, /onRefreshPrimary=\{\(\) => setRefreshKey/);
   assert.match(dashboard, /appShell\.inert = true/);
   assert.match(dashboard, /comparisonOpen \|\| favorites\.length < 2/);
 });
