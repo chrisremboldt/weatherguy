@@ -37,6 +37,7 @@ import { alertFeedPresentationState } from "@/lib/weather-alerts";
 import {
   apparentTemperatureF,
   currentAndFutureHourlyPeriods,
+  observedSkyPresentation,
   precipitationChanceLabel,
 } from "@/lib/weather-display";
 import type {
@@ -78,6 +79,10 @@ type MetricComparison = {
   primary: string;
   secondary: string;
   delta: string;
+  primaryDetail?: string;
+  primaryDetailLabel?: string;
+  secondaryDetail?: string;
+  secondaryDetailLabel?: string;
   tone?: "uv";
 };
 
@@ -662,6 +667,8 @@ export function WeatherComparison({
       secondaryCurrent.windSpeedMph,
     )
     : null;
+  const primarySky = observedSkyPresentation(primaryCurrent.skyCondition);
+  const secondarySky = observedSkyPresentation(secondaryCurrent?.skyCondition);
   const primaryUv = primaryIntelligence?.forecast?.currentUvIndex ?? null;
   const secondaryUv = secondaryIntelligence?.forecast?.currentUvIndex ?? null;
   const primaryUvLoading = primaryIntelligence === null && !primaryIntelligenceUnavailable;
@@ -711,10 +718,14 @@ export function WeatherComparison({
       delta: comparisonDeltaLabel(primaryCurrent.pressureInHg, secondaryCurrent?.pressureInHg ?? null, " inHg", 2),
     },
     {
-      label: "Visibility",
+      label: "Vis / clouds",
       primary: numericValue(primaryCurrent.visibilityMiles, " mi", 1),
       secondary: numericValue(secondaryCurrent?.visibilityMiles ?? null, " mi", 1),
       delta: comparisonDeltaLabel(primaryCurrent.visibilityMiles, secondaryCurrent?.visibilityMiles ?? null, " mi", 1),
+      primaryDetail: primarySky.compact,
+      primaryDetailLabel: primarySky.accessible,
+      secondaryDetail: secondarySky.compact,
+      secondaryDetailLabel: secondarySky.accessible,
     },
     {
       label: "UV · model",
@@ -832,9 +843,15 @@ export function WeatherComparison({
             </div>
             {metricRows.map((metric) => (
               <div className={`${styles.metricRow} ${metric.tone === "uv" ? styles.uvMetric : ""}`} key={metric.label}>
-                <strong>{metric.primary}</strong>
+                <strong title={metric.primaryDetailLabel} aria-label={metric.primaryDetailLabel ? `${metric.primary}; ${metric.primaryDetailLabel}` : undefined}>
+                  <span>{metric.primary}</span>
+                  {metric.primaryDetail && <small>{metric.primaryDetail}</small>}
+                </strong>
                 <span><b>{metric.label}</b><small>{metric.delta}</small></span>
-                <strong>{metric.secondary}</strong>
+                <strong title={metric.secondaryDetailLabel} aria-label={metric.secondaryDetailLabel ? `${metric.secondary}; ${metric.secondaryDetailLabel}` : undefined}>
+                  <span>{metric.secondary}</span>
+                  {metric.secondaryDetail && <small>{metric.secondaryDetail}</small>}
+                </strong>
               </div>
             ))}
           </section>

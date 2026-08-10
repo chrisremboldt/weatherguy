@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronRight, Cloud, Compass, FileText, Gauge, Map, Plane, RadioTower, Snowflake, Wind, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AviationData, IntelligenceData, TafPeriod, WeatherDashboardData } from "@/lib/types";
+import { observedSkyPresentation } from "@/lib/weather-display";
 
 function shortTime(iso: string, timeZone: string) {
   return new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", hour: "numeric" }).format(new Date(iso));
@@ -84,9 +85,7 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
   const dewpointSpread = data.current.temperatureF !== null && data.current.dewpointF !== null
     ? Math.max(0, data.current.temperatureF - data.current.dewpointF)
     : null;
-  const currentCeiling = data.aviation
-    ? ceilingLabel(data.aviation.ceilingFeet, "No ceiling reported")
-    : "—";
+  const currentSky = observedSkyPresentation(data.aviation?.skyCondition);
   const surfaceWind = data.aviation?.windSpeedKt !== null && data.aviation?.windSpeedKt !== undefined
     ? `${data.aviation.windDirectionDeg !== null
       ? `${String(data.aviation.windDirectionDeg).padStart(3, "0")}°`
@@ -105,7 +104,7 @@ export function AviationConsole({ data, intelligence, regional }: { data: Weathe
           <strong className={categoryClass(currentCategory)}>{currentCategory}</strong>
           <small>{data.aviation ? reportAge(data.aviation.observedAt, currentTime) : "Awaiting METAR"}</small>
         </span>
-        <span><b>Ceiling</b><strong>{currentCeiling}</strong><small>lowest BKN / OVC / VV</small></span>
+        <span title={currentSky.accessible}><b>{currentSky.label}</b><strong>{currentSky.value}</strong><small>{currentSky.detail}</small></span>
         <span><b>Visibility</b><strong>{data.aviation?.visibility ? `${data.aviation.visibility} sm` : "—"}</strong><small>prevailing METAR</small></span>
         <span><b>Surface wind</b><strong>{surfaceWind}</strong><small>{data.aviation?.windGustKt ? "gusts reported" : "latest observation"}</small></span>
         <span><b>TAF floor / 12h</b><strong className={categoryClass(tafFloor)}>{tafFloor}</strong><small>{twelveHourPeriods.length ? "lowest overlapping period" : "no current 12h overlap"}</small></span>

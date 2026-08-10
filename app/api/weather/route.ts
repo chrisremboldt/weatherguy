@@ -11,6 +11,7 @@ import type {
 import { sortWeatherAlerts } from "@/lib/weather-alerts";
 import {
   metarObservationTimestamp,
+  normalizeMetarSkyCondition,
   selectCurrentObservation,
   selectObservationHistory,
 } from "@/lib/current-observation";
@@ -145,16 +146,14 @@ function normalizeDiscussion(product: JsonRecord, id: string): ForecastDiscussio
 
 function normalizeAviation(metar: JsonRecord | undefined): AviationObservation | null {
   if (!metar) return null;
-  const clouds = Array.isArray(metar.clouds) ? metar.clouds : [];
-  const ceiling = clouds.find((cloud: JsonRecord) =>
-    ["BKN", "OVC", "VV"].includes(cloud.cover),
-  );
+  const skyCondition = normalizeMetarSkyCondition(metar);
   return {
     raw: metar.rawOb,
     flightCategory: typeof metar.fltCat === "string" && metar.fltCat.trim() ? metar.fltCat : "Unknown",
     observedAt: metarObservationTimestamp(metar) ?? "",
     visibility: metar.visib === null || metar.visib === undefined ? null : String(metar.visib),
-    ceilingFeet: numberOrNull(ceiling?.base),
+    ceilingFeet: skyCondition?.kind === "ceiling" ? skyCondition.baseFeet : null,
+    skyCondition,
     windDirectionDeg: numberOrNull(metar.wdir),
     windVariable: typeof metar.wdir === "string" ? metar.wdir.toUpperCase() === "VRB" : metar.wdir === null || metar.wdir === undefined ? null : false,
     windSpeedKt: numberOrNull(metar.wspd),
@@ -179,7 +178,7 @@ function normalizeTaf(taf: JsonRecord | undefined): AviationForecast | null {
     validTo: epochToIso(taf.validTimeTo),
     periods: (taf.fcsts ?? []).slice(0, 8).map((period: JsonRecord) => {
       const clouds = Array.isArray(period.clouds) ? period.clouds : [];
-      const ceiling = clouds.find((cloud: JsonRecord) => ["BKN", "OVC", "VV"].includes(cloud.cover));
+      const ceiling = clouds.find((cloud: JsonRecord) => ["BKN", "OVC", "VV", "OVX"].includes(cloud.cover));
       const windSpeed = numberOrNull(period.wspd);
       const variableWind = typeof period.wdir === "string" && period.wdir.toUpperCase() === "VRB";
       const windDirection = variableWind

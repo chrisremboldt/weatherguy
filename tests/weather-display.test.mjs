@@ -7,6 +7,7 @@ import {
   currentAndFutureHourlyPeriods,
   maximumPrecipitationPct,
   nextHourlyPeriods,
+  observedSkyPresentation,
   precipitationChanceLabel,
 } from "../lib/weather-display.ts";
 
@@ -76,6 +77,28 @@ test("missing precipitation probability stays unknown instead of becoming zero",
   assert.match(dashboard, /Precip peak/);
   assert.match(dashboard, /Precipitation chance unavailable/);
   assert.doesNotMatch(dashboard, /precipitationPct \?\? 0\}% rain/);
+});
+
+test("observed cloud decks distinguish ceilings, lowest layers, clear reports, and missing data", () => {
+  assert.deepEqual(
+    observedSkyPresentation({ kind: "ceiling", cover: "BKN", baseFeet: 3600 }),
+    {
+      label: "Ceiling",
+      value: "3,600 ft",
+      detail: "Broken (BKN) · AGL",
+      compact: "CIG · BKN 3,600′ AGL",
+      accessible: "Ceiling: Broken at 3,600 feet above ground level",
+    },
+  );
+  assert.equal(
+    observedSkyPresentation({ kind: "layer", cover: "SCT", baseFeet: 2300 }).compact,
+    "Lowest · SCT 2,300′ AGL",
+  );
+  assert.equal(
+    observedSkyPresentation({ kind: "clear-report", cover: "CLR", baseFeet: null }).value,
+    "No ceiling",
+  );
+  assert.equal(observedSkyPresentation(null).detail, "Cloud layer unavailable");
 });
 
 test("dashboard status and active alert copy describe only what is actually available", () => {

@@ -861,6 +861,9 @@
 
 .metricRow > strong {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 4px 12px;
   overflow: hidden;
   color: var(--copy-strong, #cbd9d9);
@@ -871,7 +874,22 @@
 }
 
 .metricRow > strong:last-child {
+  align-items: flex-end;
   text-align: right;
+}
+
+.metricRow > strong > span,
+.metricRow > strong > small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metricRow > strong > small {
+  color: var(--sky, #9fe5ff);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 500;
 }
 
 .metricRow > span {

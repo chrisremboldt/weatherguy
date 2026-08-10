@@ -1,4 +1,4 @@
-import type { HourlyPeriod } from "./types";
+import type { HourlyPeriod, ObservedSkyCondition } from "./types";
 
 const HOUR_MS = 60 * 60 * 1_000;
 
@@ -60,4 +60,59 @@ export function maximumPrecipitationPct(
 
 export function precipitationChanceLabel(value: number | null) {
   return value === null ? "—" : `${value}%`;
+}
+
+const SKY_COVER_NAMES: Record<ObservedSkyCondition["cover"], string> = {
+  BKN: "Broken",
+  OVC: "Overcast",
+  VV: "Vertical visibility",
+  FEW: "Few",
+  SCT: "Scattered",
+  CLR: "Clear reported",
+  SKC: "Sky clear",
+  CAVOK: "No significant cloud",
+};
+
+export function observedSkyPresentation(condition: ObservedSkyCondition | null | undefined) {
+  if (!condition) {
+    return {
+      label: "Cloud base",
+      value: "—",
+      detail: "Cloud layer unavailable",
+      compact: "Clouds —",
+      accessible: "Cloud layer unavailable",
+    };
+  }
+
+  if (condition.kind === "clear-report") {
+    const detail = `${SKY_COVER_NAMES[condition.cover]} (${condition.cover})`;
+    return {
+      label: "Cloud base",
+      value: "No ceiling",
+      detail,
+      compact: `No ceiling · ${condition.cover}`,
+      accessible: `${SKY_COVER_NAMES[condition.cover]}; no ceiling reported`,
+    };
+  }
+
+  const label = condition.kind === "ceiling" ? "Ceiling" : "Lowest layer";
+  const layer = `${SKY_COVER_NAMES[condition.cover]} (${condition.cover})`;
+  if (condition.baseFeet === null) {
+    return {
+      label,
+      value: "Height unavailable",
+      detail: layer,
+      compact: `${condition.cover} · height —`,
+      accessible: `${label}: ${SKY_COVER_NAMES[condition.cover]}; height unavailable`,
+    };
+  }
+
+  const feet = condition.baseFeet.toLocaleString("en-US");
+  return {
+    label,
+    value: `${feet} ft`,
+    detail: `${layer} · AGL`,
+    compact: `${condition.kind === "ceiling" ? "CIG · " : "Lowest · "}${condition.cover} ${feet}′ AGL`,
+    accessible: `${label}: ${SKY_COVER_NAMES[condition.cover]} at ${feet} feet above ground level`,
+  };
 }

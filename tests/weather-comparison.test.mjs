@@ -166,6 +166,11 @@ test("Crosscheck is an isolated, responsive full-viewport experience", () => {
   assert.match(component, /!secondaryConfig \? "Choose Place B"/);
   assert.equal(component.match(/Feels like/g)?.length, 1);
   assert.match(component, /label: "UV · model"/);
+  assert.match(component, /label: "Vis \/ clouds"/);
+  assert.match(component, /primaryDetail: primarySky\.compact/);
+  assert.match(component, /secondaryDetail: secondarySky\.compact/);
+  assert.match(component, /observedSkyPresentation\(primaryCurrent\.skyCondition\)/);
+  assert.equal(component.match(/label: "(?:Wind|Humidity|Dew point|Pressure|Vis \/ clouds|UV · model)"/g)?.length, 6);
   assert.match(component, /comparisonUvValue\(primaryUv/);
   assert.match(component, /comparisonDeltaLabel\(primaryUv, secondaryUv, "", 1\)/);
   assert.match(component, /primaryIntelligenceUnavailable/);

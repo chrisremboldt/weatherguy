@@ -755,6 +755,18 @@ h2 {
   white-space: nowrap;
 }
 
+.metric-detail {
+  max-width: 100%;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--sky);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .solar-track {
   min-height: 65px;
   display: grid;
@@ -1168,6 +1180,16 @@ h2 {
 .aviation-facts b {
   margin-bottom: 3px;
   font-weight: 400;
+}
+
+.aviation-facts small {
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 7px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hourly-panel {
@@ -4244,6 +4266,7 @@ h2 {
   .app-shell.is-fullscreen .metric { min-height: 48px; padding: 6px 8px; }
   .app-shell.is-fullscreen .metric-label { font-size: 8px; }
   .app-shell.is-fullscreen .metric-copy strong { font-size: 9px; }
+  .app-shell.is-fullscreen .metric-detail { font-size: 7px; }
   .app-shell.is-fullscreen .solar-track { min-height: 43px; padding: 6px 9px; gap: 7px; }
   .app-shell.is-fullscreen .solar-track span { font-size: 8px; }
   .app-shell.is-fullscreen .solar-track strong { font-size: 9px; }

@@ -58,6 +58,7 @@ import {
   currentAndFutureHourlyPeriods,
   maximumPrecipitationPct,
   nextHourlyPeriods,
+  observedSkyPresentation,
   precipitationChanceLabel,
 } from "@/lib/weather-display";
 
@@ -235,13 +236,26 @@ function TemperatureTrace({ periods }: { periods: HourlyPeriod[] }) {
   );
 }
 
-function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Metric({
+  icon,
+  label,
+  value,
+  detail,
+  detailLabel,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail?: string;
+  detailLabel?: string;
+}) {
   return (
     <div className="metric">
       <span className="metric-icon">{icon}</span>
       <span className="metric-copy">
         <span className="metric-label">{label}</span>
         <strong>{value}</strong>
+        {detail && <small className="metric-detail" title={detailLabel} aria-label={detailLabel}>{detail}</small>}
       </span>
     </div>
   );
@@ -567,6 +581,8 @@ export function WeatherDashboard() {
   const currentFeelsLike = data
     ? apparentTemperatureF(data.current.temperatureF, data.current.humidityPct, data.current.windSpeedMph)
     : null;
+  const currentSky = observedSkyPresentation(data?.current.skyCondition);
+  const aviationSky = observedSkyPresentation(data?.aviation?.skyCondition);
   const nearTermTrend = data?.current.temperatureF !== null && data?.current.temperatureF !== undefined && nearTermTarget
     ? nearTermTarget.temperatureF - data.current.temperatureF
     : null;
@@ -955,7 +971,13 @@ export function WeatherDashboard() {
               <Metric icon={<Wind size={18} />} label="Wind" value={data ? `${cardinalDirection(data.current.windDirectionDeg)} ${data.current.windSpeedMph ?? "—"} mph${data.current.windGustMph ? ` · G${data.current.windGustMph}` : ""}` : "—"} />
               <Metric icon={<Droplets size={18} />} label="Humidity" value={!data || data.current.humidityPct === null ? "—" : `${Math.round(data.current.humidityPct)}%${data.current.dewpointF === null ? "" : ` · dew ${data.current.dewpointF}°`}`} />
               <Metric icon={<Gauge size={18} />} label="Pressure" value={data?.current.pressureInHg === null || !data ? "—" : `${data.current.pressureInHg.toFixed(2)} inHg`} />
-              <Metric icon={<Navigation size={18} />} label="Visibility" value={data?.current.visibilityMiles === null || !data ? "—" : `${data.current.visibilityMiles} mi`} />
+              <Metric
+                icon={<Navigation size={18} />}
+                label="Visibility"
+                value={data?.current.visibilityMiles === null || !data ? "—" : `${data.current.visibilityMiles} mi`}
+                detail={currentSky.compact}
+                detailLabel={currentSky.accessible}
+              />
             </div>
             <div className="solar-track">
               <div><Sunrise size={17} /><span>Sunrise</span><strong>{formatTime(data?.astronomy.sunrise ?? null, timeZone)}</strong></div>
@@ -971,7 +993,7 @@ export function WeatherDashboard() {
             </div>
             <p className="metar-raw">{data?.aviation?.raw ?? "Waiting for the latest aviation observation."}</p>
             <div className="aviation-facts">
-              <span><b>Ceiling</b>{!data?.aviation ? "—" : data.aviation.ceilingFeet === null ? "No ceiling" : `${data.aviation.ceilingFeet.toLocaleString()} ft`}</span>
+              <span title={aviationSky.accessible}><b>{aviationSky.label}</b>{aviationSky.value}<small>{aviationSky.detail}</small></span>
               <span><b>Visibility</b>{data?.aviation?.visibility === null || !data?.aviation ? "—" : `${data.aviation.visibility} sm`}</span>
               <span><b>Altimeter</b>{data?.aviation?.altimeterInHg === null || !data?.aviation ? "—" : `${data.aviation.altimeterInHg.toFixed(2)} inHg`}</span>
             </div>

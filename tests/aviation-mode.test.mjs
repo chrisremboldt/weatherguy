@@ -17,9 +17,10 @@ test("flight operations is a persistent settings-selectable desk profile", () =>
 });
 
 test("aviation mode puts pilot limitations and trends ahead of general products", () => {
-  for (const signal of ["Ceiling", "Visibility", "Surface wind", "TAF floor / 12h", "Temp / dew spread", "Freezing level", "Regional reports"]) {
+  for (const signal of ["Visibility", "Surface wind", "TAF floor / 12h", "Temp / dew spread", "Freezing level", "Regional reports"]) {
     assert.match(consoleComponent, new RegExp(`>${signal}<`));
   }
+  assert.match(consoleComponent, /<b>\{currentSky\.label\}<\/b>/);
   assert.match(consoleComponent, /function flightCategory\(period: TafPeriod\)/);
   assert.match(styles, /\.mode-aviation \.pilot-briefing-strip\s*{[^}]*display:\s*grid;/s);
 });
@@ -47,15 +48,17 @@ test("nearby airport reports include alternate-oriented ceiling, visibility, win
 test("aviation values preserve missing and zero observations without inventing sky cover", () => {
   assert.match(consoleComponent, /function ceilingLabel\(feet: number \| null/);
   assert.match(consoleComponent, /feet === null \? unavailableLabel/);
-  assert.match(consoleComponent, /No ceiling reported/);
   assert.match(consoleComponent, /No ceiling forecast/);
   assert.match(consoleComponent, /No ceiling rpt/);
   assert.doesNotMatch(consoleComponent, /: "CLR(?: \/ no ceiling)?"/);
   assert.doesNotMatch(consoleComponent, /`BKN \$\{period\.ceilingFeet/);
   assert.match(consoleComponent, /freezingLevelFt !== null && intelligence\?\.forecast\?\.freezingLevelFt !== undefined/);
   assert.match(consoleComponent, /item\.altitudeFt !== null/);
-  assert.match(dashboard, /!data\?\.aviation \? "—" : data\.aviation\.ceilingFeet === null \? "No ceiling"/);
-  assert.doesNotMatch(dashboard, /data\?\.aviation\?\.ceilingFeet === null \|\| !data\?\.aviation \? "No ceiling"/);
+  assert.match(consoleComponent, /observedSkyPresentation\(data\.aviation\?\.skyCondition\)/);
+  assert.match(dashboard, /observedSkyPresentation\(data\?\.current\.skyCondition\)/);
+  assert.match(dashboard, /observedSkyPresentation\(data\?\.aviation\?\.skyCondition\)/);
+  assert.match(dashboard, /detail=\{currentSky\.compact\}/);
+  assert.doesNotMatch(dashboard, /ceilingFeet === null \? "No ceiling"/);
 });
 
 test("surface wind only uses VRB when the observation marks it variable", () => {

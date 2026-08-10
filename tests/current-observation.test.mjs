@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { selectCurrentObservation, selectObservationHistory } from "../lib/current-observation.ts";
+import {
+  normalizeMetarSkyCondition,
+  normalizeNwsSkyCondition,
+  selectCurrentObservation,
+  selectObservationHistory,
+} from "../lib/current-observation.ts";
 
 const olderNwsObservation = {
   properties: {
@@ -53,7 +58,93 @@ test("a newer same-station METAR replaces an older NWS observation", () => {
     windGustMph: null,
     visibilityMiles: 2,
     pressureInHg: 29.91,
+    skyCondition: { kind: "ceiling", cover: "BKN", baseFeet: 3600 },
   });
+});
+
+test("Traverse City raw CLR reports produce Clear instead of the generic placeholder", () => {
+  const nwsClear = {
+    properties: {
+      ...olderNwsObservation.properties,
+      timestamp: "2026-08-10T02:50:00Z",
+      textDescription: "Clear",
+      cloudLayers: [{ amount: "CLR", base: { value: 3810, unitCode: "wmoUnit:m" } }],
+    },
+  };
+  const ktvcMetar = {
+    ...newerMetar,
+    icaoId: "KTVC",
+    obsTime: Date.parse("2026-08-10T02:53:00Z") / 1000,
+    rawOb: "METAR KTVC 100253Z AUTO 19005KT 10SM CLR 19/17 A2992 RMK AO2",
+    wxString: null,
+    clouds: [],
+  };
+
+  const current = selectCurrentObservation(nwsClear, ktvcMetar);
+
+  assert.deepEqual(
+    normalizeNwsSkyCondition(nwsClear),
+    { kind: "clear-report", cover: "CLR", baseFeet: null },
+  );
+  assert.equal(current.source, "METAR");
+  assert.equal(current.description, "Clear");
+  assert.deepEqual(current.skyCondition, { kind: "clear-report", cover: "CLR", baseFeet: null });
+});
+
+test("cloud normalization reports a ceiling before lower scattered layers", () => {
+  assert.deepEqual(
+    normalizeMetarSkyCondition({
+      clouds: [
+        { cover: "SCT", base: 2300 },
+        { cover: "BKN", base: 3600 },
+        { cover: "OVC", base: 7000 },
+      ],
+    }),
+    { kind: "ceiling", cover: "BKN", baseFeet: 3600 },
+  );
+  assert.deepEqual(
+    normalizeMetarSkyCondition({
+      clouds: [],
+      rawOb: "METAR KBNA 220153Z 05017KT 2SM SCT023 BKN036 OVC070 24/22 A2991",
+    }),
+    { kind: "ceiling", cover: "BKN", baseFeet: 3600 },
+  );
+});
+
+test("cloud normalization reports the lowest FEW or SCT layer when there is no ceiling", () => {
+  assert.deepEqual(
+    normalizeMetarSkyCondition({
+      clouds: [
+        { cover: "FEW", base: 5000 },
+        { cover: "SCT", base: 2500 },
+      ],
+    }),
+    { kind: "layer", cover: "SCT", baseFeet: 2500 },
+  );
+});
+
+test("vertical visibility and NWS meter bases normalize to feet AGL", () => {
+  assert.deepEqual(
+    normalizeMetarSkyCondition({ clouds: [{ cover: "OVX", base: 300 }] }),
+    { kind: "ceiling", cover: "VV", baseFeet: 300 },
+  );
+  assert.deepEqual(
+    normalizeMetarSkyCondition({ clouds: [], rawOb: "METAR KORD 100251Z 00000KT 1/4SM FG VV003" }),
+    { kind: "ceiling", cover: "VV", baseFeet: 300 },
+  );
+  assert.deepEqual(
+    normalizeNwsSkyCondition({
+      properties: {
+        cloudLayers: [{ amount: "BKN", base: { value: 914.4, unitCode: "wmoUnit:m" } }],
+      },
+    }),
+    { kind: "ceiling", cover: "BKN", baseFeet: 3000 },
+  );
+});
+
+test("missing cloud data stays unknown rather than being called clear", () => {
+  assert.equal(normalizeMetarSkyCondition({ clouds: [], rawOb: "METAR KTVC 100253Z AUTO 19005KT 10SM 19/17 A2992" }), null);
+  assert.equal(normalizeNwsSkyCondition({ properties: {} }), null);
 });
 
 test("a newer NWS report stays intact instead of silently borrowing older METAR fields", () => {

@@ -11,6 +11,23 @@ export type DashboardLocation = {
   stationName: string;
 };
 
+export type ObservedSkyCondition =
+  | {
+      kind: "ceiling";
+      cover: "BKN" | "OVC" | "VV";
+      baseFeet: number | null;
+    }
+  | {
+      kind: "layer";
+      cover: "FEW" | "SCT";
+      baseFeet: number | null;
+    }
+  | {
+      kind: "clear-report";
+      cover: "CLR" | "SKC" | "CAVOK";
+      baseFeet: null;
+    };
+
 export type CurrentObservation = {
   timestamp: string;
   source: "NWS" | "METAR";
@@ -23,6 +40,7 @@ export type CurrentObservation = {
   windGustMph: number | null;
   visibilityMiles: number | null;
   pressureInHg: number | null;
+  skyCondition: ObservedSkyCondition | null;
 };
 
 export type ObservationHistoryPoint = {
@@ -92,6 +110,7 @@ export type AviationObservation = {
   observedAt: string;
   visibility: string | null;
   ceilingFeet: number | null;
+  skyCondition: ObservedSkyCondition | null;
   windDirectionDeg: number | null;
   windVariable: boolean | null;
   windSpeedKt: number | null;

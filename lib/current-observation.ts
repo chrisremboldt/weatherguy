@@ -1,4 +1,8 @@
-import type { CurrentObservation, ObservationHistoryPoint } from "./types";
+import type {
+  CurrentObservation,
+  ObservationHistoryPoint,
+  ObservedSkyCondition,
+} from "./types";
 
 // NOAA's NWS and AviationWeather APIs are schemaless until they are normalized here.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -8,6 +12,17 @@ type ObservationCandidate = Omit<CurrentObservation, "timestamp" | "description"
   timestamp: string | null;
   description: string | null;
 };
+
+type SkyCover = ObservedSkyCondition["cover"];
+
+type ReportedSkyLayer = {
+  cover: SkyCover;
+  baseFeet: number | null;
+};
+
+const CEILING_COVERS = new Set<SkyCover>(["BKN", "OVC", "VV"]);
+const NON_CEILING_COVERS = new Set<SkyCover>(["FEW", "SCT"]);
+const CLEAR_COVERS = new Set<SkyCover>(["CLR", "SKC", "CAVOK"]);
 
 const METAR_DESCRIPTORS: Record<string, string> = {
   MI: "Shallow",
@@ -47,6 +62,149 @@ const METAR_PHENOMENA: Record<string, string> = {
 
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function skyCover(value: unknown): SkyCover | null {
+  if (typeof value !== "string") return null;
+  const cover = value.trim().toUpperCase() === "OVX"
+    ? "VV"
+    : value.trim().toUpperCase();
+  return CEILING_COVERS.has(cover as SkyCover)
+    || NON_CEILING_COVERS.has(cover as SkyCover)
+    || CLEAR_COVERS.has(cover as SkyCover)
+    ? cover as SkyCover
+    : null;
+}
+
+function selectLowestLayer(layers: ReportedSkyLayer[]) {
+  if (!layers.length) return null;
+  if (layers.some((layer) => layer.baseFeet === null)) return layers[0];
+  return layers.reduce((lowest, layer) => (
+    (layer.baseFeet ?? Number.POSITIVE_INFINITY) < (lowest.baseFeet ?? Number.POSITIVE_INFINITY)
+      ? layer
+      : lowest
+  ));
+}
+
+function summarizeSkyLayers(layers: ReportedSkyLayer[]): ObservedSkyCondition | null {
+  const ceiling = selectLowestLayer(layers.filter((layer) => CEILING_COVERS.has(layer.cover)));
+  if (ceiling) {
+    return {
+      kind: "ceiling",
+      cover: ceiling.cover as "BKN" | "OVC" | "VV",
+      baseFeet: ceiling.baseFeet,
+    };
+  }
+
+  const lowestLayer = selectLowestLayer(layers.filter((layer) => NON_CEILING_COVERS.has(layer.cover)));
+  if (lowestLayer) {
+    return {
+      kind: "layer",
+      cover: lowestLayer.cover as "FEW" | "SCT",
+      baseFeet: lowestLayer.baseFeet,
+    };
+  }
+
+  const clear = layers.find((layer) => CLEAR_COVERS.has(layer.cover));
+  return clear
+    ? {
+        kind: "clear-report",
+        cover: clear.cover as "CLR" | "SKC" | "CAVOK",
+        baseFeet: null,
+      }
+    : null;
+}
+
+function parseRawMetarSky(raw: unknown): ReportedSkyLayer[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  const reportBody = raw.toUpperCase().split(/\s+RMK(?:\s+|$)/)[0];
+  const layers: ReportedSkyLayer[] = [];
+
+  for (const rawToken of reportBody.trim().split(/\s+/)) {
+    const token = rawToken.replace(/=$/, "");
+    const clear = skyCover(token);
+    if (clear && CLEAR_COVERS.has(clear)) {
+      layers.push({ cover: clear, baseFeet: null });
+      continue;
+    }
+
+    const layerMatch = token.match(/^(FEW|SCT|BKN|OVC)(\d{3}|\/{3})(?:CB|TCU)?$/);
+    if (layerMatch) {
+      layers.push({
+        cover: layerMatch[1] as SkyCover,
+        baseFeet: layerMatch[2] === "///" ? null : Number(layerMatch[2]) * 100,
+      });
+      continue;
+    }
+
+    const verticalVisibility = token.match(/^VV(\d{3}|\/{3})$/);
+    if (verticalVisibility) {
+      layers.push({
+        cover: "VV",
+        baseFeet: verticalVisibility[1] === "///" ? null : Number(verticalVisibility[1]) * 100,
+      });
+    }
+  }
+
+  return layers;
+}
+
+export function normalizeMetarSkyCondition(metar: JsonRecord | undefined): ObservedSkyCondition | null {
+  if (!metar) return null;
+  const structuredLayers = (Array.isArray(metar.clouds) ? metar.clouds : [])
+    .map((cloud: JsonRecord): ReportedSkyLayer | null => {
+      const cover = skyCover(cloud.cover);
+      if (!cover) return null;
+      return {
+        cover,
+        baseFeet: CLEAR_COVERS.has(cover) ? null : numberOrNull(cloud.base),
+      };
+    })
+    .filter((layer: ReportedSkyLayer | null): layer is ReportedSkyLayer => layer !== null);
+
+  return summarizeSkyLayers(structuredLayers)
+    ?? summarizeSkyLayers(parseRawMetarSky(metar.rawOb));
+}
+
+function nwsBaseFeet(base: unknown): number | null {
+  if (!base || typeof base !== "object") return null;
+  const value = numberOrNull((base as JsonRecord).value);
+  const unit = (base as JsonRecord).unitCode;
+  if (value === null || typeof unit !== "string") return null;
+  if (unit === "wmoUnit:m") return Math.round((value * 3.28084) / 100) * 100;
+  if (unit === "wmoUnit:ft") return Math.round(value);
+  return null;
+}
+
+export function normalizeNwsSkyCondition(observation: JsonRecord): ObservedSkyCondition | null {
+  const cloudLayers = observation.properties?.cloudLayers;
+  if (!Array.isArray(cloudLayers)) return null;
+  const layers = cloudLayers
+    .map((cloud: JsonRecord): ReportedSkyLayer | null => {
+      const cover = skyCover(cloud.amount);
+      if (!cover) return null;
+      return {
+        cover,
+        baseFeet: CLEAR_COVERS.has(cover) ? null : nwsBaseFeet(cloud.base),
+      };
+    })
+    .filter((layer: ReportedSkyLayer | null): layer is ReportedSkyLayer => layer !== null);
+  return summarizeSkyLayers(layers);
+}
+
+function skyDescription(condition: ObservedSkyCondition | null) {
+  if (!condition) return null;
+  switch (condition.cover) {
+    case "VV": return "Sky Obscured";
+    case "OVC": return "Overcast";
+    case "BKN": return "Mostly Cloudy";
+    case "SCT": return "Partly Cloudy";
+    case "FEW": return "A Few Clouds";
+    case "CAVOK": return "No Significant Weather";
+    case "CLR":
+    case "SKC":
+      return "Clear";
+  }
 }
 
 function celsiusToFahrenheit(value: unknown): number | null {
@@ -164,7 +322,7 @@ function decodeMetarToken(rawToken: string) {
   return words.join(" ");
 }
 
-function metarDescription(metar: JsonRecord): string | null {
+function metarDescription(metar: JsonRecord, condition: ObservedSkyCondition | null): string | null {
   if (typeof metar.wxString === "string" && metar.wxString.trim()) {
     const decoded = metar.wxString
       .trim()
@@ -174,22 +332,16 @@ function metarDescription(metar: JsonRecord): string | null {
     if (decoded.length) return decoded.join(" · ");
   }
 
-  const clouds = Array.isArray(metar.clouds) ? metar.clouds : [];
-  const covers = clouds.map((cloud: JsonRecord) => String(cloud.cover ?? "").toUpperCase());
-  if (covers.some((cover: string) => cover === "VV" || cover === "OVC")) return "Overcast";
-  if (covers.includes("BKN")) return "Mostly Cloudy";
-  if (covers.includes("SCT")) return "Partly Cloudy";
-  if (covers.includes("FEW")) return "A Few Clouds";
-  if (covers.some((cover: string) => cover === "CLR" || cover === "SKC")) return "Clear";
-  return null;
+  return skyDescription(condition);
 }
 
 function normalizeNwsObservation(observation: JsonRecord): ObservationCandidate {
   const properties = observation.properties ?? {};
+  const skyCondition = normalizeNwsSkyCondition(observation);
   return {
     timestamp: isoTimestamp(properties.timestamp),
     source: "NWS",
-    description: properties.textDescription || null,
+    description: properties.textDescription || skyDescription(skyCondition),
     temperatureF: celsiusToFahrenheit(properties.temperature?.value),
     dewpointF: celsiusToFahrenheit(properties.dewpoint?.value),
     humidityPct: numberOrNull(properties.relativeHumidity?.value),
@@ -198,6 +350,7 @@ function normalizeNwsObservation(observation: JsonRecord): ObservationCandidate 
     windGustMph: kilometersPerHourToMph(properties.windGust?.value),
     visibilityMiles: metersToMiles(properties.visibility?.value),
     pressureInHg: pascalsToInHg(properties.barometricPressure?.value),
+    skyCondition,
   };
 }
 
@@ -205,10 +358,11 @@ function normalizeMetarObservation(metar: JsonRecord | undefined): ObservationCa
   if (!metar) return null;
   const temperatureC = numberOrNull(metar.temp);
   const dewpointC = numberOrNull(metar.dewp);
+  const skyCondition = normalizeMetarSkyCondition(metar);
   return {
     timestamp: metarObservationTimestamp(metar),
     source: "METAR",
-    description: metarDescription(metar),
+    description: metarDescription(metar, skyCondition),
     temperatureF: celsiusToFahrenheit(temperatureC),
     dewpointF: celsiusToFahrenheit(dewpointC),
     humidityPct: relativeHumidity(temperatureC, dewpointC),
@@ -217,6 +371,7 @@ function normalizeMetarObservation(metar: JsonRecord | undefined): ObservationCa
     windGustMph: knotsToMph(metar.wgst),
     visibilityMiles: metarVisibilityMiles(metar.visib),
     pressureInHg: metarAltimeterToInHg(metar.altim),
+    skyCondition,
   };
 }
 
@@ -280,7 +435,7 @@ export function selectCurrentObservation(
   return {
     timestamp: primary.timestamp ?? new Date().toISOString(),
     source: primary.source,
-    description: primary.description ?? "Observation available",
+    description: primary.description ?? "Conditions not reported",
     temperatureF: primary.temperatureF,
     dewpointF: primary.dewpointF,
     humidityPct: primary.humidityPct,
@@ -289,5 +444,6 @@ export function selectCurrentObservation(
     windGustMph: primary.windGustMph,
     visibilityMiles: primary.visibilityMiles,
     pressureInHg: primary.pressureInHg,
+    skyCondition: primary.skyCondition,
   };
 }
