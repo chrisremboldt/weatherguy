@@ -62,6 +62,16 @@ export function precipitationChanceLabel(value: number | null) {
   return value === null ? "—" : `${value}%`;
 }
 
+export type IconCertainty = "dotted" | "dashed" | "full" | "superfull";
+
+export function iconCertaintyFromPct(value: number | null): IconCertainty | null {
+  if (value === null) return null;
+  if (value < 30) return "dotted";
+  if (value < 60) return "dashed";
+  if (value < 80) return "full";
+  return "superfull";
+}
+
 const SKY_COVER_NAMES: Record<ObservedSkyCondition["cover"], string> = {
   BKN: "Broken",
   OVC: "Overcast",

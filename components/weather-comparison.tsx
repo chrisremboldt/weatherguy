@@ -264,7 +264,7 @@ function HourCell({ period, timeZone, secondary = false }: { period: HourlyPerio
   return (
     <div className={className}>
       <span>{localHour(period.startTime, timeZone)}</span>
-      <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={20} />
+      <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={20} chancePct={period.precipitationPct} />
       <strong>{period.temperatureF}°</strong>
       <small><Droplets size={9} /> {precipitationChanceLabel(period.precipitationPct)}</small>
     </div>
@@ -277,7 +277,7 @@ function DayCell({ day, secondary = false }: { day: ForecastDaySummary | null; s
   return (
     <div className={className} title={day.detailedForecast} aria-label={`${day.label}: high ${day.highF ?? "unavailable"} degrees, low ${day.lowF ?? "unavailable"} degrees, ${day.shortForecast}; precipitation ${precipitationChanceLabel(day.precipitationPct)} maximum. ${day.detailedForecast}`}>
       <span><b>{day.label}</b><small>{day.dateLabel}</small></span>
-      <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={22} />
+      <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={22} chancePct={day.precipitationPct} />
       <strong>
         <i>{day.highF === null ? DASH : `${day.highF}°`}</i>
         <i>{day.lowF === null ? DASH : `${day.lowF}°`}</i>
