@@ -951,7 +951,7 @@ export function WeatherDashboard() {
                   return (
                     <span key={period.startTime}>
                       <b>{label.hour}</b>
-                      <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={17} />
+                      <WeatherIcon condition={period.shortForecast} isDaytime={period.isDaytime} size={17} chancePct={period.precipitationPct} />
                       <strong>{period.temperatureF}°</strong>
                       <em>{period.shortForecast}</em>
                       <small
@@ -1089,7 +1089,7 @@ export function WeatherDashboard() {
                 >
                   <span className="forecast-day-heading"><b>{day.label}</b><small>{day.dateLabel}</small></span>
                   <span className="forecast-day-core">
-                    <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} />
+                    <WeatherIcon condition={day.shortForecast} isDaytime={day.isDaytime} size={31} chancePct={day.precipitationPct} />
                     <span className="forecast-temperatures">
                       <span><small>High</small><strong>{day.highF ?? "—"}°</strong></span>
                       <span><small>Low</small><strong>{day.lowF ?? "—"}°</strong></span>

@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   apparentTemperatureF,
   currentAndFutureHourlyPeriods,
+  iconCertaintyFromPct,
   maximumPrecipitationPct,
   nextHourlyPeriods,
   observedSkyPresentation,
@@ -12,6 +13,8 @@ import {
 } from "../lib/weather-display.ts";
 
 const dashboard = await readFile(new URL("../components/weather-dashboard.tsx", import.meta.url), "utf8");
+const comparison = await readFile(new URL("../components/weather-comparison.tsx", import.meta.url), "utf8");
+const weatherIcon = await readFile(new URL("../components/weather-icon.tsx", import.meta.url), "utf8");
 
 function period(startTime, temperatureF = 70) {
   return {
@@ -111,4 +114,37 @@ test("dashboard status and active alert copy describe only what is actually avai
   assert.match(dashboard, /data && data\.alertFeedAvailable === true && !offlineSnapshot/);
   assert.doesNotMatch(dashboard, /All live feeds connected/);
   assert.match(dashboard, /Models \/ environment: Open-Meteo · CAMS · USGS · NOAA SWPC \/ SPC/);
+});
+
+test("precipitation icon certainty follows NWS chance bands", () => {
+  assert.equal(iconCertaintyFromPct(null), null);
+  assert.equal(iconCertaintyFromPct(0), "dotted");
+  assert.equal(iconCertaintyFromPct(29), "dotted");
+  assert.equal(iconCertaintyFromPct(30), "dashed");
+  assert.equal(iconCertaintyFromPct(59), "dashed");
+  assert.equal(iconCertaintyFromPct(60), "full");
+  assert.equal(iconCertaintyFromPct(79), "full");
+  assert.equal(iconCertaintyFromPct(80), "superfull");
+  assert.equal(iconCertaintyFromPct(100), "superfull");
+});
+
+test("forecast weather icons receive precipitation chance and current heroes stay solid", () => {
+  assert.match(weatherIcon, /chancePct/);
+  assert.match(weatherIcon, /iconCertaintyFromPct/);
+  assert.match(weatherIcon, /strokeDasharray/);
+  assert.match(weatherIcon, /superfull/);
+  assert.match(dashboard, /chancePct=\{period\.precipitationPct\}/);
+  assert.match(dashboard, /chancePct=\{day\.precipitationPct\}/);
+  assert.match(
+    dashboard,
+    /<WeatherIcon condition=\{data\?\.current\.description \?\? "cloudy"\} size=\{72\} strokeWidth=\{1\.25\} \/>/,
+  );
+  assert.match(comparison, /chancePct=\{period\.precipitationPct\}/);
+  assert.match(comparison, /chancePct=\{day\.precipitationPct\}/);
+  assert.match(
+    comparison,
+    /<WeatherIcon\s+condition=\{current\?\.description \?\? "cloudy"\}\s+size=\{68\}\s+strokeWidth=\{1\.2\}\s+\/>/,
+  );
+  assert.equal(dashboard.match(/chancePct=/g)?.length, 2);
+  assert.equal(comparison.match(/chancePct=/g)?.length, 2);
 });
