@@ -44,6 +44,7 @@ import type {
   LocationSearchResult,
   WeatherDashboardData,
 } from "@/lib/types";
+import { WeatherObservatory } from "@/components/weather-observatory";
 import { WeatherIcon } from "@/components/weather-icon";
 import { AviationConsole } from "@/components/aviation-console";
 import { IntelligenceGrid } from "@/components/intelligence-grid";
@@ -277,6 +278,7 @@ export function WeatherDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [experience, setExperience] = useState<"observatory" | "classic">("observatory");
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [now, setNow] = useState(new Date());
@@ -317,6 +319,8 @@ export function WeatherDashboard() {
       setMounted(true);
       setOnline(navigator.onLine);
       try {
+        const requestedView = new URLSearchParams(window.location.search).get("view");
+        setExperience(requestedView === "classic" || (requestedView !== "observatory" && window.localStorage.getItem("weatherguy-experience") === "classic") ? "classic" : "observatory");
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
         const savedDisplayMode = window.localStorage.getItem("weatherguy-display-mode");
         setDisplayMode(isDisplayMode(savedDisplayMode) ? savedDisplayMode : "desk");
@@ -623,13 +627,13 @@ export function WeatherDashboard() {
   const showRotatingWallboard = isFullscreen && !showAllWallboardScenes && !showDeskOverview;
 
   useEffect(() => {
-    if (!isFullscreen || comparisonOpen || showAllWallboardScenes || showDeskOverview || !wallboardRotate || wallboardPaused || wallboardFocusWithin || wallboardCycleScenes.length < 2) return;
+    if (experience !== "classic" || !isFullscreen || comparisonOpen || showAllWallboardScenes || showDeskOverview || !wallboardRotate || wallboardPaused || wallboardFocusWithin || wallboardCycleScenes.length < 2) return;
     const timer = window.setTimeout(
       () => setWallboardSceneIndex((current) => (current + 1) % wallboardCycleScenes.length),
       activeWallboardDurationSeconds * 1_000,
     );
     return () => window.clearTimeout(timer);
-  }, [activeWallboardDurationSeconds, activeWallboardScene, comparisonOpen, isFullscreen, showAllWallboardScenes, showDeskOverview, wallboardCycleScenes.length, wallboardFocusWithin, wallboardPaused, wallboardRotate]);
+  }, [activeWallboardDurationSeconds, activeWallboardScene, comparisonOpen, experience, isFullscreen, showAllWallboardScenes, showDeskOverview, wallboardCycleScenes.length, wallboardFocusWithin, wallboardPaused, wallboardRotate]);
 
   const commitLocation = useCallback((next: LocationConfig) => {
     window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
@@ -765,6 +769,14 @@ export function WeatherDashboard() {
 
   const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
 
+  const selectExperience = (next: "observatory" | "classic") => {
+    setExperience(next);
+    try { window.localStorage.setItem("weatherguy-experience", next); } catch { /* Keep working without persistent storage. */ }
+    const params = new URLSearchParams(window.location.search);
+    params.set("view", next);
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
+  };
+
   const updateKidMode = (enabled: boolean) => {
     setKidModeEnabled(enabled);
     persistSetting("weatherguy-kid-mode", String(enabled));
@@ -834,7 +846,21 @@ export function WeatherDashboard() {
   };
 
   return (
-    <main ref={appShellRef} data-kid-mode-surface aria-hidden={comparisonVisible || undefined} className={`app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
+    <main ref={appShellRef} data-kid-mode-surface aria-hidden={comparisonVisible || undefined} className={experience === "observatory" ? `observatory-shell ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""}` : `app-shell mode-${displayMode} ${nightDimmed ? "night-dim" : ""} ${isFullscreen ? "is-fullscreen" : ""} ${showAllWallboardScenes ? `wallboard-expanded wallboard-scenes-${enabledWallboardScenes.length}` : ""} ${showDeskOverview ? "wallboard-desk-overview" : ""}`}>
+      {experience === "observatory" ? (
+        <WeatherObservatory
+          data={data} intelligence={intelligence} regionalAviation={regionalAviation}
+          now={now} mounted={mounted} loading={loading} error={error}
+          online={online} offlineSnapshot={offlineSnapshot} refreshKey={refreshKey}
+          isFullscreen={isFullscreen} customLabel={mounted ? config?.customLabel : undefined}
+          favorites={favorites} displayMode={displayMode}
+          suspended={locationModalOpen || comparisonVisible}
+          intelligenceUnavailable={intelligenceUnavailable} aviationUnavailable={aviationUnavailable}
+          onSettings={openLocationSettings} onRefresh={() => setRefreshKey((value) => value + 1)}
+          onFullscreen={() => { void requestFullscreen(); }}
+          onClassic={() => selectExperience("classic")} onCompare={openComparison} onFavorite={loadFavorite}
+        />
+      ) : <>
       <header className="topbar">
         <div className="brand-lockup">
           <span className="radar-mark" aria-hidden="true"><span /></span>
@@ -853,6 +879,7 @@ export function WeatherDashboard() {
         </div>
 
         <div className="header-status">
+          <button className="icon-button" onClick={() => selectExperience("observatory")} aria-label="Open the new observatory" title="Open the new observatory"><Sparkles size={18} /></button>
           <div className="clock-block">
             <span suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).format(now)}</span>
             <strong suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", second: "2-digit" }).format(now)}</strong>
@@ -1213,6 +1240,8 @@ export function WeatherDashboard() {
         {aviationUnavailable && <span className="source-notice">Regional aviation feed unavailable.</span>}
       </footer>
 
+      </>}
+
       {comparisonVisible && config && data && createPortal(
         <WeatherComparison
           primaryConfig={config}
@@ -1288,8 +1317,8 @@ export function WeatherDashboard() {
                   </div>
 
                   <div className="wallboard-preferences">
-                    <span className="settings-section-label">Fullscreen wallboard</span>
-                    <p>Radar, satellite, and current conditions stay fixed. Weather Desk opens its essential forecast and intelligence panels together when space allows; specialized and smaller layouts use these scenes, while very large displays open every enabled scene.</p>
+                    <span className="settings-section-label">Classic fullscreen wallboard</span>
+                    <p>These scene controls configure the Classic desk. Its radar, satellite, and current conditions stay fixed while enabled scenes rotate. The observatory uses Auto tour to cycle its views every minute.</p>
                     <div className="wallboard-scene-options">
                       {WALLBOARD_SCENES.map((scene) => (
                         <label key={scene.id}>

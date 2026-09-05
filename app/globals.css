@@ -2231,12 +2231,14 @@ h2 {
 }
 
 /* Expanded operations desk */
-.app-shell {
+.app-shell,
+.observatory-shell {
   animation: burn-in-drift 18min steps(1, end) infinite;
   transition: filter 600ms ease;
 }
 
-.app-shell.night-dim {
+.app-shell.night-dim,
+.observatory-shell.night-dim {
   filter: brightness(0.68) saturate(0.86);
 }
 

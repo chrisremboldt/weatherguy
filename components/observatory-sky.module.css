@@ -1,0 +1,490 @@
+.daylight {
+  color: var(--obs-text, #edf1f5);
+  min-width: 0;
+  padding: 0 18px;
+}
+
+.solarHeadline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.solarValue {
+  font-size: clamp(21px, 2.3vw, 26px);
+  font-weight: 500;
+  letter-spacing: -.055em;
+  line-height: 1.15;
+}
+
+.solarDuration {
+  font-family: var(--font-mono), monospace;
+  font-weight: 400;
+  letter-spacing: -.07em;
+}
+
+.solarCaption {
+  color: var(--obs-muted, #99a8bb);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.arcFrame {
+  margin: -9px auto 0;
+  max-width: 220px;
+}
+
+.arc {
+  color: var(--obs-accent, #f3bd86);
+  display: block;
+  overflow: visible;
+  width: 100%;
+}
+
+.arcTrack,
+.arcProgress {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 1.5;
+}
+
+.arcTrack {
+  stroke: var(--obs-muted, #99a8bb);
+  stroke-dasharray: 2 6;
+  opacity: .38;
+}
+
+.arcProgress {
+  stroke: currentColor;
+}
+
+.arcComplete {
+  opacity: .22;
+}
+
+.horizon {
+  stroke: var(--obs-line, rgba(153, 168, 187, .17));
+  stroke-width: 1;
+}
+
+.horizonTick {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: .7;
+}
+
+.arcDirection,
+.arcDuration {
+  fill: var(--obs-muted, #99a8bb);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.arcDuration {
+  font-size: 11px;
+  letter-spacing: -.03em;
+}
+
+.sunHalo {
+  fill: currentColor;
+  opacity: .075;
+}
+
+.sunCore {
+  fill: currentColor;
+}
+
+.sunRay {
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
+.moonIllustration {
+  color: #b5b1e4;
+}
+
+.solarTimes {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 0;
+}
+
+.solarTimes > div {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.solarTimes > div:last-child {
+  text-align: right;
+  flex-direction: row-reverse;
+}
+
+.solarTimes svg {
+  color: var(--obs-accent, #f3bd86);
+  opacity: .8;
+}
+
+.solarTimes span {
+  color: var(--obs-muted, #99a8bb);
+  display: grid;
+  gap: 3px;
+  font-size: 10px;
+}
+
+.solarTimes strong {
+  color: var(--obs-text, #edf1f5);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.solarDate {
+  color: var(--obs-muted, #99a8bb);
+  font-size: 10px;
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.ribbon {
+  min-width: 0;
+  color: var(--obs-text, #edf1f5);
+  container-type: inline-size;
+  padding: 0 18px;
+}
+
+.ribbonToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chartCaption {
+  color: var(--obs-muted, #99a8bb);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: .11em;
+}
+
+.chartCaption > span {
+  margin-left: 5px;
+  color: var(--obs-accent, #f3bd86);
+}
+
+.horizonControl {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--obs-line, rgba(153, 168, 187, .17));
+  border-radius: 7px;
+  padding: 2px;
+  gap: 1px;
+}
+
+.horizonControl button {
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--obs-muted, #99a8bb);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.horizonControl button[aria-pressed="true"] {
+  background: rgba(153, 168, 187, .11);
+  color: var(--obs-text, #edf1f5);
+}
+
+.horizonControl button:hover,
+.hourButton:hover {
+  background: rgba(153, 168, 187, .075);
+  color: var(--obs-text, #edf1f5);
+}
+
+.horizonControl button:focus-visible,
+.hourButton:focus-visible {
+  outline: 2px solid var(--obs-accent, #f3bd86);
+  outline-offset: 2px;
+}
+
+.temperaturePlot {
+  color: var(--obs-accent, #f3bd86);
+  display: block;
+  height: 39px;
+  width: 100%;
+  margin-top: 2px;
+  overflow: visible;
+}
+
+.chartGrid {
+  stroke: var(--obs-line, rgba(153, 168, 187, .17));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 2 6;
+  opacity: .55;
+}
+
+.temperatureLine {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.selectionLine {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: .22;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.selectionHalo {
+  fill: currentColor;
+  opacity: .12;
+}
+
+.selectionDot {
+  fill: currentColor;
+  stroke: #182434;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.hourButtons {
+  position: relative;
+  height: 85px;
+  margin: 2px 0 7px;
+}
+
+.hourButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  gap: 6px;
+  padding: 4px 3px 6px;
+  color: var(--obs-muted, #99a8bb);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease;
+}
+
+.hourButton[aria-pressed="true"] {
+  background: rgba(243, 189, 134, .065);
+  border-color: rgba(243, 189, 134, .19);
+}
+
+.hourButton[aria-pressed="true"] > svg,
+.hourButton[aria-pressed="true"] .hourLabel {
+  color: var(--obs-accent, #f3bd86);
+}
+
+.hourTemperature {
+  color: var(--obs-text, #edf1f5);
+  font-family: var(--font-mono), monospace;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -.075em;
+  line-height: 1.1;
+}
+
+.hourLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: -.025em;
+  line-height: 1;
+}
+
+.hourButton > svg {
+  width: 19px;
+  height: 19px;
+}
+
+.rainChance {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+
+.rainChance svg {
+  opacity: .65;
+}
+
+.rainLikely {
+  color: #b5b1e4;
+}
+
+.hourDetail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding-top: 8px;
+  border-top: 1px solid var(--obs-line, rgba(153, 168, 187, .17));
+}
+
+.detailCondition {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.detailCondition > span {
+  white-space: nowrap;
+  color: var(--obs-muted, #99a8bb);
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+}
+
+.detailCondition > strong {
+  font-weight: 400;
+}
+
+.detailWind {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  color: var(--obs-muted, #99a8bb);
+}
+
+.empty {
+  display: grid;
+  min-height: 180px;
+  align-content: center;
+  color: var(--obs-muted, #99a8bb);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 0 18px;
+}
+
+@container (max-width: 500px) {
+  .temperaturePlot {
+    height: 39px;
+  }
+
+  .hourButton {
+    gap: 6px;
+    padding-inline: 0;
+  }
+
+  .hourButtons {
+    height: 83px;
+  }
+
+  .hourTemperature {
+    font-size: 18px;
+  }
+
+  .hourButton > svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .rainChance {
+    gap: 1px;
+    font-size: 8px;
+  }
+
+  .rainChance svg {
+    width: 8px;
+  }
+
+  .hourDetail {
+    align-items: flex-start;
+  }
+
+  .detailCondition {
+    display: grid;
+    gap: 2px;
+  }
+
+  .detailWind {
+    font-size: 9px;
+    padding-top: 2px;
+  }
+}
+
+.expanded .arcFrame {
+  max-width: 330px;
+  margin-top: -13px;
+}
+
+.expanded .solarValue {
+  font-size: 30px;
+}
+
+.expanded .temperaturePlot {
+  height: 108px;
+  margin-top: 7px;
+}
+
+.expanded .hourButtons {
+  height: 111px;
+  margin-bottom: 13px;
+}
+
+.expanded .hourButton {
+  gap: 8px;
+  padding-top: 9px;
+  padding-bottom: 10px;
+}
+
+.expanded .hourTemperature {
+  font-size: 22px;
+}
+
+.expanded .hourButton > svg {
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+}
+
+.expanded .hourDetail {
+  min-height: 47px;
+  padding-top: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hourButton {
+    transition: none;
+  }
+}
+
+@media (min-width: 1100px) and (max-height: 980px) {
+  .ribbon:not(.expanded) .temperaturePlot { height: 28px; }
+  .ribbon:not(.expanded) .hourButtons { height: 72px; margin-bottom: 4px; }
+  .ribbon:not(.expanded) .hourButton { gap: 4px; padding-top: 5px; padding-bottom: 5px; }
+  .ribbon:not(.expanded) .hourTemperature { font-size: 19px; }
+  .ribbon:not(.expanded) .hourButton > svg { width: 17px; height: 17px; margin-top: 1px; }
+  .ribbon:not(.expanded) .hourDetail { min-height: 28px; padding-top: 6px; }
+  .daylight:not(.expanded) .arcFrame { max-width: 160px; margin-top: -12px; }
+  .daylight:not(.expanded) .solarValue { font-size: 23px; }
+  .daylight:not(.expanded) .solarDate { margin-top: 6px; font-size: 9px; }
+}

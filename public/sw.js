@@ -1,4 +1,4 @@
-const CACHE = "wxdynamics-v3";
+const CACHE = "wxdynamics-v4";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 
 self.addEventListener("install", (event) => {

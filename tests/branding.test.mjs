@@ -17,7 +17,7 @@ test("wxDynamics is the product identity across the interface and install metada
   assert.match(manifest, /name: "wxDynamics Weather Intelligence Desk"/);
   assert.match(manifest, /short_name: "wxDynamics"/);
   assert.match(readme, /^# wxDynamics$/m);
-  assert.match(serviceWorker, /const CACHE = "wxdynamics-v3"/);
+  assert.match(serviceWorker, /const CACHE = "wxdynamics-v4"/);
 });
 
 test("social sharing metadata uses the branded large preview", () => {

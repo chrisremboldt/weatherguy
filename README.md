@@ -6,6 +6,21 @@ On first run, search for any U.S. city, state, ZIP code, or supported territory;
 
 Canonical production domain: [wxdynamics.com](https://wxdynamics.com)
 
+## The second-generation observatory
+
+The home observatory is now the default experience. It reuses the original live data controller and keeps the full Classic desk available from the header. Your location, favorites, themes, alert tone, Kid mode, dimming, and comparison preferences carry over.
+
+- **A weather story:** a concise, deterministic briefing drawn from NWS forecasts and active alerts, with the next meaningful weather change and a conservative outdoor window when the data supports one. No language-model service, API key, or extra subscription is needed. Missing or stale feeds remain explicit.
+- **An atmospheric overview:** observed conditions against a day/night sky, interactive regional radar, environmental readings, an hourly timeline, and seven-day forecast details.
+- **A daylight clock:** actual sunrise/sunset timing, daylight remaining, and the next supplied sunrise, all in the selected location’s timezone.
+- **Explore the forecast:** choose 12 or 24 hours, select individual hours, or open a day’s complete forecast. Outlook also includes the NWS forecast discussion and observation history.
+- **Dedicated workspaces:** Radar & satellite, Outlook, Intelligence, and Aviation preserve the specialist tools.
+- **Ambient:** a quiet, large-format conditions display with the daylight clock. Active alerts remain visible.
+- **Auto tour:** rotates through the five workspaces every minute; pauses for focused controls, open dialogs, and active alerts. This is separate from Classic’s configurable scene rotation.
+- **Monitor comfort:** all ten color channels, fullscreen fitting for desktop monitors, optional nighttime dimming, reduced-motion support, and subtle burn-in drift.
+
+The chosen experience is saved in the browser. Use `?view=observatory` or `?view=classic` to explicitly select one; existing coordinate and comparison URLs still work.
+
 ## What is on the desk
 
 - Dual live sensor deck with animated NWS NEXRAD radar and auto-selected GOES-East/West imagery
@@ -66,6 +81,7 @@ Production check:
 ```bash
 npm run lint
 npm run typecheck
+node --test tests/*.test.mjs
 npm run build
 npm start
 ```

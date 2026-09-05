@@ -1,0 +1,521 @@
+.observatory {
+  --obs-bg: #121c2b;
+  --obs-panel: #192638;
+  --obs-panel-high: #203046;
+  --obs-text: #edf1f5;
+  --obs-muted: #a4b1c3;
+  --obs-accent: #f3bd86;
+  --obs-lavender: #b5b1e4;
+  --obs-green: #94cfc0;
+  --obs-line: rgba(182, 199, 224, .13);
+  color-scheme: dark;
+  color: var(--obs-text);
+  background: radial-gradient(ellipse at 40% -20%, var(--obs-panel-high) 0, transparent 60%), var(--obs-bg);
+  min-height: 100svh;
+  padding: 0 clamp(20px, 2.5vw, 64px);
+  font-family: var(--font-body), sans-serif;
+  font-size: 15px;
+  --ink: var(--obs-bg); --panel: var(--obs-panel); --panel-high: var(--obs-panel-high);
+  --cloud: var(--obs-text); --copy: var(--obs-muted); --muted: var(--obs-muted); --faint: var(--obs-muted);
+  --signal: var(--obs-green); --sky: var(--obs-lavender); --amber: var(--obs-accent); --line: var(--obs-line);
+  --panel-rgb: 25, 38, 56; --ink-rgb: 18, 28, 43; --control-rgb: 32, 48, 70; --signal-rgb: 148, 207, 192;
+}
+.observatory *, .observatory *::before, .observatory *::after { box-sizing: border-box; }
+.observatory button, .observatory a { touch-action: manipulation; }
+.observatory button { cursor: pointer; }
+.observatory button:disabled { cursor: default; opacity: .45; }
+.observatory button:focus-visible, .observatory a:focus-visible, .observatory summary:focus-visible { outline: 2px solid var(--obs-accent); outline-offset: 4px; }
+.observatory h1, .observatory h2, .observatory h3, .observatory p { margin: 0; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 22px; min-height: 91px; border-bottom: 1px solid var(--obs-line); }
+.brand { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; text-align: left; color: var(--obs-accent); }
+.brand > span { color: var(--obs-text); font-size: 25px; font-weight: 400; line-height: 1.05; letter-spacing: -.7px; }
+.brand > span > span { font-weight: 650; }
+.brand small { display: block; font: 8px var(--font-mono), monospace; letter-spacing: 2px; color: var(--obs-muted); margin-top: 8px; }
+.navigation { display: flex; align-self: stretch; align-items: stretch; gap: 23px; }
+.navigation button { padding: 3px 0 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--obs-muted); white-space: nowrap; font-size: 14px; }
+.navigation button:hover { color: var(--obs-text); }
+.navigation button[aria-current] { color: var(--obs-accent); border-bottom-color: var(--obs-accent); }
+.headerTools { display: flex; align-items: center; gap: 9px; }
+.toolButton { display: grid; place-items: center; border: 1px solid var(--obs-line); border-radius: 9px; background: transparent; color: var(--obs-muted); width: 36px; height: 36px; }
+.toolButton:hover { background: var(--obs-panel-high); color: var(--obs-text); }
+.classicButton { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; font-size: 12px; color: var(--obs-muted); margin-right: 12px; white-space: nowrap; }
+.locationRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 26px 0 23px; }
+.eyebrow { display: flex; align-items: center; gap: 8px; font: 9px var(--font-mono), monospace; letter-spacing: 1.7px; color: var(--obs-muted); }
+.locationTitle > button { display: flex; align-items: center; gap: 16px; padding: 6px 0 3px; color: var(--obs-text); border: 0; background: none; text-align: left; }
+.locationTitle h1 { font-size: clamp(27px, 2.5vw, 43px); line-height: 1.1; font-weight: 550; letter-spacing: -.9px; }
+.locationTitle > button > svg { color: var(--obs-muted); }
+.coordinates { font-size: 12px; color: var(--obs-muted); }
+.clock { text-align: right; flex-shrink: 0; }
+.clock > span { font-size: 13px; color: var(--obs-muted); }
+.clock > strong { display: block; font: 500 39px var(--font-display), sans-serif; letter-spacing: .3px; font-variant-numeric: tabular-nums; line-height: 1.15; margin-top: 4px; }
+.clock small { font: 11px var(--font-mono), monospace; margin-left: 8px; color: var(--obs-muted); }
+.card { position: relative; min-width: 0; border: 1px solid var(--obs-line); border-radius: 13px; background: var(--obs-panel); overflow: hidden; }
+.cardHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 16px 20px 13px; }
+.cardHeading h2 { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 550; letter-spacing: -.1px; }
+.cardHeading h2 svg { color: var(--obs-lavender); }
+.cardHeading > span { color: var(--obs-muted); font-size: 10px; }
+.cardHeading button, .nextCard > button, .discussion a { display: flex; gap: 7px; align-items: center; padding: 0; background: none; border: 0; color: var(--obs-muted); font-size: 11px; text-decoration: none; }
+.cardHeading button:hover, .nextCard > button:hover { color: var(--obs-accent); }
+.heroGrid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 18px; }
+.conditions { min-height: 353px; padding: 24px 28px 17px; background: #253447; display: flex; flex-direction: column; }
+.conditionTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; z-index: 1; }
+.conditionTop > svg { color: var(--obs-accent); }
+.statusDot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--obs-green); box-shadow: 0 0 9px #94cfc025; flex: 0 0 auto; }
+.warningDot { background: var(--obs-accent); }
+.temperatureRow { position: relative; display: flex; align-items: center; gap: 25px; padding: 3px 0 11px; }
+.temperature { font: 500 clamp(100px, 8.7vw, 165px)/.97 var(--font-display), sans-serif; letter-spacing: -4px; }
+.temperature sup { font: inherit; vertical-align: top; color: var(--obs-accent); font-size: .7em; position: relative; top: 4px; margin-left: 3px; }
+.temperatureRow > div { padding-top: 13px; }
+.temperatureRow h2 { font-size: 20px; line-height: 1.15; font-weight: 500; max-width: 230px; text-wrap: balance; }
+.temperatureRow > div > span { display: block; margin-top: 7px; color: #c3cddd; font-size: 13px; }
+.temperatureRow p { display: flex; align-items: center; gap: 5px; color: #c3cddd; margin-top: 11px; font: 12px var(--font-mono), monospace; }
+.temperatureRow p svg:nth-of-type(2) { margin-left: 9px; }
+.briefing { position: relative; padding-top: 16px; border-top: 1px solid #c8d2e21a; margin-top: auto; }
+.briefing .eyebrow { color: var(--obs-accent); font-size: 8px; }
+.briefing h3 { font-size: clamp(19px, 1.6vw, 27px); font-weight: 500; line-height: 1.18; letter-spacing: -.4px; margin-top: 9px; text-wrap: balance; }
+.briefing p { color: #c5cfdc; font-size: 13px; max-width: 550px; line-height: 1.45; margin-top: 7px; }
+.observationSource { position: relative; color: #aebcd1; font: 8px var(--font-mono), monospace; letter-spacing: .35px; margin-top: 17px; }
+.atmosphere { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 79% 27%, #e5bba327, transparent 45%), linear-gradient(160deg, #31455a, #26384d 45%, #303d54); }
+.nightSky { background: radial-gradient(ellipse at 83% 18%, #a8b6e322, transparent 47%), linear-gradient(160deg, #233449, #1d2b43 55%, #303149); }
+.celestial { position: absolute; top: 44px; right: 45px; width: 92px; height: 92px; border-radius: 50%; background: #f2c7a1; box-shadow: 0 0 65px 25px #eeb88220, 0 0 0 27px #edc39e06, 0 0 0 55px #edc39e04; opacity: .48; }
+.nightSky .celestial { background: #dee4ff; box-shadow: 0 0 55px 20px #b8caff14; width: 70px; height: 70px; opacity: .7; }
+.nightSky .celestial::after { content: ""; position: absolute; background: #2c3c53; border-radius: 50%; width: 64px; height: 64px; left: -13px; top: -9px; }
+.stars { position: absolute; inset: 0; width: 100%; color: #edf1ff; opacity: .6; }
+.horizon { position: absolute; left: 0; bottom: 0; width: 100%; height: 47%; color: #172539; }
+.cloudOne, .cloudTwo { position: absolute; right: -7%; top: 29%; height: 37px; width: 65%; border-radius: 50%; filter: blur(14px); background: #bec7d62a; transform: rotate(-8deg); }
+.cloudTwo { right: 7%; top: 42%; width: 49%; opacity: .65; }
+.rain { position: absolute; inset: 0; opacity: .15; background: repeating-linear-gradient(105deg, transparent 0 45px, #bec7de 46px, transparent 47px 93px); mask-image: linear-gradient(transparent 20%, #000 60%, transparent); }
+.radarCard { display: flex; flex-direction: column; background: #182434; }
+.overviewRadar { flex: 1; min-height: 0; }
+.overviewRadar :global(.radar-console) { height: 100%; display: flex; flex-direction: column; }
+.observatory :global(.radar-base-tiles) { filter: invert(1) hue-rotate(185deg) saturate(.4) brightness(.65); }
+.observatory :global(.radar-map) { background: #253140; min-height: 245px; flex: 1; height: 245px; }
+.overviewRadar :global(.radar-stage) { height: 250px; min-height: 0; }
+.overviewRadar :global(.radar-toolbar) { padding: 0 18px 10px; min-height: 0; background: transparent; border: 0; }
+.observatory :global(.mode-switch) { background: #ffffff05; border-color: var(--obs-line); border-radius: 6px; }
+.observatory :global(.mode-switch button) { border-radius: 4px; font-size: 10px; color: var(--obs-muted); }
+.observatory :global(.mode-switch button.active) { background: #ffffff0c; color: var(--obs-text); }
+.observatory :global(.sensor-toolbar select) { background: #233146; color: #c1cede; border-color: var(--obs-line); font-size: 10px; max-width: 185px; }
+.observatory :global(.radar-lab-strip) { background: #152031; border-color: var(--obs-line); padding: 8px 12px; gap: 8px; font-size: 9px; flex-wrap: nowrap; min-height: 39px; }
+.overviewRadar :global(.radar-lab-strip > span:last-child), .overviewRadar :global(.radar-lab-strip > label), .overviewRadar :global(.radar-location-button > span) { display: none; }
+.observatory :global(.radar-lab-strip input[type="range"]) { accent-color: var(--obs-lavender); min-width: 45px; }
+.observatory :global(.radar-lab-strip button) { background: transparent; color: var(--obs-muted); border-color: var(--obs-line); }
+.observatory :global(.leaflet-control-zoom a) { background: #223044; color: var(--obs-text); border-color: var(--obs-line); }
+.observatory :global(.leaflet-control-attribution) { background: #152031d9; color: #a7b4c5; font-size: 8px; }
+.observatory :global(.leaflet-control-attribution a) { color: #b8c9e2; }
+.mapCaption { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 18px; color: var(--obs-muted); font: 8px var(--font-mono), monospace; }
+.mapCaption > span { display: flex; align-items: center; gap: 7px; }
+.radarLegend { display: inline-block; width: 60px; height: 4px; border-radius: 2px; background: linear-gradient(90deg,#76b6e0,#61c899,#ded777,#ee966b,#d56583); }
+.metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 19px 0; padding: 5px 0 7px; }
+.metrics > div { display: flex; align-items: flex-start; gap: 13px; padding: 0 20px; border-left: 1px solid var(--obs-line); }
+.metrics > div:first-child { border-left: 0; padding-left: 7px; }
+.metrics > div > svg { color: var(--obs-lavender); margin-top: 6px; flex-shrink: 0; }
+.metrics > div > span { font-size: 11px; color: var(--obs-muted); display: flex; flex-direction: column; }
+.metrics strong { color: var(--obs-text); font: 500 29px var(--font-display), sans-serif; line-height: 1.2; white-space: nowrap; }
+.metrics strong small { color: var(--obs-muted); font: 10px var(--font-body), sans-serif; }
+.metrics strong.flightValue { color: var(--obs-green); font: 500 23px/1.52 var(--font-display), sans-serif; letter-spacing: .5px; }
+.metrics em { font-size: 10px; font-style: normal; white-space: nowrap; }
+.insightGrid { display: grid; grid-template-columns: 1.65fr .8fr .85fr; gap: 18px; }
+.timelineCard { padding-bottom: 12px; }
+.timelineCard .cardHeading { padding-bottom: 3px; }
+.daylightCard { padding-bottom: 10px; }
+.daylightCard .cardHeading { padding-bottom: 4px; }
+.nextCard { padding: 0 20px 17px; display: flex; flex-direction: column; }
+.nextCard .cardHeading { padding-left: 0; padding-right: 0; }
+.nextKicker { display: block; margin-top: 13px; font: 8px var(--font-mono), monospace; letter-spacing: 1px; color: var(--obs-accent); }
+.nextCard > strong { display: block; font-size: 22px; font-weight: 500; line-height: 1.15; margin-top: 7px; letter-spacing: -.4px; }
+.nextCard > p { font-size: 12px; line-height: 1.4; color: var(--obs-muted); margin: 8px 0 17px; }
+.nextCard > button { margin-top: auto; font-size: 11px; color: var(--obs-accent); }
+.week { margin-top: 22px; }
+.weekHeading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px; }
+.weekHeading h2 { font-size: 14px; font-weight: 500; }
+.weekHeading > span { font-size: 10px; color: var(--obs-muted); }
+.weekDays { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--obs-line); border-radius: 10px; overflow: hidden; }
+.weekDays > button { border: 0; border-left: 1px solid var(--obs-line); background: #ffffff02; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; padding: 13px 17px; row-gap: 10px; color: var(--obs-text); text-align: left; align-items: center; }
+.weekDays > button:first-child { border-left: 0; background: #ffffff04; }
+.weekDays > button:hover, .weekDays > button.selectedDay { background: #b5b1e410; }
+.weekDays > button > span { font-size: 12px; white-space: nowrap; }
+.weekDays > button > svg { color: var(--obs-accent); width: 23px; height: 23px; }
+.weekDays strong { font: 500 25px var(--font-display), sans-serif; white-space: nowrap; }
+.weekDays strong small { font: 16px var(--font-display), sans-serif; color: var(--obs-muted); margin-left: 8px; }
+.weekDays em { font: 9px var(--font-mono), monospace; display: flex; gap: 3px; align-items: center; justify-self: end; color: var(--obs-lavender); }
+.dayDetail { display: flex; justify-content: space-between; gap: 20px; padding: 18px 20px; margin-top: 9px; color: var(--obs-muted); font-size: 14px; line-height: 1.5; background: var(--obs-panel); border-radius: 10px; }
+.dayDetail strong { display: block; color: var(--obs-text); font-weight: 600; margin-bottom: 5px; }
+.dayDetail button { align-self: flex-start; background: none; border: 0; color: var(--obs-muted); padding: 2px; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 0 20px; }
+.feedStatus { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--obs-muted); }
+.feedStatus > svg { color: var(--obs-green); flex-shrink: 0; }
+.sourceText { margin-left: 12px; padding-left: 14px; border-left: 1px solid var(--obs-line); color: var(--obs-muted); opacity: .8; }
+.footerTools { display: flex; gap: 16px; align-items: center; }
+.footerTools button { border: 0; background: none; color: var(--obs-muted); font-size: 11px; display: flex; align-items: center; gap: 6px; padding: 4px 0; white-space: nowrap; }
+.footerTools button[aria-pressed="true"], .footerTools button:hover { color: var(--obs-accent); }
+.footerTools select { background: var(--obs-panel); border: 1px solid var(--obs-line); border-radius: 5px; color: var(--obs-muted); font-size: 11px; padding: 4px; max-width: 130px; }
+.alertBanner { display: flex; align-items: center; gap: 11px; padding: 13px 17px; border: 1px solid #f3bd863d; border-radius: 9px; color: var(--obs-accent); background: #f3bd860a; font-size: 13px; margin-bottom: 16px; }
+.alertBanner > svg { flex-shrink: 0; }
+.alertBanner > span { flex: 1; }
+.alertBanner > button { display: flex; align-items: center; gap: 6px; border: 0; padding: 0; background: none; color: inherit; font-size: 11px; }
+.alertActive { border-color: #ed929066; background: #be5d6412; color: #ffc1b9; }
+.alertDetails { margin-bottom: 15px; }
+.alertDetails details { border: 1px solid #ed929033; background: #be5d640a; border-radius: 8px; margin-top: 7px; padding: 12px 18px; }
+.alertDetails summary { cursor: pointer; display: flex; align-items: center; gap: 10px; color: #ffb6b2; font-size: 14px; }
+.alertDetails summary > span { display: flex; align-items: center; gap: 7px; margin-left: auto; font-size: 11px; }
+.alertDetails p { font-size: 14px; line-height: 1.6; white-space: pre-wrap; color: var(--obs-text); margin-top: 15px; }
+.alertDetails small { display: block; margin-top: 15px; color: var(--obs-muted); }
+.mapsView { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; }
+.largeRadar :global(.radar-map) { min-height: 455px; height: 455px; }
+.largeRadar :global(.radar-lab-strip) { flex-wrap: wrap; }
+.largeRadar :global(.radar-stage) { min-height: 440px; }
+.satelliteCard :global(.satellite-stage) { min-height: 455px; }
+.mapsNote { display: flex; align-items: center; gap: 12px; color: var(--obs-muted); grid-column: 1 / -1; font-size: 13px; padding: 10px 0 20px; }
+.outlookView { display: flex; flex-direction: column; gap: 18px; }
+.outlookRibbon { padding-bottom: 18px; }
+.outlookStories { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.outlookStories article { padding: 24px; }
+.outlookStories h3 { font-size: 25px; font-weight: 500; margin: 14px 0 7px; }
+.outlookStories p { color: var(--obs-muted); font-size: 13px; line-height: 1.55; }
+.discussionGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.discussion { padding-bottom: 20px; }
+.discussion > p { margin: 0 20px; font-size: 15px; line-height: 1.6; color: var(--obs-muted); }
+.discussion details { margin: 17px 20px 0; }
+.discussion summary { display: flex; align-items: center; gap: 10px; color: var(--obs-accent); font-size: 12px; cursor: pointer; }
+.discussion pre { overflow: auto; max-height: 400px; white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.7 var(--font-mono), monospace; color: var(--obs-muted); }
+.observationPanel { min-width: 0; }
+.specialistView :global(.panel), .observationPanel :global(.panel) { border-radius: 12px; background: var(--obs-panel); box-shadow: none; }
+.specialistView :global(.intelligence-grid) { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.sectionIntro { padding: 4px 0 24px; }
+.sectionIntro h2 { font-size: 28px; font-weight: 500; margin: 9px 0 5px; }
+.sectionIntro p { font-size: 14px; color: var(--obs-muted); }
+.unavailable { color: var(--obs-accent); font-size: 13px; padding: 15px 0; }
+.emptyState { position: relative; min-height: 560px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 21px; border-radius: 16px; overflow: hidden; text-align: center; padding: 35px; }
+.emptyState > :not(.atmosphere) { position: relative; }
+.emptyState > svg { color: var(--obs-accent); }
+.emptyState h2 { font-size: 40px; font-weight: 450; letter-spacing: -1px; }
+.emptyState p { color: #c9d2df; font-size: 16px; }
+.actionButton { display: flex; align-items: center; gap: 12px; background: var(--obs-accent); color: #253044; border: 0; border-radius: 7px; font-size: 14px; padding: 12px 20px; }
+.ambientScene { position: relative; min-height: 60vh; border-radius: 18px; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 40px; }
+.ambientScene .celestial { width: 180px; height: 180px; top: 55px; right: 130px; opacity: .4; }
+.ambientScene .nightSky .celestial::after { width: 175px; height: 175px; left: -35px; top: -25px; }
+.ambientReading { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.ambientReading > svg { color: var(--obs-accent); }
+.ambientReading > strong { font: 400 clamp(130px, 13vw, 260px)/1.2 var(--font-display), sans-serif; }
+.ambientReading h2 { font-size: 26px; font-weight: 400; }
+.ambientReading p { font-size: 17px; color: #cbd3e2; margin-top: 14px; }
+.ambientReading > span { font-size: 12px; color: #b9c5d8; margin-top: 10px; }
+.ambientSun { position: absolute; bottom: 24px; right: 25px; width: 240px; }
+.feedNotes { font-size: 10px; color: var(--obs-muted); padding-bottom: 15px; }
+.feedNotes summary { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.feedNotes p { margin-top: 6px; }
+
+@media (min-width: 1800px) {
+  .header { min-height: 104px; }
+  .locationRow { padding: 30px 0 28px; }
+  .heroGrid { grid-template-columns: 1fr 1.4fr; gap: 23px; }
+  .conditions { min-height: 415px; padding: 29px 34px 22px; }
+  .briefing p { font-size: 15px; }
+  .temperatureRow { gap: 37px; }
+  .temperatureRow h2 { font-size: 26px; }
+  .observationSource { font-size: 10px; }
+  .cardHeading { padding: 18px 23px 14px; }
+  .cardHeading h2 { font-size: 17px; }
+  .cardHeading > span { font-size: 11px; }
+  .observatory :global(.radar-map) { min-height: 295px; height: 295px; }
+  .metrics { margin: 24px 0; }
+  .metrics > div { gap: 18px; padding-left: 35px; }
+  .metrics strong { font-size: 35px; }
+  .metrics em, .metrics > div > span { font-size: 12px; }
+  .insightGrid { gap: 23px; }
+  .nextCard > p { font-size: 14px; }
+  .nextCard > strong { font-size: 25px; }
+  .weekDays > button { padding: 15px 23px; }
+  .weekDays > button > span { font-size: 14px; }
+  .weekDays strong { font-size: 29px; }
+  .footer { padding: 21px 0; }
+  .feedStatus, .footerTools button { font-size: 12px; }
+  .largeRadar :global(.radar-map) { min-height: 560px; }
+}
+@media (min-width: 1200px) and (max-height: 850px) {
+  .header { min-height: 66px; }
+  .locationRow { padding: 16px 0; }
+  .locationTitle h1 { font-size: 30px; }
+  .heroGrid { gap: 14px; }
+  .conditions { min-height: 290px; padding: 17px 24px 13px; }
+  .temperature { font-size: 105px; }
+  .temperatureRow { padding: 0 0 6px; }
+  .briefing { padding-top: 11px; }
+  .briefing h3 { font-size: 21px; }
+  .briefing p { font-size: 12px; margin-top: 5px; }
+  .observationSource { margin-top: 10px; }
+  .observatory :global(.radar-map) { min-height: 190px; height: 190px; }
+  .overviewRadar :global(.radar-stage) { height: 200px; }
+  .cardHeading { padding-top: 12px; min-height: 39px; }
+  .metrics { margin: 13px 0; padding: 0; }
+  .metrics strong { font-size: 25px; }
+  .insightGrid { gap: 14px; }
+  .week { margin-top: 14px; }
+  .weekDays > button { padding: 9px 14px; row-gap: 6px; }
+  .weekHeading { margin-bottom: 8px; }
+  .footer { padding: 12px 0; }
+}
+@media (max-width: 1250px) {
+  .header { gap: 14px; }
+  .brand > span { font-size: 22px; }
+  .brand > svg { width: 30px; }
+  .brand small { font-size: 7px; letter-spacing: 1.5px; }
+  .navigation { gap: 15px; }
+  .navigation button { font-size: 12px; }
+  .classicButton { font-size: 10px; margin-right: 0; }
+  .toolButton { width: 31px; height: 31px; }
+  .metrics > div { padding-left: 15px; gap: 8px; }
+  .metrics > div > svg { width: 16px; }
+  .metrics em { font-size: 9px; }
+  .insightGrid { grid-template-columns: 1.5fr .8fr .85fr; gap: 13px; }
+  .cardHeading { padding-left: 16px; padding-right: 16px; }
+  .cardHeading h2 { font-size: 13px; }
+  .timelineCard .cardHeading > span { display: none; }
+  .nextCard { padding-left: 16px; padding-right: 16px; }
+  .nextCard > strong { font-size: 20px; }
+  .nextCard > p { font-size: 11px; }
+  .weekDays > button { padding-left: 12px; padding-right: 12px; }
+  .weekDays > button > span { font-size: 11px; }
+  .sourceText { display: none; }
+}
+@media (max-width: 1000px) {
+  .header { flex-wrap: wrap; min-height: 104px; row-gap: 0; padding-top: 17px; }
+  .navigation { order: 3; flex-basis: 100%; justify-content: center; min-height: 48px; gap: 30px; }
+  .headerTools { margin-left: auto; }
+  .heroGrid { grid-template-columns: 1fr 1fr; gap: 13px; }
+  .conditions { padding: 20px; }
+  .temperatureRow { gap: 13px; }
+  .temperature { font-size: 103px; }
+  .temperatureRow h2 { font-size: 17px; }
+  .metrics { gap: 0; }
+  .metrics > div { padding-left: 12px; }
+  .metrics > div > svg { display: none; }
+  .metrics strong { font-size: 27px; }
+  .insightGrid { grid-template-columns: 1.65fr 1fr; }
+  .nextCard { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1.2fr auto; align-items: center; column-gap: 16px; padding: 17px 20px; }
+  .nextCard .cardHeading { display: none; }
+  .nextKicker { margin-top: 0; grid-column: 1; font-size: 7px; }
+  .nextCard > strong { grid-column: 1; margin-top: 5px; }
+  .nextCard > p { grid-column: 2; grid-row: 1 / 3; margin: 0; font-size: 12px; }
+  .nextCard > button { grid-column: 3; grid-row: 1 / 3; margin: 0; }
+  .weekDays { grid-template-columns: repeat(4, 1fr); }
+  .weekDays > button { border-bottom: 1px solid var(--obs-line); padding: 12px 17px; }
+  .weekDays > button:nth-child(5) { border-left: 0; }
+  .weekDays > button > span { font-size: 13px; }
+  .mapsView { grid-template-columns: 1fr; }
+  .outlookStories { grid-template-columns: 1fr 1fr; }
+  .discussionGrid { grid-template-columns: 1fr; }
+  .ambientSun { position: relative; right: auto; bottom: auto; margin-top: 30px; width: 240px; }
+  .ambientScene { flex-direction: column; }
+}
+@media (max-width: 650px) {
+  .observatory { padding: 0 16px; }
+  .header { padding-top: 15px; }
+  .brand { gap: 8px; }
+  .brand > span { font-size: 22px; }
+  .brand > svg { width: 29px; }
+  .classicButton { font-size: 10px; margin-right: 0; }
+  .classicButton > svg { display: none; }
+  .headerTools { gap: 7px; }
+  .toolButton { width: 30px; height: 30px; }
+  .navigation { gap: 0; justify-content: space-between; min-height: 49px; overflow-x: auto; }
+  .navigation button { font-size: 11px; }
+  .locationRow { padding: 21px 0 19px; gap: 8px; }
+  .eyebrow { font-size: 7px; letter-spacing: 1px; }
+  .locationTitle h1 { font-size: 26px; }
+  .locationTitle > button { gap: 7px; }
+  .coordinates { font-size: 10px; }
+  .clock > span { display: block; max-width: 110px; font-size: 10px; }
+  .clock > strong { font-size: 29px; }
+  .clock small { font-size: 8px; margin-left: 4px; }
+  .heroGrid { grid-template-columns: 1fr; gap: 15px; }
+  .conditions { min-height: 350px; padding: 24px; }
+  .conditionTop .eyebrow { font-size: 9px; }
+  .temperature { font-size: 132px; }
+  .temperatureRow { gap: 27px; }
+  .temperatureRow h2 { font-size: 23px; }
+  .briefing h3 { font-size: 25px; }
+  .briefing p { font-size: 14px; }
+  .observationSource { font-size: 9px; }
+  .observatory :global(.radar-map) { height: 285px; min-height: 285px; }
+  .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 0; margin: 23px 0; }
+  .metrics > div { padding-left: 18px; }
+  .metrics > div:nth-child(4) { border-left: 0; padding-left: 7px; }
+  .metrics > div > span { font-size: 11px; }
+  .metrics strong { font-size: 30px; }
+  .metrics em { font-size: 10px; }
+  .insightGrid { grid-template-columns: 1fr; gap: 15px; }
+  .cardHeading { padding: 17px 19px 10px; }
+  .cardHeading h2 { font-size: 15px; }
+  .timelineCard .cardHeading > span { display: inline; font-size: 9px; }
+  .daylightCard { min-height: 210px; }
+  .nextCard { grid-column: auto; display: flex; align-items: flex-start; padding: 0 20px 20px; }
+  .nextCard .cardHeading { display: flex; }
+  .nextCard .nextKicker { margin-top: 12px; }
+  .nextCard > strong { font-size: 26px; margin-top: 9px; }
+  .nextCard > p { margin: 10px 0 20px; font-size: 14px; }
+  .week { margin-top: 22px; }
+  .weekDays { grid-template-columns: 1fr; border: 0; border-radius: 0; }
+  .weekDays > button { border: 0; border-top: 1px solid var(--obs-line); display: grid; grid-template-columns: 1.4fr .6fr 1fr .65fr; grid-template-rows: auto; gap: 12px; padding: 13px 5px; }
+  .weekDays > button:first-child { background: none; }
+  .weekDays > button > span { font-size: 14px; }
+  .weekDays > button > svg { width: 26px; height: 26px; }
+  .weekDays strong { font-size: 28px; }
+  .weekDays strong small { font-size: 21px; margin-left: 14px; }
+  .weekDays em { font-size: 11px; }
+  .weekHeading > span { font-size: 9px; }
+  .footer { flex-direction: column; align-items: stretch; gap: 15px; border-top: 1px solid var(--obs-line); margin-top: 10px; padding: 18px 0; }
+  .feedStatus { justify-content: center; }
+  .footerTools { justify-content: center; gap: 20px; }
+  .footerTools button { font-size: 11px; }
+  .footerTools select { max-width: 90px; }
+  .outlookStories { gap: 12px; }
+  .outlookStories article { padding: 18px; }
+  .outlookStories h3 { font-size: 21px; }
+  .specialistView :global(.intelligence-grid) { grid-template-columns: 1fr; }
+  .largeRadar :global(.radar-lab-strip) { flex-wrap: wrap; }
+  .satelliteCard :global(.satellite-stage) { min-height: 300px; }
+  .alertBanner { padding: 13px; font-size: 12px; }
+  .alertBanner > button { font-size: 0; }
+  .emptyState { min-height: 470px; padding: 26px; }
+  .emptyState h2 { font-size: 32px; }
+  .ambientScene { padding: 40px 20px; }
+  .ambientReading h2 { font-size: 24px; }
+  .ambientReading > span { font-size: 11px; line-height: 1.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .observatory *, .observatory *::before, .observatory *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Instrument numerals stay condensed; narrative headings use the reading face. */
+.observatory h1, .observatory h2, .observatory h3 { font-family: var(--font-body), sans-serif; text-transform: none; }
+.conditions, .ambientScene { --obs-text: #edf1f5; --obs-muted: #b9c5d8; --obs-accent: #f3bd86; color: #edf1f5; }
+
+/* A complete horizon fits on a dedicated monitor, with room for an alert. */
+@media (min-width: 1100px) and (min-height: 700px) {
+  .header { min-height: clamp(60px, 7vh, 82px); }
+  .locationRow { padding: clamp(13px, 1.7vh, 22px) 0; }
+  .locationTitle h1 { font-size: clamp(29px, 3.1vh, 40px); }
+  .locationTitle .eyebrow { font-size: 8px; }
+  .heroGrid { gap: 18px; }
+  .conditions { min-height: 0; padding: 19px 26px 14px; }
+  .temperature { font-size: clamp(98px, 11.5vh, 144px); }
+  .temperatureRow { padding: 0 0 10px; }
+  .temperatureRow h2 { font-size: clamp(19px, 2.1vh, 25px); }
+  .briefing { padding-top: 12px; }
+  .briefing h3 { font-size: clamp(21px, 2.2vh, 27px); margin-top: 7px; }
+  .briefing p { font-size: 13px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .observationSource { font-size: 9px; margin-top: 11px; }
+  .cardHeading { min-height: 42px; padding: 13px 18px 10px; }
+  .cardHeading h2 { font-size: 14px; }
+  .overviewRadar :global(.radar-map) { min-height: 0; height: clamp(178px, 21vh, 270px); }
+  .overviewRadar :global(.radar-lab-strip) { padding-top: 5px; padding-bottom: 5px; min-height: 30px; }
+  .overviewRadar :global(.radar-stage) { min-height: 0; height: clamp(210px, 25vh, 310px); }
+  .mapCaption { padding-top: 8px; padding-bottom: 8px; }
+  .metrics { margin: clamp(13px, 1.6vh, 21px) 0; padding: 0; }
+  .metrics > div { padding-left: 23px; gap: 12px; }
+  .metrics > div:first-child { padding-left: 6px; }
+  .metrics strong { font-size: 29px; }
+  .metrics em, .metrics > div > span { font-size: 10px; }
+  .insightGrid { gap: 18px; }
+  .nextCard > strong { font-size: 23px; }
+  .nextCard > p { font-size: 12px; }
+  .week { margin-top: 16px; }
+  .weekDays > button { padding: 10px 18px; row-gap: 7px; }
+  .weekDays > button > span { font-size: 13px; }
+  .weekDays strong { font-size: 26px; }
+  .weekHeading { margin-bottom: 9px; }
+  .footer { padding: 14px 0; }
+  .feedStatus, .footerTools button { font-size: 11px; }
+  .alertDetails { margin-bottom: 13px; }
+  .alertDetails details { margin-top: 0; }
+}
+
+/* Saved visual channels also carry into the second-generation observatory. */
+:global(html[data-theme="blue-hour"]) .observatory { --obs-bg: #111b2c; --obs-panel: #19283e; --obs-panel-high: #263952; --obs-accent: #a9cffa; --obs-lavender: #b4bdee; }
+:global(html[data-theme="aurora-field"]) .observatory { --obs-bg: #1a192c; --obs-panel: #27253d; --obs-panel-high: #373149; --obs-accent: #c9b6ea; --obs-lavender: #b2d0c4; }
+:global(html[data-theme="solar-flare"]) .observatory { --obs-bg: #271d1b; --obs-panel: #342823; --obs-panel-high: #4a3730; --obs-accent: #edbf94; --obs-lavender: #ccb0ba; }
+:global(html[data-theme="phosphor-rain"]) .observatory { --obs-bg: #172421; --obs-panel: #20312b; --obs-panel-high: #31483b; --obs-accent: #c0d6a0; --obs-lavender: #a1c7bd; }
+:global(html[data-theme="cloud-deck"]) .observatory,
+:global(html[data-theme="bluebird"]) .observatory,
+:global(html[data-theme="marine-layer"]) .observatory,
+:global(html[data-theme="first-light"]) .observatory,
+:global(html[data-theme="polar-station"]) .observatory {
+  color-scheme: light;
+  --obs-bg: #e5eaf0; --obs-panel: #f5f7fa; --obs-panel-high: #dce4ee;
+  --obs-text: #263346; --obs-muted: #546378; --obs-accent: #815439; --obs-lavender: #656388; --obs-green: #31695d;
+  --obs-line: rgba(45, 64, 89, .15);
+  background: radial-gradient(ellipse at 40% -20%, #d2deeb 0, transparent 60%), var(--obs-bg);
+}
+:global(html[data-theme="bluebird"]) .observatory { --obs-bg: #deebf3; --obs-panel: #f1f8fc; --obs-panel-high: #cfdfed; --obs-accent: #3a6585; }
+:global(html[data-theme="marine-layer"]) .observatory { --obs-bg: #ddeae6; --obs-panel: #f1f7f4; --obs-panel-high: #ccded7; --obs-accent: #3c6c5a; }
+:global(html[data-theme="first-light"]) .observatory { --obs-bg: #eee7dc; --obs-panel: #fbf6ed; --obs-panel-high: #e2d7c5; --obs-accent: #87573a; }
+:global(html[data-theme="polar-station"]) .observatory { --obs-bg: #e4e8f0; --obs-panel: #f5f6fb; --obs-panel-high: #d8deec; --obs-accent: #5c6288; }
+:global(html[data-theme="cloud-deck"]) .radarCard,
+:global(html[data-theme="bluebird"]) .radarCard,
+:global(html[data-theme="marine-layer"]) .radarCard,
+:global(html[data-theme="first-light"]) .radarCard,
+:global(html[data-theme="polar-station"]) .radarCard { --obs-text: #edf1f5; --obs-muted: #b9c5d8; --obs-line: rgba(182,199,224,.13); color: var(--obs-text); }
+@media (min-width: 1100px) and (min-height: 700px) {
+  .header { min-height: clamp(58px, 6.3vh, 72px); }
+  .locationRow { padding-top: 11px; padding-bottom: 11px; }
+  .temperature { font-size: clamp(96px, 10.4vh, 125px); }
+  .temperatureRow { padding-bottom: 6px; }
+  .briefing p { -webkit-line-clamp: 2; }
+  .overviewRadar :global(.radar-map) { height: clamp(155px, 18.6vh, 227px); }
+  .overviewRadar :global(.radar-toolbar) { padding-bottom: 7px; }
+  .footer { padding-top: 10px; padding-bottom: 10px; }
+}
+
+.feedNotes { padding-bottom: 7px; }
+
+.observatory { --obs-alert: #ffc1b9; }
+.alertDetails summary, .alertActive { color: var(--obs-alert); }
+:global(html[data-theme="cloud-deck"]) .observatory,
+:global(html[data-theme="bluebird"]) .observatory,
+:global(html[data-theme="marine-layer"]) .observatory,
+:global(html[data-theme="first-light"]) .observatory,
+:global(html[data-theme="polar-station"]) .observatory { --obs-alert: #8f3441; }
+.radarCard { --obs-green: #94cfc0; --obs-lavender: #b5b1e4; }
+@media (min-width: 1100px) and (min-height: 700px) {
+  .feedNotes { padding-bottom: 0; }
+}
+
+@media (min-width: 1100px) and (max-height: 980px) {
+  .header { min-height: 56px; }
+  .locationRow { padding: 8px 0; }
+  .locationTitle h1 { font-size: 27px; }
+  .locationTitle > .eyebrow { display: none; }
+  .clock > strong { font-size: 32px; }
+  .alertDetails details { padding: 9px 15px; }
+  .alertDetails { margin-bottom: 11px; }
+  .conditions { padding: 15px 21px 11px; }
+  .conditionTop { min-height: 24px; }
+  .conditionTop > svg { width: 24px; height: 24px; }
+  .temperature { font-size: 90px; }
+  .temperatureRow { padding-bottom: 4px; }
+  .temperatureRow > div { padding-top: 8px; }
+  .temperatureRow h2 { font-size: 19px; }
+  .temperatureRow > div > span { margin-top: 5px; font-size: 12px; }
+  .temperatureRow p { margin-top: 6px; }
+  .briefing { padding-top: 8px; }
+  .briefing h3 { margin-top: 5px; font-size: 20px; }
+  .briefing p { font-size: 12px; line-height: 1.4; margin-top: 5px; }
+  .observationSource { margin-top: 8px; font-size: 8px; }
+  .cardHeading { min-height: 35px; padding: 10px 16px 8px; }
+  .overviewRadar :global(.radar-map) { height: 143px; }
+  .overviewRadar :global(.radar-toolbar) { padding-bottom: 5px; }
+  .mapCaption { padding-top: 7px; padding-bottom: 7px; }
+  .metrics { margin: 11px 0; }
+  .metrics strong { font-size: 26px; }
+  .metrics strong.flightValue { font-size: 22px; line-height: 1.4; }
+  .week { margin-top: 12px; }
+  .weekDays > button { padding: 8px 14px; row-gap: 5px; }
+  .weekDays strong { font-size: 24px; }
+  .weekHeading { margin-bottom: 7px; }
+  .footer { padding: 9px 0; }
+}
+@media (min-width: 1100px) and (max-height: 980px) {
+  .footer { padding-top: 7px; padding-bottom: 7px; }
+}

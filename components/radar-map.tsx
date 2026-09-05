@@ -26,6 +26,7 @@ export function RadarMap({
   timeZone,
   alerts,
   refreshKey,
+  initialLabMode = false,
 }: {
   latitude: number;
   longitude: number;
@@ -33,6 +34,7 @@ export function RadarMap({
   timeZone: string;
   alerts: WeatherAlert[];
   refreshKey: number;
+  initialLabMode?: boolean;
 }) {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -43,7 +45,7 @@ export function RadarMap({
   const deviceLocationWatchRef = useRef<number | null>(null);
   const devicePositionRef = useRef<DevicePosition | null>(null);
   const recenterDeviceRef = useRef(false);
-  const [labMode, setLabMode] = useState(false);
+  const [labMode, setLabMode] = useState(initialLabMode);
   const [mapReady, setMapReady] = useState(false);
   const [radar, setRadar] = useState<RadarData | null>(null);
   const [productId, setProductId] = useState<RadarProductId>("bref");
@@ -159,6 +161,7 @@ export function RadarMap({
       const L = module.default;
       const map = L.map(mapNode.current, { zoomControl: true, attributionControl: true }).setView([latitude, longitude], 7);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        className: "radar-base-tiles",
         maxZoom: 13,
         attribution: "© OpenStreetMap · NOAA/NWS",
       }).addTo(map);

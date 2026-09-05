@@ -99,7 +99,7 @@ export function SatelliteView({ latitude, longitude, refreshKey }: { latitude: n
           aria-label="Satellite loop frame"
         />
         <button onClick={() => setFrameIndex(Math.max(0, (data?.frames.length ?? 1) - 1))} aria-label="Latest satellite frame"><SkipForward size={14} /></button>
-        <span>{frameIndex + 1}/{data?.frames.length ?? 0}</span>
+        <span>{data?.frames.length ? `${frameIndex + 1}/${data.frames.length}` : "No frames"}</span>
         {data?.notice && <span className="feed-notice" title={data.notice}>DEGRADED</span>}
       </div>
     </div>
