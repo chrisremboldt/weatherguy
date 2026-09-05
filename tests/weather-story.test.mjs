@@ -133,7 +133,7 @@ test("old and undated weather data gets a stale briefing without current plannin
 
 test("empty forecasts, invalid dates, nonfinite temperatures and missing probabilities remain unknown", () => {
   const result = buildWeatherStory(weather({ hourly: [hour(10), hour(13, { startTime: "invalid" })], astronomy: { sunrise: null, sunset: null } }), null, now);
-  assert.equal(result.headline, "Waiting for the next forecast.");
+  assert.equal(result.headline, "Hourly forecast unavailable");
   assert.equal(result.nextChange, null);
   assert.equal(result.outdoorWindow, null);
   assert.equal(result.insights[0].value, "Unavailable");

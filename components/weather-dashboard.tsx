@@ -1318,7 +1318,7 @@ export function WeatherDashboard() {
 
                   <div className="wallboard-preferences">
                     <span className="settings-section-label">Classic fullscreen wallboard</span>
-                    <p>These scene controls configure the Classic desk. Its radar, satellite, and current conditions stay fixed while enabled scenes rotate. The observatory uses Auto tour to cycle its views every minute.</p>
+                    <p>These scene controls configure the Classic desk. Its radar, satellite, and current conditions stay fixed while enabled scenes rotate. The observatory uses Rotate views to cycle its views every minute.</p>
                     <div className="wallboard-scene-options">
                       {WALLBOARD_SCENES.map((scene) => (
                         <label key={scene.id}>

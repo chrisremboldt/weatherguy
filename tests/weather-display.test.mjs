@@ -143,7 +143,7 @@ test("forecast weather icons receive precipitation chance and current heroes sta
   assert.match(comparison, /chancePct=\{day\.precipitationPct\}/);
   assert.match(
     comparison,
-    /<WeatherIcon\s+condition=\{current\?\.description \?\? "cloudy"\}\s+size=\{68\}\s+strokeWidth=\{1\.2\}\s+\/>/,
+    /<WeatherIcon\s+condition=\{current\?\.description \?\? "cloudy"\}\s+isDaytime=\{forecastNow\?\.isDaytime\}\s+size=\{68\}\s+strokeWidth=\{1\.2\}\s+\/>/,
   );
   assert.equal(dashboard.match(/chancePct=/g)?.length, 2);
   assert.equal(comparison.match(/chancePct=/g)?.length, 2);

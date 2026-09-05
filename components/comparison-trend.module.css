@@ -1,0 +1,264 @@
+.trend {
+  min-width: 0;
+  padding: 5px 12px 7px;
+  color: var(--obs-text, #edf1f5);
+  container-type: inline-size;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 14px;
+  margin-bottom: 3px;
+}
+
+.label {
+  color: var(--obs-muted, #99a8bb);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.label > span {
+  margin-left: 4px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  opacity: .75;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.legendItem > b {
+  font-weight: 500;
+}
+
+.legendItem > span {
+  color: var(--obs-muted, #99a8bb);
+}
+
+.swatchA,
+.swatchB {
+  display: block;
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--obs-accent, #f3bd86);
+}
+
+.swatchB {
+  border-color: var(--obs-lavender, #b5b1e4);
+  border-top-style: dashed;
+}
+
+.plotFrame {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+}
+
+.scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 26px;
+  flex: 0 0 26px;
+  padding: 0 0 1px;
+  color: var(--obs-muted, #99a8bb);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.plot {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  overflow: visible;
+}
+
+.gridLine,
+.timeGuide {
+  stroke: var(--obs-line, rgba(153, 168, 187, .17));
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.timeGuide {
+  stroke-dasharray: 2 5;
+  opacity: .7;
+}
+
+.lineA,
+.lineB {
+  fill: none;
+  stroke: var(--obs-accent, #f3bd86);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.lineB {
+  stroke: var(--obs-lavender, #b5b1e4);
+  stroke-dasharray: 4 3;
+}
+
+.lineA > path,
+.lineB > path,
+.singlePoint {
+  vector-effect: non-scaling-stroke;
+}
+
+.singlePoint {
+  stroke-dasharray: none;
+  stroke-width: 2.5;
+}
+
+.clockAxis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 3px;
+  padding-left: 32px;
+  color: var(--obs-muted, #99a8bb);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px;
+  line-height: 1.25;
+}
+
+.clockPair {
+  display: grid;
+  gap: 1px;
+}
+
+.clockPair > span {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.clockPair:nth-child(2) {
+  justify-self: center;
+  text-align: center;
+}
+
+.clockPair:nth-child(2) > span {
+  justify-content: center;
+}
+
+.clockPair:nth-child(3) {
+  justify-self: end;
+  text-align: right;
+}
+
+.clockPair:nth-child(3) > span {
+  justify-content: flex-end;
+}
+
+.clockA,
+.clockB {
+  color: var(--obs-accent, #f3bd86);
+  font-size: 7px;
+  font-weight: 500;
+}
+
+.clockB {
+  color: var(--obs-lavender, #b5b1e4);
+}
+
+.clockUnavailable {
+  grid-column: 1 / -1;
+  margin-top: 1px;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  min-height: 66px;
+  margin: 0;
+  color: var(--obs-muted, #99a8bb);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+@container (max-width: 480px) {
+  .heading {
+    min-height: 19px;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .label {
+    font-size: 10px;
+  }
+
+  .label > span {
+    display: none;
+  }
+
+  .legend {
+    gap: 10px;
+    font-size: 8px;
+  }
+
+  .legendItem {
+    gap: 4px;
+  }
+
+  .swatchA,
+  .swatchB {
+    width: 10px;
+  }
+
+  .plot {
+    height: 77px;
+  }
+
+  .scale {
+    font-size: 9px;
+  }
+
+  .clockAxis {
+    margin-top: 5px;
+    font-size: 9px;
+  }
+
+  .clockA,
+  .clockB {
+    font-size: 8px;
+  }
+
+  .empty {
+    min-height: 105px;
+  }
+}
+
+@container (max-width: 330px) {
+  .legendItem > span {
+    display: none;
+  }
+
+  .legendItem > .missing {
+    display: inline;
+  }
+
+  .clockAxis {
+    font-size: 8px;
+  }
+}

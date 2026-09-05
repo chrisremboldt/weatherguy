@@ -100,20 +100,20 @@ function findNextChange(hours: HourlyPeriod[], now: number, timeZone: string): W
     let title = "";
     let detail = "";
     if (/thunder/i.test(hour.shortForecast) && !/thunder/i.test(previous.shortForecast)) {
-      title = "Thunderstorms enter the forecast";
+      title = "Thunderstorms forecast";
       detail = `${hour.shortForecast}. Check the radar and current alerts before heading out.`;
     } else if (chance !== null && previousChance !== null && chance >= 40 && previousChance < 40) {
       title = "Precipitation chances rise";
       detail = `The hourly chance rises from ${previousChance}% to ${chance}%. ${hour.shortForecast}.`;
     } else if (chance !== null && previousChance !== null && chance <= 20 && previousChance >= 40 && !PRECIPITATION.test(hour.shortForecast)) {
-      title = "A lower chance of precipitation";
+      title = "Precipitation chances fall";
       detail = `The hourly chance falls to ${chance}%. ${hour.shortForecast}.`;
     } else if (wind !== null && previousWind !== null && wind >= 20 && wind - previousWind >= 10) {
-      title = "The wind picks up";
+      title = "Wind increases";
       detail = `${hour.windDirection} winds ${hour.windSpeed} in the hourly forecast.`;
     } else if (finite(hour.temperatureF) && finite(baseline.temperatureF) && Math.abs(hour.temperatureF - baseline.temperatureF) >= 8) {
       const rising = hour.temperatureF > baseline.temperatureF;
-      title = rising ? "A warmer chapter" : "A cooler chapter";
+      title = rising ? "Temperatures rise" : "Temperatures fall";
       detail = `Forecast temperatures ${rising ? "rise" : "fall"} from ${Math.round(baseline.temperatureF)}° to ${Math.round(hour.temperatureF)}°.`;
     }
     if (title) return { title, detail, time: new Date(time).toISOString(), timeLabel: timeLabel(time, now, timeZone) };
@@ -156,7 +156,7 @@ function findOutdoorWindow(
   const high = Math.max(...temperatures);
   const peak = Math.max(...best.hours.map((hour) => probability(hour.precipitationPct) ?? 0));
   return {
-    title: "A window for being outside",
+    title: "Outdoor window",
     detail: `${low === high ? `${low}°` : `${low}–${high}°`} forecast, winds 15 mph or less, and precipitation chances at or below ${peak}%. Recheck conditions before leaving.`,
     start: new Date(start).toISOString(),
     end,
@@ -191,7 +191,7 @@ export function buildWeatherStory(
   let nextChange = fresh ? findNextChange(hours, reference, zone) : null;
   const sunrise = Date.parse(data.astronomy.sunrise ?? "");
   const sunset = Date.parse(data.astronomy.sunset ?? "");
-  const solarEvents = [{ time: sunrise, title: "Sunrise", detail: "Daylight begins at your selected location." }, { time: sunset, title: "Sunset", detail: "The sun sets at your selected location; twilight follows." }]
+  const solarEvents = [{ time: sunrise, title: "Sunrise", detail: "Sunrise at the selected location." }, { time: sunset, title: "Sunset", detail: "Sunset at the selected location; twilight follows." }]
     .filter((event) => Number.isFinite(event.time) && event.time > reference && event.time < reference + 24 * HOUR)
     .sort((a, b) => a.time - b.time);
   if (!nextChange && fresh && solarEvents.length) {
@@ -199,15 +199,15 @@ export function buildWeatherStory(
     nextChange = { title: event.title, detail: event.detail, time: new Date(event.time).toISOString(), timeLabel: timeLabel(event.time, reference, zone) };
   }
 
-  let headline = outdoorWindow ? "Make a little time for outside." : "The next few hours, at a glance.";
+  let headline = outdoorWindow ? "Outdoor window available" : "Hourly forecast";
   let tone: WeatherStoryTone = "calm";
   const peakWind = Math.max(0, ...nearHours.map((hour) => windMph(hour.windSpeed)).filter(finite));
-  if (peakPrecip !== null && peakPrecip >= 50) { headline = "Keep an umbrella within reach."; tone = "watch"; }
-  if (high !== null && high >= 90) { headline = "A hot stretch is on the way."; tone = "watch"; }
-  if (low !== null && low <= 32) { headline = "Freezing temperatures are in the picture."; tone = "watch"; }
-  if (peakWind >= 25) { headline = "The wind is the main story."; tone = "watch"; }
-  if (nearHours.some((hour) => /snow|sleet|freezing rain/i.test(hour.shortForecast))) { headline = "Wintry weather is in the picture."; tone = "watch"; }
-  if (nearHours.some((hour) => /thunder/i.test(hour.shortForecast))) { headline = "Thunderstorms are in the forecast."; tone = "watch"; }
+  if (peakPrecip !== null && peakPrecip >= 50) { headline = `Precipitation chance reaches ${peakPrecip}%`; tone = "watch"; }
+  if (high !== null && high >= 90) { headline = `Temperatures reach ${high}°`; tone = "watch"; }
+  if (low !== null && low <= 32) { headline = "Freezing temperatures forecast"; tone = "watch"; }
+  if (peakWind >= 25) { headline = `Forecast winds reach ${peakWind} mph`; tone = "watch"; }
+  if (nearHours.some((hour) => /snow|sleet|freezing rain/i.test(hour.shortForecast))) { headline = "Wintry precipitation forecast"; tone = "watch"; }
+  if (nearHours.some((hour) => /thunder/i.test(hour.shortForecast))) { headline = "Thunderstorms forecast"; tone = "watch"; }
 
   const precipitationSummary = peakPrecip === null
     ? "precipitation chances unavailable"
@@ -215,7 +215,7 @@ export function buildWeatherStory(
   let summary = low !== null && high !== null
     ? `${coverageLabel}, expect ${low === high ? `around ${low}°` : `${low}–${high}°`} with ${precipitationSummary}.`
     : `Hourly temperatures unavailable; ${precipitationSummary}.`;
-  if (!nearHours.length) { headline = "Waiting for the next forecast."; tone = "muted"; }
+  if (!nearHours.length) { headline = "Hourly forecast unavailable"; tone = "muted"; }
   if (alerts.length) {
     headline = alerts[0].event;
     tone = /Extreme|Severe/i.test(alerts[0].severity) ? "urgent" : "watch";
@@ -226,14 +226,14 @@ export function buildWeatherStory(
     if (tone === "calm") tone = "watch";
   }
   if (!fresh) {
-    headline = alerts.length ? `Saved alert: ${alerts[0].event}` : "The weather picture needs a refresh.";
-    summary = "This briefing uses saved or undated weather data. Current conditions and alert status need to be checked again.";
+    headline = alerts.length ? `Saved alert: ${alerts[0].event}` : "Weather data needs updating";
+    summary = "This forecast uses saved or undated weather data. Refresh to check current conditions and alert status.";
     tone = alerts.length ? "watch" : "muted";
   }
 
   const insights: WeatherStory["insights"] = [
     {
-      label: "Temperature arc", value: low === null || high === null ? "Unavailable" : low === high ? `${low}°` : `${low}–${high}°`,
+      label: "Temperature range", value: low === null || high === null ? "Unavailable" : low === high ? `${low}°` : `${low}–${high}°`,
       detail: `${coverageLabel}${fresh ? " · forecast" : " · saved forecast"}`, tone: low === null || !fresh ? "muted" : "calm",
     },
     {
@@ -259,7 +259,7 @@ export function buildWeatherStory(
   });
   const ageMinutes = Math.max(0, Math.floor((reference - Date.parse(data.fetchedAt)) / 60_000));
   return {
-    eyebrow: "Your weather, considered",
+    eyebrow: "Forecast summary",
     headline, summary, tone, nextChange, outdoorWindow, insights,
     updatedLabel: !Number.isFinite(ageMinutes) ? "Refresh time unavailable" : ageMinutes < 1 ? "Refreshed just now" : ageMinutes < 60 ? `Refreshed ${ageMinutes} min ago` : `Refreshed ${Math.floor(ageMinutes / 60)}h ${ageMinutes % 60}m ago`,
   };

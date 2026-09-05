@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   Check,
+  ChevronDown,
   Copy,
   Droplets,
   Expand,
@@ -14,11 +15,13 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  Telescope,
   X,
 } from "lucide-react";
 import type { CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WeatherIcon } from "@/components/weather-icon";
+import { ComparisonTrend } from "@/components/comparison-trend";
 import {
   alignHourlyPeriods,
   COMPARISON_STORAGE_KEY,
@@ -159,16 +162,17 @@ function topAlert(alerts: WeatherAlert[]) {
 
 function SideHero({ side, label, data, loading = false, error, now }: SideHeroProps) {
   const current = data?.current ?? null;
+  const forecastNow = data ? currentAndFutureHourlyPeriods(data.hourly, now.getTime(), 1)[0] : null;
   const feelsLike = current
     ? apparentTemperatureF(current.temperatureF, current.humidityPct, current.windSpeedMph)
     : null;
 
   return (
-    <article className={`${styles.sideHero} ${side === "A" ? styles.sideA : styles.sideB}`} aria-label={`${label} observed conditions`}>
+    <article className={`${styles.sideHero} ${side === "B" ? styles.sideB : ""}`} aria-label={`${label} observed conditions`}>
       <div className={styles.sideHeading}>
         <span className={styles.sideMarker}>{side}</span>
         <div>
-          <span className={styles.eyebrow}>Observed station</span>
+          <span className={styles.eyebrow}>Current conditions</span>
           <h2>{label}</h2>
         </div>
         <div className={styles.sideClock}>
@@ -186,6 +190,7 @@ function SideHero({ side, label, data, loading = false, error, now }: SideHeroPr
         <div className={styles.conditionReadout} aria-busy={loading && !data}>
           <WeatherIcon
             condition={current?.description ?? "cloudy"}
+            isDaytime={forecastNow?.isDaytime}
             size={68}
             strokeWidth={1.2}
           />
@@ -195,7 +200,7 @@ function SideHero({ side, label, data, loading = false, error, now }: SideHeroPr
             <small>Feels like {feelsLike ?? DASH}{feelsLike === null ? "" : "°"}</small>
           </div>
           <div className={styles.freshness}>
-            <span>{current ? observationAge(current.timestamp) : loading ? "loading" : "unavailable"}</span>
+            <span>{current ? `Observed ${observationAge(current.timestamp)}` : loading ? "Loading observation" : "Observation unavailable"}</span>
             <small>{data ? data.location.stationName : "NWS coverage"}</small>
           </div>
         </div>
@@ -208,13 +213,16 @@ function AlertCell({
   alerts,
   label,
   available,
+  now,
 }: {
   alerts: WeatherAlert[] | null;
   label: string;
   available: boolean;
+  now: Date;
 }) {
-  const items = alerts ?? [];
-  const state = alertFeedPresentationState(alerts, available);
+  const currentAlerts = alerts?.filter((item) => !Number.isFinite(Date.parse(item.expires)) || Date.parse(item.expires) > now.getTime()) ?? null;
+  const items = currentAlerts ?? [];
+  const state = alertFeedPresentationState(currentAlerts, available);
   const alert = topAlert(items);
   if (state === "loading" || state === "unavailable") {
     return (
@@ -229,7 +237,7 @@ function AlertCell({
   }
   const saved = state === "saved";
   return (
-    <div className={`${styles.alertCell} ${alert ? styles.alertActive : styles.alertClear} ${saved ? styles.alertUnknown : ""}`}>
+    <div className={`${styles.alertCell} ${alert ? styles.alertActive : ""} ${saved ? styles.alertUnknown : ""}`}>
       <span>{alert ? `${items.length} ${saved ? "saved" : "active"}` : "All clear"}</span>
       {alert ? (
         <details className={styles.alertDisclosure}>
@@ -308,7 +316,7 @@ function ComparisonRadar({
 
   return (
     <article
-      className={`${styles.comparisonRadar} ${side === "A" ? styles.radarA : styles.radarB}`}
+      className={`${styles.comparisonRadar} ${side === "B" ? styles.radarB : ""}`}
       aria-label={`${label} ground radar`}
       aria-busy={loading && !normalizedStation}
     >
@@ -671,6 +679,11 @@ export function WeatherComparison({
   const secondarySky = observedSkyPresentation(secondaryCurrent?.skyCondition);
   const primaryUv = primaryIntelligence?.forecast?.currentUvIndex ?? null;
   const secondaryUv = secondaryIntelligence?.forecast?.currentUvIndex ?? null;
+  const uvSaved = (intelligence: IntelligenceData | null) => Boolean(intelligence && (
+    !Number.isFinite(Date.parse(intelligence.fetchedAt)) || now.getTime() - Date.parse(intelligence.fetchedAt) > 90 * 60_000
+  ));
+  const primaryUvSaved = uvSaved(primaryIntelligence);
+  const secondaryUvSaved = uvSaved(secondaryIntelligence);
   const primaryUvLoading = primaryIntelligence === null && !primaryIntelligenceUnavailable;
   const secondaryUvLoading = Boolean(
     secondaryConfig && secondaryIntelligence === null && !secondaryIntelligenceUnavailable,
@@ -736,12 +749,15 @@ export function WeatherComparison({
         ? "Loading…"
         : comparisonUvValue(secondaryUv, secondaryIntelligence?.forecast?.currentUvCategory),
       delta: comparisonDeltaLabel(primaryUv, secondaryUv, "", 1),
+      primaryDetail: primaryUvSaved ? "Saved model" : undefined,
+      secondaryDetail: secondaryUvSaved ? "Saved model" : undefined,
       tone: "uv",
     },
   ];
   const hourlyStyle = { "--comparison-hours": Math.max(1, alignedHours.length) } as CSSProperties;
   const dailyStyle = { "--comparison-days": Math.max(1, daySlots.length) } as CSSProperties;
   const comparisonHasDegradedProducts = !primaryAlertsAvailable
+    || primaryUvSaved || secondaryUvSaved
     || primaryIntelligenceUnavailable
     || Boolean(primaryIntelligence && !primaryIntelligence.forecast)
     || Boolean(primaryIntelligence?.forecast && primaryUv === null)
@@ -758,14 +774,14 @@ export function WeatherComparison({
     <section ref={shellRoot} className={styles.shell} data-kid-mode-surface aria-label="Two-location weather comparison" tabIndex={-1}>
       <header className={styles.topbar} inert={pickerOpen} aria-hidden={pickerOpen}>
         <div className={styles.brand}>
-          <span className={styles.radarMark} aria-hidden="true"><i /></span>
-          <div><strong>WX DYNAMICS</strong><span>Crosscheck / two-station view</span></div>
+          <Telescope size={32} strokeWidth={1.4} aria-hidden="true" />
+          <div><strong>wx<b>Dynamics</b></strong><span>COMPARISON</span></div>
         </div>
 
         <div className={styles.route} aria-label="Compared locations">
           <span><b>A</b><strong>{primaryLabel}</strong></span>
           <ArrowLeftRight size={15} aria-hidden="true" />
-          <button type="button" onClick={() => setPickerOpen(true)}><b>B</b><strong>{secondaryLabel}</strong></button>
+          <button type="button" onClick={() => setPickerOpen(true)} aria-label={`Change comparison location: ${secondaryLabel}`}><b>B</b><strong>{secondaryLabel}</strong><ChevronDown size={12} /></button>
         </div>
 
         <div className={styles.actions}>
@@ -800,13 +816,13 @@ export function WeatherComparison({
         <section className={styles.heroGrid}>
           <SideHero side="A" label={primaryLabel} data={primaryData} now={now} />
           <div className={styles.deltaRail} aria-label="Current temperature difference">
-            <span>Observed spread</span>
+            <span>Temperature difference</span>
             <strong>{comparisonDeltaLabel(primaryCurrent.temperatureF, secondaryCurrent?.temperatureF ?? null, "°")}</strong>
             <small>{primaryCurrent.temperatureF !== null && secondaryCurrent?.temperatureF !== null && secondaryCurrent
-              ? `${Math.abs(secondaryCurrent.temperatureF - primaryCurrent.temperatureF)}° between stations`
+              ? secondaryCurrent.temperatureF === primaryCurrent.temperatureF ? "Same temperature" : `${secondaryCurrent.temperatureF > primaryCurrent.temperatureF ? "B" : "A"} is warmer`
               : "Waiting for both observations"}</small>
             <i aria-hidden="true" />
-            <span>Feels</span>
+            <span>Apparent temperature</span>
             <b>{comparisonDeltaLabel(primaryFeelsLike, secondaryFeelsLike, "°")}</b>
           </div>
           <SideHero
@@ -820,12 +836,13 @@ export function WeatherComparison({
         </section>
 
         <section className={styles.alertRow} aria-label="Active alerts comparison">
-          <AlertCell alerts={primaryData.alerts} label={primaryLabel} available={primaryAlertsAvailable} />
+          <AlertCell alerts={primaryData.alerts} label={primaryLabel} available={primaryAlertsAvailable} now={now} />
           <div className={styles.rowAxis}><AlertTriangle size={14} /><span>NWS alerts</span></div>
           <AlertCell
             alerts={secondaryData?.alerts ?? null}
             label={secondaryLabel}
             available={Boolean(secondaryData && !secondaryError && secondaryData.alertFeedAvailable === true)}
+            now={now}
           />
         </section>
 
@@ -869,9 +886,11 @@ export function WeatherComparison({
         <div className={styles.outlookGrid}>
           <section className={styles.outlookPanel} aria-label="Aligned hourly forecast comparison">
             <div className={styles.panelHeading}>
-              <div><span className={styles.eyebrow}>Same instant / local clocks</span><h2>Next six hours</h2></div>
-              <small>NWS point forecast</small>
+              <h2>Hourly forecast</h2>
+              <small>NWS point forecasts</small>
             </div>
+            <ComparisonTrend primary={primaryData.hourly} secondary={secondaryData?.hourly ?? []} now={now} primaryTimeZone={primaryData.location.timeZone} secondaryTimeZone={secondaryData?.location.timeZone ?? null} />
+            <div className={styles.hourlyLabel}><span>Next six hours</span><span>Aligned times · local clocks</span></div>
             {alignedHours.length ? (
               <div className={styles.hourlyScroller} role="region" aria-label="Scrollable aligned hourly forecasts" tabIndex={0}>
                 <div className={styles.hourlyGrid} style={hourlyStyle}>
@@ -888,7 +907,7 @@ export function WeatherComparison({
 
           <section className={styles.outlookPanel} aria-label="Daily forecast comparison">
             <div className={styles.panelHeading}>
-              <div><span className={styles.eyebrow}>Local days / paired lead</span><h2>Five-day outlook</h2></div>
+              <h2>Five-day outlook</h2>
               <small>High / low / precip</small>
             </div>
             {daySlots.length ? (
@@ -914,10 +933,10 @@ export function WeatherComparison({
         <div className={styles.pickerBackdrop} data-kid-mode-blocker role="presentation">
           <section ref={pickerDialog} className={styles.picker} role="dialog" aria-modal="true" aria-labelledby="comparison-picker-title" tabIndex={-1}>
             <div className={styles.pickerHeading}>
-              <div><span className={styles.eyebrow}>Crosscheck station B</span><h2 id="comparison-picker-title">Choose a second place</h2></div>
+              <div><span className={styles.eyebrow}>Comparison location B</span><h2 id="comparison-picker-title">Choose a second place</h2></div>
               <button type="button" onClick={closePicker} aria-label={secondaryConfig ? "Close location picker" : "Cancel comparison"} data-picker-close><X size={18} /></button>
             </div>
-            <p>Place A stays locked to <strong>{primaryLabel}</strong>. Search for a different U.S. location or supported territory.</p>
+            <p>Compare <strong>{primaryLabel}</strong> with another U.S. location or supported territory.</p>
             <form className={styles.searchForm} onSubmit={(event) => void searchLocations(event)}>
               <label htmlFor="comparison-location-search">City, state, territory, or ZIP code</label>
               <div>

@@ -56,15 +56,15 @@ export function DaylightArc({
       ? durationLabel(sunrise - reference)
       : night
         ? "After sunset"
-        : "Sun & horizon";
+        : "Solar times";
   const caption = daytime
-    ? "of daylight left"
+    ? "daylight remaining"
     : beforeSunrise
       ? "until sunrise"
       : night
-        ? "The day has given way to night."
+        ? "Today’s solar times"
         : valid
-          ? "Updated solar times are pending."
+          ? "Current solar times pending."
           : "Solar times are unavailable.";
   const dateLabel = valid && !today
     ? new Date(sunrise).toLocaleDateString("en-US", { timeZone, month: "short", day: "numeric" })
@@ -155,7 +155,7 @@ export function WeatherRibbon({
   const hours = upcoming.filter((period) => Date.parse(period.startTime) < now.getTime() + horizon * 3_600_000).slice(0, horizon);
 
   if (!hours.length) {
-    return <div className={styles.empty}>The hourly forecast is unavailable. New forecast data will appear here when it returns.</div>;
+    return <div className={styles.empty}>Hourly forecast unavailable.</div>;
   }
 
   const slotCount = Math.min(8, hours.length);
@@ -234,7 +234,7 @@ export function WeatherRibbon({
         <circle className={styles.selectionHalo} cx={selectedPoint.x} cy={selectedPoint.y} r="10" />
         <circle className={styles.selectionDot} cx={selectedPoint.x} cy={selectedPoint.y} r="4" />
       </svg>
-      <div className={styles.hourButtons} aria-label="Explore the hourly forecast">
+      <div className={styles.hourButtons} aria-label="Select a forecast hour">
         {sampleIndices.map((periodIndex, slot) => {
           const hour = hours[periodIndex];
           const timestamp = Date.parse(hour.startTime);
