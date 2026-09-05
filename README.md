@@ -20,6 +20,8 @@ The home observatory is now the default experience. It reuses the original live 
 - **Comparison:** paired current readings, local clocks, NWS radar, alerts, hourly and five-day forecasts. A shared 24-hour temperature chart uses solid A and dashed B curves, preserves missing-data gaps, and displays both local time zones. The second location and shareable URL carry over between visits.
 - **Monitor comfort:** all ten color channels, fullscreen fitting for desktop monitors, optional nighttime dimming, reduced-motion support, and subtle burn-in drift.
 
+Each desk names itself in the header and has a labeled button to switch to the other desk. Comparison names its return desk and retains that choice after a refresh. Its radar row expands to use spare monitor height.
+
 The chosen experience is saved in the browser. Use `?view=observatory` or `?view=classic` to explicitly select one; existing coordinate and comparison URLs still work.
 
 ## What is on the desk

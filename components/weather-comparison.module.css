@@ -41,8 +41,10 @@
 .actions { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
 .actions button, .pickerHeading button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--obs-line); border-radius: 8px; color: var(--obs-muted); background: transparent; }
 .actions button:hover, .pickerHeading button:hover { color: var(--obs-text); background: var(--obs-panel-high); }
+.actions .backButton { width: auto; display: flex; align-items: center; gap: 7px; padding: 0 11px; color: var(--obs-text); font-size: 12px; white-space: nowrap; }
 .actions .kidModeActive { color: var(--obs-accent); background: color-mix(in srgb, var(--obs-accent) 8%, transparent); }
-.workspace { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px clamp(18px, 2.5vw, 48px) 14px; display: grid; align-content: start; grid-template-rows: auto auto auto auto; gap: 15px; }
+/* Keep readings and forecasts at their natural size; give spare monitor height to radar. */
+.workspace { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px clamp(18px, 2.5vw, 48px) 14px; display: grid; grid-template-rows: auto auto minmax(min-content, 1fr) auto; gap: 15px; }
 .heroGrid, .alertRow { display: grid; grid-template-columns: minmax(0, 1fr) 156px minmax(0, 1fr); gap: 18px; }
 .sideHero { position: relative; min-width: 0; min-height: 207px; padding: 20px 24px 16px; overflow: hidden; border: 1px solid var(--obs-line); border-radius: 13px; background: var(--obs-panel); }
 .sideHero::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 100% 110%, color-mix(in srgb, var(--side-a) 12%, transparent), transparent 65%); }
@@ -88,7 +90,7 @@
 .alertList article > span { font: 9px var(--font-mono), monospace; color: var(--obs-accent); }
 .alertList article > small { color: var(--obs-muted); white-space: pre-line; }
 .rowAxis { display: flex; align-items: center; justify-content: center; gap: 7px; color: var(--obs-muted); font-size: 10px; padding-top: 13px; }
-.situationalBand { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(330px, 1fr) minmax(230px, .8fr); gap: 18px; min-height: 264px; }
+.situationalBand { display: grid; grid-template-columns: minmax(230px, 1fr) minmax(330px, .85fr) minmax(230px, 1fr); gap: 18px; min-height: 264px; }
 .comparisonRadar, .metricPanel, .outlookPanel { min-width: 0; border: 1px solid var(--obs-line); border-radius: 12px; background: var(--obs-panel); overflow: hidden; }
 .comparisonRadar { display: flex; flex-direction: column; background: #182434; color: #edf1f5; }
 .radarHeader { display: flex; align-items: center; gap: 9px; padding: 11px 14px; border-bottom: 1px solid #b6c7e021; }
@@ -189,7 +191,7 @@
 }
 @media (max-height: 900px) and (min-width: 1101px) {
   .topbar { min-height: 62px; padding-top: 10px; padding-bottom: 10px; }
-  .workspace { gap: 10px; padding-top: 12px; padding-bottom: 10px; }
+  .workspace { gap: 10px; padding-top: 12px; padding-bottom: 8px; }
   .sideHero { min-height: 165px; padding: 13px 20px 10px; }
   .temperature > strong { font-size: 74px; }
   .sideHeading h2 { font-size: 23px; }
@@ -236,6 +238,8 @@
   .footer > span:last-child { display: none; }
 }
 @media (max-width: 720px) {
+  .actions .backButton { width: 30px; padding: 0; justify-content: center; }
+  .backButton > span { display: none; }
   .brand strong { font-size: 22px; }
   .brand > svg { width: 27px; }
   .actions { gap: 5px; }

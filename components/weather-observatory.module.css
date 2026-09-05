@@ -38,7 +38,8 @@
 .headerTools { display: flex; align-items: center; gap: 9px; }
 .toolButton { display: grid; place-items: center; border: 1px solid var(--obs-line); border-radius: 9px; background: transparent; color: var(--obs-muted); width: 36px; height: 36px; }
 .toolButton:hover { background: var(--obs-panel-high); color: var(--obs-text); }
-.classicButton { display: flex; align-items: center; gap: 8px; border: 0; background: transparent; font-size: 12px; color: var(--obs-muted); margin-right: 12px; white-space: nowrap; }
+.classicButton { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 7px 10px; border: 1px solid color-mix(in srgb, var(--obs-accent) 50%, transparent); border-radius: 8px; background: color-mix(in srgb, var(--obs-accent) 8%, transparent); font-size: 12px; font-weight: 600; color: var(--obs-accent); margin-right: 3px; white-space: nowrap; }
+.classicButton:hover { border-color: var(--obs-accent); background: color-mix(in srgb, var(--obs-accent) 15%, transparent); }
 .locationRow { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 26px 0 23px; }
 .eyebrow { display: flex; align-items: center; gap: 8px; font: 9px var(--font-mono), monospace; letter-spacing: 1.7px; color: var(--obs-muted); }
 .locationTitle > button { display: flex; align-items: center; gap: 16px; padding: 6px 0 3px; color: var(--obs-text); border: 0; background: none; text-align: left; }

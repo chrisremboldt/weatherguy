@@ -47,7 +47,7 @@ type Props = {
   onSettings: () => void;
   onRefresh: () => void;
   onFullscreen: () => void;
-  onClassic: () => void;
+  onClassic: (keyboard?: boolean) => void;
   onCompare: (opener: HTMLElement) => void;
   onFavorite: (favorite: FavoriteLocation) => void;
 };
@@ -174,10 +174,10 @@ export function WeatherObservatory(props: Props) {
 
   return <div className={`${styles.observatory} ${ambient ? styles.ambientMode : ""}`} data-observatory-view={ambient ? "ambient" : primaryView} onFocusCapture={() => setFocusWithin(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false); }}>
     <header className={styles.header}>
-      <button className={styles.brand} onClick={() => selectView("overview")} aria-label="wxDynamics observatory overview"><OrbitalMark /><span>wx<span>Dynamics</span><small>THE HOME OBSERVATORY</small></span></button>
+      <button className={styles.brand} onClick={() => selectView("overview")} aria-label="wxDynamics observatory overview"><OrbitalMark /><span>wx<span>Dynamics</span><small>OBSERVATORY DESK</small></span></button>
       <nav className={styles.navigation} aria-label="Observatory views">{VIEWS.map(item => <button key={item.id} aria-current={!ambient && primaryView === item.id ? "page" : undefined} onClick={() => selectView(item.id)}>{item.label}</button>)}</nav>
       <div className={styles.headerTools}>
-        <button className={styles.classicButton} onClick={props.onClassic} title="Open the original weather desk">Classic desk <ArrowRight size={13} /></button>
+        <button className={styles.classicButton} data-desk-switch onClick={event => props.onClassic(event.detail === 0)} aria-label="Switch to Classic desk" title="Switch to Classic desk">Classic desk <ArrowRight size={14} aria-hidden="true" /></button>
         <button className={styles.toolButton} onClick={props.onSettings} title="Settings and location" aria-label="Open settings"><Settings2 size={18} /></button>
         <button className={styles.toolButton} onClick={event => { if (event.detail > 0) event.currentTarget.blur(); props.onFullscreen(); }} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen wallboard"}>{isFullscreen ? <Minimize size={18} /> : <Expand size={18} />}</button>
       </div>

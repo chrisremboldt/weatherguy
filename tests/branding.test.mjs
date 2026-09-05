@@ -10,7 +10,7 @@ const serviceWorker = await readFile(new URL("../public/sw.js", import.meta.url)
 
 test("wxDynamics is the product identity across the interface and install metadata", () => {
   assert.match(component, />WX DYNAMICS</);
-  assert.match(component, />Weather intelligence</);
+  assert.match(component, />Classic desk</);
   assert.match(component, />wxDynamics controls</);
   assert.match(layout, /title: "wxDynamics — Weather Intelligence Desk"/);
   assert.match(layout, /metadataBase: new URL\("https:\/\/wxdynamics\.com"\)/);

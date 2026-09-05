@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowLeftRight,
   Check,
   ChevronDown,
@@ -57,6 +58,7 @@ import styles from "./weather-comparison.module.css";
 const DASH = "—";
 
 export type WeatherComparisonProps = {
+  desk?: "observatory" | "classic";
   primaryConfig: LocationConfig;
   primaryData: WeatherDashboardData;
   primaryAlertsAvailable: boolean;
@@ -346,6 +348,7 @@ function ComparisonRadar({
 }
 
 export function WeatherComparison({
+  desk = "observatory",
   primaryConfig,
   primaryData,
   primaryAlertsAvailable,
@@ -808,7 +811,7 @@ export function WeatherComparison({
           <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen"} title={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}>
             {isFullscreen ? <Minimize size={17} /> : <Expand size={17} />}
           </button>
-          <button type="button" onClick={() => void closeComparison()} aria-label="Close comparison" title="Close comparison"><X size={18} /></button>
+          <button type="button" className={styles.backButton} onClick={() => void closeComparison()} aria-label={`Back to ${desk === "classic" ? "Classic" : "Observatory"} desk`} title={`Close comparison and return to the ${desk === "classic" ? "Classic" : "Observatory"} desk`}><ArrowLeft size={16} /><span>{desk === "classic" ? "Classic" : "Observatory"} desk</span></button>
         </div>
       </header>
 

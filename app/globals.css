@@ -5073,3 +5073,69 @@ h2 {
   .app-shell.is-fullscreen .wallboard-scene { transition: none; transform: none; }
   .wallboard-progress i { animation: none; transform: scaleX(1); }
 }
+
+/* Keep both desk names and the return path visible at every screen size. */
+.desk-switch-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid rgba(var(--signal-rgb), .5);
+  border-radius: 8px;
+  background: rgba(var(--signal-rgb), .08);
+  color: var(--signal);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.desk-switch-button:hover {
+  border-color: var(--signal);
+  background: rgba(var(--signal-rgb), .15);
+}
+
+.app-shell .topbar,
+.app-shell.is-fullscreen .topbar {
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  gap: 16px;
+}
+
+.app-shell .location-lockup {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-shell .location-lockup > div { min-width: 0; }
+.app-shell .location-lockup strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brand-subtitle.current-desk-label { display: block; color: var(--signal); }
+.app-shell.is-fullscreen .desk-switch-button { min-height: 32px; padding-top: 5px; padding-bottom: 5px; font-size: 11px; }
+
+@media (max-width: 1100px) {
+  .app-shell .clock-block { display: none; }
+  .app-shell .topbar,
+  .app-shell.is-fullscreen .topbar { gap: 12px; }
+}
+
+@media (max-width: 700px) {
+  .app-shell .topbar,
+  .app-shell.is-fullscreen .topbar {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    height: auto;
+    min-height: 108px;
+    padding: 11px 0;
+  }
+  .app-shell .location-lockup { grid-column: 2; grid-row: 1; justify-self: end; }
+  .app-shell .location-lockup strong { max-width: 120px; }
+  .app-shell .header-status { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .desk-switch-button { margin-right: auto; }
+}
+
+@media (max-width: 370px) {
+  .desk-switch-button { gap: 3px; padding: 7px; font-size: 11px; }
+  .desk-switch-button > svg { width: 13px; }
+}

@@ -52,6 +52,7 @@ import { FullscreenObservationStrip, ObservationContext } from "@/components/obs
 import { SensorDeck } from "@/components/sensor-deck";
 import { requestComparisonFullscreen, WeatherComparison } from "@/components/weather-comparison";
 import { buildForecastDays } from "@/lib/forecast-days";
+import { deskExperienceFromParams, withDeskExperience, type DeskExperience } from "@/lib/desk-experience";
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId } from "@/lib/themes";
 import { alertFeedPresentationState } from "@/lib/weather-alerts";
 import {
@@ -268,6 +269,7 @@ export function WeatherDashboard() {
   const settingsReturnFocusRef = useRef<HTMLElement | null>(null);
   const wallboardTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const comparisonReturnFocusRef = useRef<HTMLElement | null>(null);
+  const deskSwitchFocusRef = useRef(false);
   const [config, setConfig] = useState<LocationConfig | null>(initialLocation);
   const [formConfig, setFormConfig] = useState<LocationFormConfig>(() => formFromLocation(initialLocation()));
   const [data, setData] = useState<WeatherDashboardData | null>(null);
@@ -278,7 +280,7 @@ export function WeatherDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [experience, setExperience] = useState<"observatory" | "classic">("observatory");
+  const [experience, setExperience] = useState<DeskExperience>("observatory");
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [now, setNow] = useState(new Date());
@@ -318,9 +320,12 @@ export function WeatherDashboard() {
     const timer = window.setTimeout(() => {
       setMounted(true);
       setOnline(navigator.onLine);
+      const params = new URLSearchParams(window.location.search);
+      let savedExperience: string | null = null;
+      try { savedExperience = window.localStorage.getItem("weatherguy-experience"); } catch { /* URL choices work without storage. */ }
+      setExperience(deskExperienceFromParams(params, savedExperience));
+      setComparisonOpen(params.get("view") === "compare");
       try {
-        const requestedView = new URLSearchParams(window.location.search).get("view");
-        setExperience(requestedView === "classic" || (requestedView !== "observatory" && window.localStorage.getItem("weatherguy-experience") === "classic") ? "classic" : "observatory");
         setFavorites(JSON.parse(window.localStorage.getItem("weatherguy-favorites") || "[]") as FavoriteLocation[]);
         const savedDisplayMode = window.localStorage.getItem("weatherguy-display-mode");
         setDisplayMode(isDisplayMode(savedDisplayMode) ? savedDisplayMode : "desk");
@@ -330,7 +335,6 @@ export function WeatherDashboard() {
         setAutoDim(window.localStorage.getItem("weatherguy-auto-dim") === "true");
         setAlertAudio(window.localStorage.getItem("weatherguy-alert-audio") === "true");
         setKidModeEnabled(window.localStorage.getItem("weatherguy-kid-mode") === "true");
-        setComparisonOpen(new URLSearchParams(window.location.search).get("view") === "compare");
         setWallboardScenes(savedWallboardScenes(window.localStorage.getItem("weatherguy-wallboard-scenes")));
         setWallboardRotate(window.localStorage.getItem("weatherguy-wallboard-rotate") !== "false");
         const savedInterval = Number(window.localStorage.getItem("weatherguy-wallboard-interval"));
@@ -342,6 +346,13 @@ export function WeatherDashboard() {
     if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!deskSwitchFocusRef.current) return;
+    deskSwitchFocusRef.current = false;
+    const frame = window.requestAnimationFrame(() => appShellRef.current?.querySelector<HTMLButtonElement>("[data-desk-switch]")?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [experience]);
 
   useEffect(() => {
     const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -554,13 +565,16 @@ export function WeatherDashboard() {
         const currentIndex = favorites.findIndex((favorite) => favorite.latitude === current?.latitude && favorite.longitude === current?.longitude);
         const next = favorites[(currentIndex + 1 + favorites.length) % favorites.length];
         window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
-        const params = new URLSearchParams({ lat: next.latitude.toFixed(4), lon: next.longitude.toFixed(4), location: next.label });
-        window.history.replaceState(null, "", `?${params.toString()}`);
+        const params = withDeskExperience(window.location.search, experience);
+        params.set("lat", next.latitude.toFixed(4));
+        params.set("lon", next.longitude.toFixed(4));
+        params.set("location", next.label);
+        window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
         return next;
       });
     }, 15 * 60_000);
     return () => window.clearInterval(timer);
-  }, [autoRotate, comparisonOpen, favorites]);
+  }, [autoRotate, comparisonOpen, experience, favorites]);
 
   useEffect(() => {
     if (!alertAudio || !data?.alerts.length) return;
@@ -637,9 +651,12 @@ export function WeatherDashboard() {
 
   const commitLocation = useCallback((next: LocationConfig) => {
     window.localStorage.setItem("weatherguy-location", JSON.stringify(next));
-    const params = new URLSearchParams({ lat: next.latitude.toFixed(4), lon: next.longitude.toFixed(4) });
+    const params = withDeskExperience(window.location.search, experience);
+    params.set("lat", next.latitude.toFixed(4));
+    params.set("lon", next.longitude.toFixed(4));
     if (next.customLabel) params.set("location", next.customLabel);
-    window.history.replaceState(null, "", `?${params.toString()}`);
+    else params.delete("location");
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
     setData(null);
     setIntelligence(null);
     setIntelligenceUnavailable(false);
@@ -652,7 +669,7 @@ export function WeatherDashboard() {
     setSearchError(null);
     setSearchResults([]);
     setWallboardSceneIndex(0);
-  }, []);
+  }, [experience]);
 
   const saveLocation = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -759,7 +776,7 @@ export function WeatherDashboard() {
   const openComparison = (opener: HTMLElement) => {
     if (!config || !data) return;
     comparisonReturnFocusRef.current = opener;
-    const params = new URLSearchParams(window.location.search);
+    const params = withDeskExperience(window.location.search, experience);
     params.set("view", "compare");
     window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
     setSettingsOpen(false);
@@ -769,11 +786,11 @@ export function WeatherDashboard() {
 
   const persistSetting = (key: string, value: string) => window.localStorage.setItem(key, value);
 
-  const selectExperience = (next: "observatory" | "classic") => {
+  const selectExperience = (next: DeskExperience, keyboard = false) => {
+    deskSwitchFocusRef.current = keyboard;
     setExperience(next);
     try { window.localStorage.setItem("weatherguy-experience", next); } catch { /* Keep working without persistent storage. */ }
-    const params = new URLSearchParams(window.location.search);
-    params.set("view", next);
+    const params = withDeskExperience(window.location.search, next);
     window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params.toString()}${window.location.hash}`);
   };
 
@@ -858,7 +875,7 @@ export function WeatherDashboard() {
           intelligenceUnavailable={intelligenceUnavailable} aviationUnavailable={aviationUnavailable}
           onSettings={openLocationSettings} onRefresh={() => setRefreshKey((value) => value + 1)}
           onFullscreen={() => { void requestFullscreen(); }}
-          onClassic={() => selectExperience("classic")} onCompare={openComparison} onFavorite={loadFavorite}
+          onClassic={(keyboard) => selectExperience("classic", keyboard)} onCompare={openComparison} onFavorite={loadFavorite}
         />
       ) : <>
       <header className="topbar">
@@ -866,7 +883,7 @@ export function WeatherDashboard() {
           <span className="radar-mark" aria-hidden="true"><span /></span>
           <div>
             <strong className="brand-name">WX DYNAMICS</strong>
-            <span className="brand-subtitle">Weather intelligence</span>
+            <span className="brand-subtitle current-desk-label">Classic desk</span>
           </div>
         </div>
 
@@ -879,7 +896,7 @@ export function WeatherDashboard() {
         </div>
 
         <div className="header-status">
-          <button className="icon-button" onClick={() => selectExperience("observatory")} aria-label="Open the new observatory" title="Open the new observatory"><Sparkles size={18} /></button>
+          <button className="desk-switch-button" data-desk-switch onClick={(event) => selectExperience("observatory", event.detail === 0)} aria-label="Switch to Observatory desk" title="Switch to Observatory desk"><span>Observatory desk</span><ChevronRight size={16} aria-hidden="true" /></button>
           <div className="clock-block">
             <span suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", month: "short", day: "numeric" }).format(now)}</span>
             <strong suppressHydrationWarning>{new Intl.DateTimeFormat("en-US", { timeZone, hour: "numeric", minute: "2-digit", second: "2-digit" }).format(now)}</strong>
@@ -1244,6 +1261,7 @@ export function WeatherDashboard() {
 
       {comparisonVisible && config && data && createPortal(
         <WeatherComparison
+          desk={experience}
           primaryConfig={config}
           primaryData={data}
           primaryAlertsAvailable={alertStatus === "active" || alertStatus === "clear"}
