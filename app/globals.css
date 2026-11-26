@@ -2448,31 +2448,6 @@ h2 {
   object-fit: cover;
 }
 
-.satellite-crosshair {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  transform: translate(-50%, -50%);
-  border: 1px solid rgba(231, 240, 239, 0.72);
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(var(--ink-rgb), 0.6);
-}
-
-.satellite-crosshair i,
-.satellite-crosshair b {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  background: rgba(231, 240, 239, 0.75);
-  transform: translate(-50%, -50%);
-}
-
-.satellite-crosshair i { width: 24px; height: 1px; }
-.satellite-crosshair b { width: 1px; height: 24px; }
-
 .sensor-badge {
   position: absolute;
   z-index: 4;
