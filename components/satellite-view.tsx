@@ -71,12 +71,9 @@ export function SatelliteView({ latitude, longitude, refreshKey }: { latitude: n
       </div>
       <div className={`satellite-stage ${loading ? "is-loading" : ""}`}>
         {frame ? (
-          <>
-            {/* NOAA's five-minute source frames are intentionally loaded without image optimization. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={frame.url} alt={`${data?.satellite} ${data?.productLabel} view of ${data?.sectorLabel}`} />
-            <span className="satellite-crosshair" aria-hidden="true"><i /><b /></span>
-          </>
+          // NOAA's five-minute source frames are intentionally loaded without image optimization.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={frame.url} alt={`${data?.satellite} ${data?.productLabel} view of ${data?.sectorLabel}`} />
         ) : (
           <div className="radar-placeholder"><Satellite size={32} /><span>Acquiring GOES imagery</span></div>
         )}
